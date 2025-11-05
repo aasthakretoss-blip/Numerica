@@ -458,7 +458,7 @@ export default function InteractiveDataViewer() {
         params: params.toString()
       });
 
-      const response = await fetch(`https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/demographic?${params}`);
+      const response = await fetch(`https://numerica-1.onrender.com/api/payroll/demographic?${params}`);
       
       if (response.ok) {
         const result = await response.json();

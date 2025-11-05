@@ -2,7 +2,7 @@
  * Script de prueba rápida para verificar conectividad con la API
  */
 
-const API_BASE_URL = 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com';
+const API_BASE_URL = 'https://numerica-1.onrender.com';
 
 async function testApiConnection() {
     console.log('🔍 PROBANDO CONECTIVIDAD CON LA API');

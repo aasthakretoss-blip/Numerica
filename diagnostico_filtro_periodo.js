@@ -3,7 +3,7 @@
  */
 
 const API_CONFIG = {
-  BASE_URL: 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com'
+  BASE_URL: 'https://numerica-1.onrender.com'
 };
 
 const buildApiUrl = (endpoint) => {

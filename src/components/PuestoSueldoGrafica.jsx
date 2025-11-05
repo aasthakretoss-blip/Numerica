@@ -324,7 +324,7 @@ export default function PuestoSueldoGrafica({
       
       console.log('🔍 PuestoSueldoGrafica - Consultando servidor para conteos únicos:', filterParams);
 
-      const url = `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/demographic/unique-count?${params}`;
+      const url = `https://numerica-1.onrender.com/api/payroll/demographic/unique-count?${params}`;
       console.log('🔍 PuestoSueldoGrafica - URL del servidor:', url);
       
       const response = await fetch(url);
