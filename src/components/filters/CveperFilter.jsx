@@ -138,7 +138,7 @@ const CveperFilter = ({ selectedCveper, onCveperChange, curp }) => {
           page: '1'
         });
         
-        const response = await fetch(`https://numerica-1.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
         if (!response.ok) throw new Error('Error fetching data');
         
         const result = await response.json();

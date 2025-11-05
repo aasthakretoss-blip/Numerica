@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_ENDPOINT = 'https://numerica-1.onrender.com';
+const API_ENDPOINT = 'https://numerica-2.onrender.com';
 
 exports.handler = async (event) => {
     const timestamp = new Date().toISOString();

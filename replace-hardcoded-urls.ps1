@@ -9,7 +9,7 @@ Write-Host "Buscando archivos con URLs hardcodeadas..." -ForegroundColor Cyan
 $files = Get-ChildItem -Path "src" -Recurse -File -Include "*.jsx","*.js","*.tsx","*.ts"
 $oldUrl1 = "http://localhost:3001"
 $oldUrl2 = "https://n4xman7i5l.execute-api.us-east-1.amazonaws.com"  # Old endpoint, no longer used
-$newUrl = "https://numerica-1.onrender.com"
+$newUrl = "hhttps://numerica-2.onrender.com"
 $filesChanged = 0
 
 foreach ($file in $files) {

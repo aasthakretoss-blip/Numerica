@@ -8,11 +8,11 @@ const API_CONFIG = {
     PROFILE_API: 'http://localhost:3001/api/profile',
   },
   production: {
-    BASE_URL: process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com',
-    PAYROLL_API: (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com') + '/api',
-    EMPLOYEES_API: (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com') + '/api',
-    DEMOGRAPHICS_API: (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com') + '/api',
-    PROFILE_API: (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com') + '/api',
+    BASE_URL: process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com',
+    PAYROLL_API: (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com') + '/api',
+    EMPLOYEES_API: (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com') + '/api',
+    DEMOGRAPHICS_API: (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com') + '/api',
+    PROFILE_API: (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com') + '/api',
   }
 };
 

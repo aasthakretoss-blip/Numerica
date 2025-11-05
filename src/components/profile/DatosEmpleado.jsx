@@ -262,7 +262,7 @@ const DatosEmpleado = ({ rfc, selectedCveper, onEmployeeDataLoaded }) => {
           params.append('cveper', cveperValue);
         }
         
-        const response = await fetch(`https://numerica-1.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar datos del empleado');

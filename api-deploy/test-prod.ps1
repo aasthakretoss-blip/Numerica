@@ -1,4 +1,4 @@
-$baseUrl = "https://numerica-1.onrender.com"
+$baseUrl = "https://numerica-2.onrender.com"
 
 Write-Host "=== TESTING PRODUCTION API ===" -ForegroundColor Green
 

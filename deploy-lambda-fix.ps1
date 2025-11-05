@@ -33,7 +33,7 @@ Write-Host ""
 Write-Host "[3/3] Verificando deployment..." -ForegroundColor Yellow
 
 # Probar el endpoint de stats
-$apiUrl = "https://numerica-1.onrender.com/api/payroll/stats"
+$apiUrl = "https://numerica-2.onrender.com/api/payroll/stats"
 Write-Host "  Probando: $apiUrl" -ForegroundColor Cyan
 
 try {

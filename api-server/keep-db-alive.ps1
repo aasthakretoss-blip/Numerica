@@ -3,7 +3,7 @@
 Write-Host "🔄 Manteniendo base de datos activa..." -ForegroundColor Green
 
 # URL de health check que hará ping a la base de datos
-$healthUrl = "https://numerica-1.onrender.com/api/health"
+$healthUrl = "https://numerica-2.onrender.com/api/health"
 
 # Función para hacer ping
 function Test-DatabaseConnection {

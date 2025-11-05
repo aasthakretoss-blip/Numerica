@@ -1,9 +1,7 @@
 // Importes removidos - ahora usamos endpoint público sin autenticación
 import { buildApiUrl, isProduction } from '../config/apiConfig';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.VITE_API_BASE_URL || (isProduction 
-  ? 'https://numerica-1.onrender.com'
-  : 'http://localhost:3001');
+const API_BASE_URL = "https://numerica-2.onrender.com";
 
 // Tipos para la API
 export interface UniqueValueResponse {

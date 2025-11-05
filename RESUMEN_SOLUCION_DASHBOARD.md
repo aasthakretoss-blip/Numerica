@@ -37,7 +37,7 @@ const PRODUCTION_API_URL = 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.c
 ### 2. **Centralización de URLs en TablaDemografico.jsx**
 ```javascript
 // ANTES (hardcodeado):
-const response = await fetch('https://numerica-1.onrender.com/api/payroll/periodos');
+const response = await fetch('https://numerica-2.onrender.com/api/payroll/periodos');
 
 // DESPUÉS (centralizado):
 const response = await fetch(buildApiUrl('/api/payroll/periodos'));

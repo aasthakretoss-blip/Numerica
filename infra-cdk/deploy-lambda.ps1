@@ -11,7 +11,7 @@ try {
     npx cdk deploy --require-approval never
     
     Write-Host "Deployment completado!" -ForegroundColor Green
-    Write-Host "API URL: https://numerica-1.onrender.com" -ForegroundColor Cyan
+    Write-Host "API URL: https://numerica-2.onrender.com" -ForegroundColor Cyan
 } catch {
     Write-Host "Error: $_" -ForegroundColor Red
     exit 1

@@ -1,16 +1,16 @@
 // URL de API - Usar variable de entorno de .env files
 // REACT_APP_API_URL se configura en .env.production o .env.development
-const PRODUCTION_API_URL = process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com';
+const PRODUCTION_API_URL = process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com';
 
 // CONFIGURACIÓN PARA DESARROLLO Y PRODUCCIÓN
 const API_CONFIG = {
   development: {
     // Usar api-server local en desarrollo o API desde .env
-    BASE_URL: process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com'),
-    PAYROLL_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com')) + '/api/payroll',
-    EMPLOYEES_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com')) + '/api/employees',
-    DEMOGRAPHICS_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com')) + '/api/demographics',
-    PROFILE_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-1.onrender.com')) + '/api/profile',
+    BASE_URL: process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com'),
+    PAYROLL_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/payroll',
+    EMPLOYEES_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/employees',
+    DEMOGRAPHICS_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/demographics',
+    PROFILE_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/profile',
   },
   production: {
     // SIEMPRE usar REACT_APP_API_URL de .env.production en builds de producción

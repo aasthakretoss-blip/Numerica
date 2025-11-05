@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 # Configuración
 $CLOUDFRONT_BUCKET = "payroll-employees-845465762708-us-east-1"
 $CLOUDFRONT_DISTRIBUTION_ID = "E3JFSGITJTR6NS"
-$API_URL = "https://numerica-1.onrender.com"
+$API_URL = "https://numerica-2.onrender.com"
 
 Write-Host "=================================="
 Write-Host "  DEPLOYMENT FRONTEND - NUMERICA"

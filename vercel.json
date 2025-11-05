@@ -3,6 +3,12 @@
   "name": "numerica",
   "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run vercel-build",
   "outputDirectory": "build",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://numerica-2.onrender.com/api/$1"
+    }
+  ],
   "routes": [
     {
       "src": "/static/(.*)",
