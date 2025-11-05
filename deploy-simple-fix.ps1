@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 $CLOUDFRONT_BUCKET = "payroll-employees-845465762708-us-east-1"
 $CLOUDFRONT_DISTRIBUTION_ID = "E3JFSGITJTR6NS"
-$API_URL = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com"
+$API_URL = "https://numerica-1.onrender.com"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  DEPLOYMENT FRONTEND - NUMERICA" -ForegroundColor Cyan
@@ -15,7 +15,7 @@ Write-Host ""
 # Paso 1: Verificar .env.production
 Write-Host "[1/4] Verificando .env.production..." -ForegroundColor Yellow
 $envContent = Get-Content ".env.production" -Raw
-if ($envContent -notmatch "ki6h36kbh4") {
+if ($envContent -notmatch "numerica-1.onrender.com") {
     Write-Host "    Actualizando .env.production con URL correcta..." -ForegroundColor Yellow
     $envContent = $envContent -replace "REACT_APP_API_URL=.*", "REACT_APP_API_URL=$API_URL"
     $envContent | Set-Content ".env.production" -Encoding UTF8

@@ -5,7 +5,7 @@
 
 // Configuración de la API (similar a la del proyecto)
 const API_CONFIG = {
-  BASE_URL: 'https://wgx1txkom8.execute-api.us-east-1.amazonaws.com/dev'
+  BASE_URL: 'https://numerica-1.onrender.com'
 };
 
 const buildApiUrl = (endpoint) => {

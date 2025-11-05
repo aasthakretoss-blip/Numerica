@@ -2,7 +2,7 @@
 import { buildApiUrl, isProduction } from '../config/apiConfig';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.VITE_API_BASE_URL || (isProduction 
-  ? 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com'
+  ? 'https://numerica-1.onrender.com'
   : 'http://localhost:3001');
 
 // Tipos para la API

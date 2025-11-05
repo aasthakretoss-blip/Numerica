@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_ENDPOINT = 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com';
+const API_ENDPOINT = 'https://numerica-1.onrender.com';
 
 exports.handler = async (event) => {
     const timestamp = new Date().toISOString();

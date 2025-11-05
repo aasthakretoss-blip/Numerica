@@ -2,14 +2,14 @@
 # URLs a reemplazar:
 # - http://localhost:3001
 # - https://n4xman7i5l.execute-api.us-east-1.amazonaws.com
-# Nueva URL: https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com
+# Nueva URL: https://numerica-1.onrender.com
 
 Write-Host "Buscando archivos con URLs hardcodeadas..." -ForegroundColor Cyan
 
 $files = Get-ChildItem -Path "src" -Recurse -File -Include "*.jsx","*.js","*.tsx","*.ts"
 $oldUrl1 = "http://localhost:3001"
 $oldUrl2 = "https://n4xman7i5l.execute-api.us-east-1.amazonaws.com"  # Old endpoint, no longer used
-$newUrl = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com"
+$newUrl = "https://numerica-1.onrender.com"
 $filesChanged = 0
 
 foreach ($file in $files) {
@@ -24,7 +24,7 @@ foreach ($file in $files) {
     
     if ($content -match [regex]::Escape($oldUrl2)) {
         Write-Host "  Encontrado endpoint antiguo (n4xman7i5l): $($file.FullName)" -ForegroundColor Yellow
-        Write-Host "    (Este endpoint ya no está en uso, el actual es ki6h36kbh4)" -ForegroundColor Gray
+        Write-Host "    (Este endpoint ya no está en uso, el actual es numerica-1.onrender.com)" -ForegroundColor Gray
         $content = $content -replace [regex]::Escape($oldUrl2), $newUrl
         $modified = $true
     }

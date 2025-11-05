@@ -7,7 +7,7 @@ echo.
 echo [1/3] Configurando variables de entorno...
 set NODE_ENV=production
 set REACT_APP_ENV=production
-set REACT_APP_API_URL=https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com
+set REACT_APP_API_URL=https://numerica-1.onrender.com
 set REACT_APP_COGNITO_USER_POOL_ID=us-east-1_JwP9gBEvr
 set REACT_APP_COGNITO_CLIENT_ID=18l43dor2k5fja5pu0caf64u2f
 set REACT_APP_COGNITO_REGION=us-east-1

@@ -1,7 +1,7 @@
 # Test Periodos Endpoint
 Write-Host "Testing periodos endpoint..." -ForegroundColor Cyan
 
-$apiUrl = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/api/payroll/periodos"
+$apiUrl = "https://numerica-1.onrender.com/api/payroll/periodos"
 
 try {
     Write-Host "Calling: $apiUrl" -ForegroundColor Yellow

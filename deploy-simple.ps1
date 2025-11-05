@@ -15,7 +15,7 @@ if (-not (Test-Path "package.json")) {
 
 # URLs de produccion
 $CLOUDFRONT_URL = "https://d3s6xfijfd78h6.cloudfront.net/busqueda-empleados"
-$API_URL_CURRENT = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com"
+$API_URL_CURRENT = "https://numerica-1.onrender.com"
 $CLOUDFRONT_DISTRIBUTION_ID = "E3JFSGITJTR6NS"
 $CLOUDFRONT_BUCKET = "payroll-employees-845465762708-us-east-1"
 
@@ -29,14 +29,14 @@ Write-Output ""
 Write-Output "[1/5] Configurando variables de produccion..."
 if (Test-Path ".env") {
     $envContent = Get-Content ".env" -Raw
-    $envContent = $envContent -replace "REACT_APP_API_URL=.*", "REACT_APP_API_URL=https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com"
+    $envContent = $envContent -replace "REACT_APP_API_URL=.*", "REACT_APP_API_URL=https://numerica-1.onrender.com"
     $envContent = $envContent -replace "REACT_APP_ENV=.*", "REACT_APP_ENV=production"
     $envContent | Out-File ".env" -Encoding UTF8 -NoNewline
     Write-Output "Variables configuradas correctamente"
 } else {
     Write-Output "Archivo .env no encontrado, creando uno nuevo..."
     @"
-REACT_APP_API_URL=https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com
+REACT_APP_API_URL=https://numerica-1.onrender.com
 REACT_APP_ENV=production
 "@ | Out-File ".env" -Encoding UTF8
 }

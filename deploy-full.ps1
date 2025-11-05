@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 
 # URLs actuales funcionando
 $CLOUDFRONT_URL = "https://d3s6xfijfd78h6.cloudfront.net/busqueda-empleados"
-$API_URL_CURRENT = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod"
+$API_URL_CURRENT = "https://numerica-1.onrender.com"
 $CLOUDFRONT_DISTRIBUTION_ID = "E3JFSGITJTR6NS"
 $CLOUDFRONT_BUCKET = "payroll-employees-845465762708-us-east-1"
 
@@ -40,10 +40,10 @@ function Deploy-Frontend {
     Write-Output ""
     
     # Verificar configuración de producción
-    if (-not (Get-Content ".env.production" | Select-String "REACT_APP_API_URL=https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod")) {
+    if (-not (Get-Content ".env.production" | Select-String "REACT_APP_API_URL=https://numerica-1.onrender.com")) {
         Write-Output "⚠️ Configurando variables de producción..."
         $envContent = Get-Content ".env.production" -Raw
-        $envContent = $envContent -replace "REACT_APP_API_URL=.*", "REACT_APP_API_URL=https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod"
+        $envContent = $envContent -replace "REACT_APP_API_URL=.*", "REACT_APP_API_URL=https://numerica-1.onrender.com"
         $envContent = $envContent -replace "REACT_APP_ENV=.*", "REACT_APP_ENV=production"
         $envContent | Out-File ".env" -Encoding UTF8
         Write-Output "✅ Variables de producción configuradas"

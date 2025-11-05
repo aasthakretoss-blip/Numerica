@@ -1,7 +1,7 @@
 // Diagnóstico del endpoint /api/fondos/data-from-rfc
 const axios = require('axios');
 
-const API_BASE_URL = 'https://wgx1txkom8.execute-api.us-east-1.amazonaws.com/dev';
+const API_BASE_URL = 'https://numerica-1.onrender.com';
 const TEST_RFC = 'AOHM980311PY9';
 
 // Función para obtener token de autenticación (simulado)

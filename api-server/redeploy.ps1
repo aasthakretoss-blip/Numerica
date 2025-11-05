@@ -20,12 +20,12 @@ npx serverless deploy --stage prod --verbose
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Deploy exitoso! Tu API esta disponible en:" -ForegroundColor Green
-    Write-Host "   https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com" -ForegroundColor Cyan
+    Write-Host "   https://numerica-1.onrender.com" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Probando la API..." -ForegroundColor Yellow
     
     try {
-        $response = Invoke-RestMethod -Uri "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/api/health" -Method GET -TimeoutSec 30
+        $response = Invoke-RestMethod -Uri "https://numerica-1.onrender.com/api/health" -Method GET -TimeoutSec 30
         Write-Host "API respondiendo correctamente!" -ForegroundColor Green
         Write-Host "   Status: $($response.status)" -ForegroundColor White
     } catch {

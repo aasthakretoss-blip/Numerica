@@ -1,4 +1,4 @@
-$baseUrl = "https://wgx1txkom8.execute-api.us-east-1.amazonaws.com/dev"
+$baseUrl = "https://numerica-1.onrender.com"
 
 Write-Host "=== TESTING PRODUCTION API ===" -ForegroundColor Green
 

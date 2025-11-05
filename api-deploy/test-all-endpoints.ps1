@@ -1,4 +1,4 @@
-$baseUrl = "https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com"
+$baseUrl = "https://numerica-1.onrender.com"
 
 Write-Host "=== TESTING COMPLETE NUMERICA AWS API ===" -ForegroundColor Green
 Write-Host "Base URL: $baseUrl" -ForegroundColor Cyan
