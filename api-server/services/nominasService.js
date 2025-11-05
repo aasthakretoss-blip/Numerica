@@ -425,7 +425,7 @@ class NominasService {
         paramIndex++;
       }
       
-      query += ` ORDER BY "Nombre completo" ASC, "CURP" ASC`;
+      query += ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
       
       // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -478,7 +478,8 @@ class NominasService {
           "Puesto" as puesto,
           "Compañía" as sucursal,
           "RFC" as rfc,
-          TO_CHAR(cveper, 'YYYY-MM-DD') as periodo,
+          cveper as periodo,
+          cveper as fecha,
           TO_CHAR(cveper, 'YYYY-MM-DD') as mes,
           COALESCE(" SUELDO CLIENTE ", 0) as sueldo,
           COALESCE(" SUELDO CLIENTE ", 0) as salary,
@@ -603,8 +604,9 @@ class NominasService {
           'curp': '"CURP"',
           'puesto': '"Puesto"',
           'sucursal': '"Compa\u00f1\u00eda"',
-          'periodo': 'TO_CHAR(cveper, \'YYYY-MM-DD\')',
-          'mes': 'TO_CHAR(cveper, \'YYYY-MM-DD\')',
+          'periodo': 'cveper',
+          'mes': 'cveper',
+          'fecha': 'cveper',
           'salario': 'CAST(" SUELDO CLIENTE" AS NUMERIC)',
           'comisiones': '(COALESCE(CAST(" COMISIONES CLIENTE" AS NUMERIC), 0) + COALESCE(CAST(" COMISIONES FACTURADAS" AS NUMERIC), 0))',
           'percepcionesTotales': 'CAST(" TOTAL DE PERCEPCIONES" AS NUMERIC)',
@@ -616,14 +618,14 @@ class NominasService {
         const dbField = fieldMapping[options.orderBy];
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC`;
+          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
           console.log('✅ Clausula ORDER BY generada:', orderClause);
         } else {
-          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`; // Fallback por defecto con sort secundario
+          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`; // Fallback por defecto con sort secundario y terciario
           console.log('⚠️ Campo no reconocido, usando orden por defecto:', orderClause);
         }
       } else {
-        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`; // Orden por defecto con sort secundario para consistencia
+        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`; // Orden por defecto con sort secundario y terciario para consistencia
       }
       
       query += orderClause;

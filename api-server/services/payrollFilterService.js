@@ -489,6 +489,8 @@ class PayrollFilterService {
           "Compañía" as sucursal,
           TO_CHAR(cveper, 'YYYY-MM-DD') as mes,
           cveper as cveper,
+          cveper as periodo,
+          cveper as fecha,
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as sueldo,
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as " SUELDO CLIENTE ",
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as salary,
@@ -671,7 +673,9 @@ class PayrollFilterService {
           'curp': '"CURP"',
           'puesto': '"Puesto"',
           'sucursal': '"Compañía"',
-          'mes': 'TO_CHAR(cveper, \'YYYY-MM-DD\')',
+          'mes': 'cveper',
+          'periodo': 'cveper',
+          'fecha': 'cveper',
           'salario': '(" SUELDO CLIENTE "::NUMERIC)',
           ' SUELDO CLIENTE ': '(" SUELDO CLIENTE "::NUMERIC)',
           'salary': '(" SUELDO CLIENTE "::NUMERIC)',
@@ -688,19 +692,21 @@ class PayrollFilterService {
         
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC`;
+          // Add tertiary sort by cveper (date) for consistent ordering when nombre and CURP are same
+          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
           console.log('✅ PayrollFilterService: Clausula ORDER BY generada:', orderClause);
         } else {
-          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`;
+          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
           console.log('⚠️ PayrollFilterService: Campo no reconocido, usando orden por defecto:', options.orderBy, orderClause);
         }
       } else {
-        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`;
-        console.log('✅ PayrollFilterService: Aplicando orden por defecto (nombre ASC, CURP ASC)');
+        // Default sort with tertiary sort by date for consistent ordering
+        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
+        console.log('✅ PayrollFilterService: Aplicando orden por defecto (nombre ASC, CURP ASC, cveper DESC)');
       }
       
       // Always ensure there's an order clause for consistent results
-      query += orderClause || ` ORDER BY "Nombre completo" ASC, "CURP" ASC`;
+      query += orderClause || ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
       
       // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
