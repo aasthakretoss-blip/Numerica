@@ -425,8 +425,7 @@ class NominasService {
         paramIndex++;
       }
       
-      // Ordenamiento
-      query += ` ORDER BY "Nombre completo" ASC`;
+      query += ` ORDER BY "Nombre completo" ASC, "CURP" ASC`;
       
       // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -479,8 +478,8 @@ class NominasService {
           "Puesto" as puesto,
           "Compañía" as sucursal,
           "RFC" as rfc,
-          DATE(cveper)::text as periodo,
-          "Mes" as mes,
+          TO_CHAR(cveper, 'YYYY-MM-DD') as periodo,
+          TO_CHAR(cveper, 'YYYY-MM-DD') as mes,
           COALESCE(" SUELDO CLIENTE ", 0) as sueldo,
           COALESCE(" SUELDO CLIENTE ", 0) as salary,
           COALESCE(" COMISIONES CLIENTE ", 0) as "comisionesCliente",
@@ -604,8 +603,8 @@ class NominasService {
           'curp': '"CURP"',
           'puesto': '"Puesto"',
           'sucursal': '"Compa\u00f1\u00eda"',
-          'periodo': 'DATE(cveper)',
-          'mes': 'DATE(cveper)',
+          'periodo': 'TO_CHAR(cveper, \'YYYY-MM-DD\')',
+          'mes': 'TO_CHAR(cveper, \'YYYY-MM-DD\')',
           'salario': 'CAST(" SUELDO CLIENTE" AS NUMERIC)',
           'comisiones': '(COALESCE(CAST(" COMISIONES CLIENTE" AS NUMERIC), 0) + COALESCE(CAST(" COMISIONES FACTURADAS" AS NUMERIC), 0))',
           'percepcionesTotales': 'CAST(" TOTAL DE PERCEPCIONES" AS NUMERIC)',
@@ -617,14 +616,14 @@ class NominasService {
         const dbField = fieldMapping[options.orderBy];
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          orderClause = ` ORDER BY ${dbField} ${direction}`;
+          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC`;
           console.log('✅ Clausula ORDER BY generada:', orderClause);
         } else {
-          orderClause = ` ORDER BY "Nombre completo" ASC`; // Fallback por defecto
+          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`; // Fallback por defecto con sort secundario
           console.log('⚠️ Campo no reconocido, usando orden por defecto:', orderClause);
         }
       } else {
-        orderClause = ` ORDER BY "Nombre completo" ASC`; // Orden por defecto
+        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC`; // Orden por defecto con sort secundario para consistencia
       }
       
       query += orderClause;
@@ -684,12 +683,12 @@ class NominasService {
       const client = await nominasPool.connect();
       const result = await client.query(`
         SELECT 
-          DATE(cveper)::text AS value, 
+          TO_CHAR(cveper, 'YYYY-MM-DD') AS value, 
           COUNT(*) as count
         FROM historico_nominas_gsau
         WHERE cveper IS NOT NULL
-        GROUP BY DATE(cveper)::text
-        ORDER BY DATE(cveper)::text DESC
+        GROUP BY TO_CHAR(cveper, 'YYYY-MM-DD')
+        ORDER BY TO_CHAR(cveper, 'YYYY-MM-DD') DESC
       `);
       client.release();
       return {

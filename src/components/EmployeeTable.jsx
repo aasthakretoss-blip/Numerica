@@ -7,6 +7,7 @@ import {
   FaChevronLeft, FaChevronRight 
 } from 'react-icons/fa'
 import { parseMoney, formatCurrency, formatPeriod } from '../utils/data.js'
+import { formatCveperForTable } from '../utils/periodUtils.ts'
 import { useServerPagination } from '../hooks/useServerPagination.js'
 import { surfaces, textColors, effects, brandColors, semanticColors } from '../styles/ColorTokens'
 
@@ -313,7 +314,7 @@ export default function EmployeeTable({
         curp: emp.curp || emp.curve || emp.rfc || 'N/A',
         puesto: emp.position || emp.puesto || 'N/A',
         sucursal: emp.department || emp.sucursal || 'N/A',
-        periodo: emp.periodo || emp.mes || 'N/A',
+        periodo: formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || 'N/A',
         salario: parseFloat(emp.salary || emp.sueldo) || 0,
         comisiones: parseFloat(emp.commissions || emp.comisiones) || 0,
         comisionesCliente: parseFloat(emp.comisionesCliente || 0),
