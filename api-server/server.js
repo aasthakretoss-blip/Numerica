@@ -37,19 +37,61 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Configuración CORS
-const corsOptions = {
-  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'http://localhost:3002',
-    'http://localhost:3003'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-email'],
-  credentials: true
+const allowedOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:3001', 
+      'http://localhost:3002',
+      'http://localhost:3003',
+      'https://numerica-imsa.vercel.app'  // Vercel frontend
+    ];
+
+// Custom origin function to allow Vercel preview deployments
+const originFunction = (origin, callback) => {
+  // Allow requests with no origin (like mobile apps, Postman, etc.)
+  if (!origin) {
+    return callback(null, true);
+  }
+
+  // Check if origin is in allowed list
+  if (allowedOrigins.includes(origin)) {
+    return callback(null, true);
+  }
+
+  // Allow Vercel preview deployments (*.vercel.app)
+  if (origin.endsWith('.vercel.app')) {
+    return callback(null, true);
+  }
+
+  // Allow Netlify deployments (*.netlify.app)
+  if (origin.endsWith('.netlify.app')) {
+    return callback(null, true);
+  }
+
+  // Allow AWS CloudFront/Amplify
+  if (origin.includes('cloudfront.net') || origin.includes('amplifyapp.com')) {
+    return callback(null, true);
+  }
+
+  // Reject other origins
+  callback(new Error('Not allowed by CORS'));
 };
+
+const corsOptions = {
+  origin: originFunction,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-email', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly for all routes
+app.options('*', cors(corsOptions));
 
 // Middleware de logging
 app.use((req, res, next) => {
