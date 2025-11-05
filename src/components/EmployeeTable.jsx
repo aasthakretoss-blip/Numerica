@@ -476,7 +476,7 @@ export default function EmployeeTable({
             Mostrando {((pagination.page - 1) * pagination.pageSize) + 1} - {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total} empleados
             {stats && (
               <span style={{ marginLeft: '1rem', color: brandColors.primary }}>
-                Total en BD: {stats.totalRecords.toLocaleString()}
+                Total en BD: {stats.totalRecords?.toLocaleString()}
               </span>
             )}
           </PaginationInfo>
