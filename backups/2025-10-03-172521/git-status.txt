@@ -1,0 +1,47 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   infra-cdk/package.json
+	modified:   src/components/LayoutWithSidebar.jsx
+	modified:   src/components/StatisticsPanel.jsx
+	modified:   src/components/StatisticsPanel.tsx
+	modified:   src/components/TablaInteractivaDemografica.jsx
+	modified:   src/config/apiConfig.js
+	modified:   src/hooks/useServerPagination.js
+	modified:   src/hooks/useServerPagination.ts
+	modified:   src/pages/BusquedaEmpleados.jsx
+	modified:   src/pages/Demografico.jsx
+	modified:   src/pages/SimuladorCreditos.jsx
+	modified:   src/pages/UserProfile.jsx
+	modified:   src/services/demographicFiltersApi.js
+	modified:   src/services/nominasApi.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backend-lambda/db_verification_handler.py
+	backend-lambda/lambda-packages/
+	backend-lambda/psycopg2/
+	backend-lambda/psycopg2_binary-2.9.9.dist-info/
+	backend-lambda/simple_handler.py
+	backend-lambda/test_handler.py
+	backup-state.bat
+	backups/
+	build-production.bat
+	fix-localhost-references.ps1
+	fix-localhost-refs-v2.ps1
+	fix-localhost-simple.ps1
+	infra-cdk/backend-lambda/
+	infra-cdk/bin/simple.ts
+	infra-cdk/deploy.bat
+	infra-cdk/deploymentLog.md
+	infra-cdk/lambda-code/
+	infra-cdk/layers/
+	infra-cdk/lib/simple-stack.ts
+	infra-cdk/package-lock.json
+	infra-cdk/website/
+	src/components/ChartErrorBoundary.jsx
+
+no changes added to commit (use "git add" and/or "git commit -a")

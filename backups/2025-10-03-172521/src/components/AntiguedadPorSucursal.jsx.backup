@@ -1,0 +1,1007 @@
+import { useState, useEffect, useMemo } from 'react'
+import styled from 'styled-components'
+import { FaSpinner, FaBuilding, FaChevronUp, FaChevronDown, FaFilter } from 'react-icons/fa'
+import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
+
+// Color oficial del sitio (alineado con otros componentes)
+const OFFICIAL_BLUE = '#3b82f6'
+
+// Styled Components
+const ChartContainer = styled.div`
+  width: 50%;
+  min-width: 600px;
+  height: auto;
+  min-height: 80vh;
+  max-height: none;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: visible;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  
+  @media (max-width: 1200px) {
+    width: 80%;
+    min-width: 500px;
+  }
+  
+  @media (max-width: 768px) {
+    width: 95%;
+    min-width: 300px;
+  }
+`;
+
+const ChartHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-bottom: ${props => props.$collapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'};
+`;
+
+const ChartTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const TitleText = styled.h3`
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0;
+  color: #1e3a8a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ToggleButton = styled.button`
+  background: rgba(30, 58, 138, 0.2);
+  border: 1px solid rgba(30, 58, 138, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: #1e3a8a;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  
+  &:hover {
+    background: rgba(30, 58, 138, 0.3);
+    transform: translateY(-2px);
+  }
+`;
+
+const ChartContent = styled.div`
+  flex: 1;
+  max-height: ${props => props.$collapsed ? '0' : 'none'};
+  overflow: ${props => props.$collapsed ? 'hidden' : 'visible'};
+  transition: max-height 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #1e3a8a;
+`;
+
+const ChartWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+`;
+
+const TopStatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+`;
+
+const StatItem = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(168, 237, 234, 0.3);
+  }
+`;
+
+const StatValue = styled.div`
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 0.2rem;
+`;
+
+const StatLabel = styled.div`
+  font-size: 0.7rem;
+  color: rgba(44, 62, 80, 0.7);
+  line-height: 1.1;
+`;
+
+const ContentContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const LeftSidebar = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-width: 180px;
+  flex-shrink: 0;
+  
+  @media (max-width: 768px) {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+`;
+
+const LegendContainer = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: rgba(59, 130, 246, 0.9);
+  font-weight: 500;
+  white-space: nowrap;
+`;
+
+const LegendColor = styled.div`
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  background: ${props => props.$color};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+`;
+
+const LegendGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  
+  @media (max-width: 480px) {
+    gap: 0.3rem;
+  }
+`;
+
+const MainChartArea = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: visible;
+`;
+
+const BarsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  height: auto;
+  min-height: 60vh;
+  overflow: visible;
+  padding: 0.5rem;
+`;
+
+const BarRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 35px;
+`;
+
+const BranchLabel = styled.div`
+  font-size: 1.06rem;  /* Agrandado otro 15%: 0.92rem * 1.15 = 1.06rem */
+  color: rgba(44, 62, 80, 0.8);
+  font-weight: 500;
+  text-align: right;
+  min-width: 200px;  /* Aumentado el espacio para nombre de sucursal */
+  max-width: 200px;
+  word-wrap: break-word;
+  line-height: 1.2;
+  padding-right: 0.75rem;
+`;
+
+const BarStack = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  height: 30px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: transparent;
+`;
+
+const BarSegment = styled.div`
+  height: 100%;
+  background: ${props => props.$color};
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: white;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  min-width: 2px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scaleY(1.1);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+`;
+
+const Tooltip = styled.div`
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 20;
+
+  ${BarSegment}:hover & {
+    opacity: 1;
+  }
+`;
+
+// Definir rangos de antigüedad en años
+const SENIORITY_BANDS = [
+  { min: 0, max: 1, label: "< 1 año", color: "linear-gradient(90deg, #2E8B57, #3CB371)", name: "Nuevo" },
+  { min: 1, max: 3, label: "1-3 años", color: "linear-gradient(90deg, #1e3a8a, #3b82f6)", name: "Junior" },
+  { min: 3, max: 5, label: "3-5 años", color: "linear-gradient(90deg, #FFD700, #FFA500)", name: "Intermedio" },
+  { min: 5, max: 10, label: "5-10 años", color: "linear-gradient(90deg, #FF6347, #DC143C)", name: "Senior" },
+  { min: 10, max: Infinity, label: "10+ años", color: "linear-gradient(90deg, #8B008B, #4B0082)", name: "Veterano" }
+];
+
+export default function AntiguedadPorSucursal({ 
+  title = "Antigüedad por Sucursal",
+  filters = {} // Filtros demográficos aplicados
+}) {
+  // Estado del componente
+  const [collapsed, setCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [latestPeriod, setLatestPeriod] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState(null);
+  const [totalUniqueEmployees, setTotalUniqueEmployees] = useState(0);
+
+  // Función para obtener años de antigüedad de un empleado
+  const getYearsOfSeniority = (emp) => {
+    const seniorityFields = ['Fecha antigüedad', 'fecha_antiguedad', 'fechaAntiguedad', 'start_date', 'hire_date'];
+    
+    // DEBUG: Logging detallado para el primer empleado que se procese
+    const isFirstEmployee = emp.originalIndex === 0;
+    
+    if (isFirstEmployee) {
+      console.log('🔍 DEBUG FECHA ANTIGÜEDAD - Primer empleado:');
+      seniorityFields.forEach(field => {
+        const value = emp[field];
+        console.log(`  Campo '${field}':`, {
+          existe: field in emp,
+          valor: value,
+          tipo: typeof value,
+          esNull: value === null,
+          esUndefined: value === undefined,
+          esDate: value instanceof Date,
+          longitud: (value && typeof value === 'string') ? value.length : 'N/A'
+        });
+        
+        if (value) {
+          try {
+            let testDate;
+            
+            // Si ya es un objeto Date, usarlo directamente
+            if (value instanceof Date) {
+              testDate = value;
+            } else {
+              // Si no, intentar crear Date desde el valor
+              testDate = new Date(value);
+            }
+            
+            console.log(`    Procesando '${value}' como fecha:`, {
+              valorOriginal: value,
+              tipoOriginal: typeof value,
+              esDateOriginal: value instanceof Date,
+              fechaResultante: testDate,
+              esValida: !isNaN(testDate.getTime()),
+              timestamp: testDate.getTime(),
+              fechaString: testDate.toString(),
+              isoString: isNaN(testDate.getTime()) ? 'INVALIDA' : testDate.toISOString(),
+              año: testDate.getFullYear(),
+              mes: testDate.getMonth() + 1,
+              día: testDate.getDate()
+            });
+          } catch (error) {
+            console.log(`    Error al parsear '${value}':`, error.message);
+          }
+        }
+      });
+    }
+    
+    for (const field of seniorityFields) {
+      if (emp[field] !== null && emp[field] !== undefined) {
+        try {
+          const rawValue = emp[field];
+          let startDate;
+          
+          // Manejar diferentes tipos de valores de fecha
+          if (rawValue instanceof Date) {
+            // Ya es un objeto Date
+            startDate = rawValue;
+          } else if (typeof rawValue === 'string' && rawValue.trim() !== '') {
+            // Es una cadena, intentar parsear
+            startDate = new Date(rawValue.trim());
+          } else if (typeof rawValue === 'number') {
+            // Es un timestamp numérico
+            startDate = new Date(rawValue);
+          } else {
+            // Tipo no válido, continuar con el siguiente campo
+            if (isFirstEmployee) {
+              console.log(`⚠️ Campo '${field}' - tipo de valor no compatible:`, {
+                valor: rawValue,
+                tipo: typeof rawValue
+              });
+            }
+            continue;
+          }
+          
+          const currentDate = new Date();
+          
+          // Validar que la fecha sea válida y no futura
+          if (!isNaN(startDate.getTime()) && startDate <= currentDate) {
+            const diffTime = Math.abs(currentDate - startDate);
+            const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+            
+            if (isFirstEmployee) {
+              console.log(`✅ EXITO - Campo '${field}' procesado correctamente:`, {
+                valorOriginal: rawValue,
+                tipoOriginal: typeof rawValue,
+                fechaParseada: startDate.toISOString(),
+                fechaActual: currentDate.toISOString(),
+                añosCalculados: diffYears.toFixed(2),
+                diasDiferencia: Math.floor(diffTime / (1000 * 60 * 60 * 24))
+              });
+            }
+            
+            return Math.max(0, diffYears); // No permitir valores negativos
+          } else {
+            if (isFirstEmployee) {
+              console.log(`⚠️ Campo '${field}' - fecha inválida o futura:`, {
+                valorOriginal: rawValue,
+                tipoOriginal: typeof rawValue,
+                fechaParseada: startDate,
+                esNaN: isNaN(startDate.getTime()),
+                esFutura: startDate > currentDate,
+                fechaActual: currentDate.toISOString(),
+                timestampFecha: startDate.getTime(),
+                timestampActual: currentDate.getTime()
+              });
+            }
+          }
+        } catch (error) {
+          if (isFirstEmployee) {
+            console.log(`❌ Error procesando campo '${field}':`, {
+              error: error.message,
+              valor: emp[field],
+              tipo: typeof emp[field]
+            });
+          }
+          continue; // Intentar con el siguiente campo
+        }
+      } else {
+        if (isFirstEmployee) {
+          console.log(`⚠️ Campo '${field}' es null/undefined:`, emp[field]);
+        }
+      }
+    }
+    
+    if (isFirstEmployee) {
+      console.log('❌ Ningún campo de antigüedad fue procesable para el primer empleado');
+    }
+    
+    return null; // No se pudo determinar la antigüedad
+  };
+
+  // Función para determinar rango de antigüedad
+  const getSeniorityBand = (yearsOfSeniority) => {
+    if (yearsOfSeniority === null || yearsOfSeniority === undefined || yearsOfSeniority < 0) return null;
+    return SENIORITY_BANDS.find(band => yearsOfSeniority >= band.min && yearsOfSeniority < band.max) || SENIORITY_BANDS[SENIORITY_BANDS.length - 1];
+  };
+
+  // Cargar último período disponible
+  const loadLatestPeriod = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/payroll/periodos');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          const sortedPeriods = result.data.sort((a, b) => new Date(b.value) - new Date(a.value));
+          const latest = sortedPeriods[0];
+          
+          const periodDate = new Date(latest.value);
+          const monthFilter = `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          console.log('📅 AntiguedadPorSucursal - Último período encontrado:', latest.value, 'Filtro aplicado:', monthFilter);
+          
+          setLatestPeriod(latest);
+          setPeriodFilter(monthFilter);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading latest period:', error);
+    }
+  };
+
+  // Cargar conteo de CURPs únicos desde el servidor
+  const loadUniqueCurpCount = async () => {
+    try {
+      const filterParams = {
+        ...filters,
+        periodFilter: periodFilter || filters.periodFilter
+      };
+      
+      const params = buildDemographicFilterParams(filterParams);
+      
+      console.log('🔍 AntiguedadPorSucursal: Contando CURPs únicos con filtros:', filterParams);
+
+      const url = `http://localhost:3001/api/payroll/demographic/unique-count?${params}`;
+      console.log('🔍 DEBUG: Llamando endpoint para conteo CURPs:', url);
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const result = await response.json();
+        console.log('🔍 DEBUG: Respuesta del servidor:', result);
+        if (result.success) {
+          setTotalUniqueEmployees(result.uniqueCurpCount || 0);
+          console.log('🔢 CURPs únicos cargados:', result.uniqueCurpCount);
+        }
+      } else {
+        console.error('❌ Error en respuesta del servidor:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Error loading unique CURP count:', error);
+    }
+  };
+
+  // Cargar TODAS las páginas de datos
+  const loadAllEmployees = async () => {
+    try {
+      setLoading(true);
+      
+      const filterParams = {
+        ...filters,
+        periodFilter: periodFilter || filters.periodFilter
+      };
+      
+      console.log('📊 AntiguedadPorSucursal: Aplicando filtros demográficos:', {
+        filterParams,
+        finalUrl: `http://localhost:3001/api/payroll/demographic`
+      });
+
+      // Cargar TODAS las páginas como hacen los otros componentes
+      let allEmployeesData = [];
+      let currentPage = 1;
+      let totalPages = 1;
+      let expectedTotal = 0;
+      
+      console.log('📊 AntiguedadPorSucursal: Cargando TODAS las páginas...');
+      
+      do {
+        const additionalParams = {
+          pageSize: 1000,
+          page: currentPage
+        };
+        
+        const params = buildDemographicFilterParams(filterParams, additionalParams);
+        
+        console.log(`📄 AntiguedadPorSucursal: Cargando página ${currentPage}/${totalPages}...`);
+        
+        const response = await fetch(`http://localhost:3001/api/payroll/demographic?${params}`);
+        
+        if (response.ok) {
+          const result = await response.json();
+          
+          if (result.success) {
+            // Primera página: establecer totales esperados
+            if (currentPage === 1) {
+              expectedTotal = result.total || 0;
+              totalPages = Math.ceil(expectedTotal / 1000);
+              console.log(`📊 AntiguedadPorSucursal: Total esperado: ${expectedTotal}, Páginas: ${totalPages}`);
+              
+              console.log('🗄️ CONFIRMACIÓN: Los datos provienen de la tabla "historico_nominas_gsau" (según regla establecida)');
+            }
+            
+            // Agregar empleados de esta página
+            if (result.data && result.data.length > 0) {
+              allEmployeesData = allEmployeesData.concat(result.data);
+              console.log(`✅ AntiguedadPorSucursal: Página ${currentPage} cargada - ${result.data.length} registros (Total acumulado: ${allEmployeesData.length})`);
+            } else {
+              console.log(`⚠️ AntiguedadPorSucursal: Página ${currentPage} vacía`);
+              break;
+            }
+            
+            currentPage++;
+          } else {
+            console.error(`❌ AntiguedadPorSucursal: Error en página ${currentPage}:`, result.error);
+            break;
+          }
+        } else {
+          console.error(`❌ AntiguedadPorSucursal: Error HTTP en página ${currentPage}:`, response.status, response.statusText);
+          break;
+        }
+      } while (currentPage <= totalPages && allEmployeesData.length < expectedTotal);
+      
+      console.log(`📊 AntiguedadPorSucursal: CARGA COMPLETA:`);
+      console.log(`  - Total empleados cargados: ${allEmployeesData.length}`);
+      console.log(`  - Esperados: ${expectedTotal}`);
+      console.log(`  - Páginas procesadas: ${currentPage - 1}/${totalPages}`);
+      
+      // Cargar conteo de CURPs únicos en paralelo
+      await loadUniqueCurpCount();
+      
+      setAllEmployees(allEmployeesData);
+      
+    } catch (error) {
+      console.error('❌ AntiguedadPorSucursal: Error loading demographic data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Efectos principales
+  useEffect(() => {
+    const initializeComponent = async () => {
+      console.log('📅 AntiguedadPorSucursal: Inicializando componente...');
+      await loadLatestPeriod();
+      console.log('✅ AntiguedadPorSucursal: Componente inicializado');
+    };
+    
+    initializeComponent();
+  }, []);
+  
+  useEffect(() => {
+    if (periodFilter !== null) {
+      console.log('🔄 AntiguedadPorSucursal: Cargando datos completos - Period Filter:', periodFilter);
+      loadAllEmployees();
+    }
+  }, [periodFilter, filters]);
+
+  // Procesar datos para agrupar por sucursal y bandas de antigüedad
+  const seniorityData = useMemo(() => {
+    if (!allEmployees.length) {
+      console.log('📊 AntiguedadPorSucursal - Sin empleados cargados, retornando estructura vacía');
+      return { branchData: {}, stats: { totalEmployees: 0, totalBranches: 0 } };
+    }
+
+    console.log('📊 AntiguedadPorSucursal - INICIANDO procesamiento de datos:');
+    console.log('- Total empleados cargados:', allEmployees.length);
+    console.log('- Filtros aplicados:', filters);
+
+    // PASO 1: IDENTIFICAR CURPs ÚNICOS y sus datos más recientes
+    const uniqueCurpsMap = new Map();
+    
+    allEmployees.forEach((emp, index) => {
+      const curp = emp.curp || emp.CURP || emp.Curp;
+      
+      if (curp && typeof curp === 'string' && curp.trim().length > 0) {
+        const cleanCurp = curp.trim().toUpperCase();
+        
+        if (!uniqueCurpsMap.has(cleanCurp)) {
+          uniqueCurpsMap.set(cleanCurp, {
+            ...emp,
+            cleanCurp: cleanCurp,
+            originalIndex: index
+          });
+        } else {
+          // Mantener el registro más reciente
+          const existing = uniqueCurpsMap.get(cleanCurp);
+          const existingDate = new Date(existing.periodo || existing.fecha_periodo || '1900-01-01');
+          const currentDate = new Date(emp.periodo || emp.fecha_periodo || '1900-01-01');
+          
+          if (currentDate >= existingDate) {
+            uniqueCurpsMap.set(cleanCurp, {
+              ...emp,
+              cleanCurp: cleanCurp,
+              originalIndex: index
+            });
+          }
+        }
+      }
+    });
+    
+    const uniqueEmployees = Array.from(uniqueCurpsMap.values());
+    
+    console.log(`📊 AntiguedadPorSucursal - Total registros originales: ${allEmployees.length}`);
+    console.log(`📊 AntiguedadPorSucursal - CURPs únicos identificados: ${uniqueEmployees.length}`);
+    
+    // PASO 2: PROCESAR DATOS POR SUCURSAL Y RANGOS DE ANTIGÜEDAD
+    const branchData = {};
+    let processedCount = 0;
+    let validSeniorityCount = 0;
+    let invalidSeniorityCount = 0;
+    
+    const branchFields = [
+      'Compañía',     // Campo principal de historico_nominas_gsau
+      'compania',
+      'Compañia',     // Sin tilde
+      'COMPAÑÍA',
+      'COMPANIA',
+      'sucursal',
+      'Sucursal',
+      'branch'
+    ];
+    
+    // DEBUG: Mostrar campos disponibles en los primeros registros
+    if (uniqueEmployees.length > 0) {
+      console.log('🔍 DEBUG: Campos disponibles en los primeros 3 empleados:');
+      uniqueEmployees.slice(0, 3).forEach((emp, idx) => {
+        const availableFields = Object.keys(emp).filter(key => emp[key] !== null && emp[key] !== undefined && emp[key] !== '');
+        const dateFields = Object.keys(emp).filter(key => {
+          const value = emp[key];
+          return value && (key.toLowerCase().includes('fecha') || key.toLowerCase().includes('date') || 
+                          key.toLowerCase().includes('antig') || key.toLowerCase().includes('inicio') ||
+                          key.toLowerCase().includes('ingreso') || key.toLowerCase().includes('contrato'));
+        });
+        
+        // Buscar todos los campos que podrían ser de sucursal/compañía
+        const companyFields = Object.keys(emp).filter(key => {
+          const lowerKey = key.toLowerCase();
+          return lowerKey.includes('compañ') || lowerKey.includes('compan') || 
+                 lowerKey.includes('sucursal') || lowerKey.includes('branch') ||
+                 lowerKey.includes('empresa') || lowerKey.includes('unidad');
+        });
+        
+        console.log(`  Empleado ${idx + 1}:`, {
+          total_campos: availableFields.length,
+          primeros_10_campos: availableFields.slice(0, 10),
+          campos_fecha_encontrados: dateFields,
+          valores_fecha: dateFields.reduce((acc, field) => {
+            acc[field] = emp[field];
+            return acc;
+          }, {}),
+          // DETALLE DE CAMPOS DE SUCURSAL/COMPAÑÍA
+          campos_compania_encontrados: companyFields,
+          valores_compania: companyFields.reduce((acc, field) => {
+            acc[field] = emp[field];
+            return acc;
+          }, {}),
+          campos_sucursal_buscados: branchFields.map(field => ({
+            campo: field,
+            existe: field in emp,
+            valor: emp[field],
+            tipo: typeof emp[field],
+            esString: typeof emp[field] === 'string',
+            longitud: (emp[field] && typeof emp[field] === 'string') ? emp[field].length : 'N/A'
+          })),
+          campos_antiguedad_buscados: ['Fecha antigüedad', 'fecha_antiguedad', 'fechaAntiguedad', 'start_date', 'hire_date'].map(field => `${field}: '${emp[field] || 'NO_EXISTE'}'`)
+        });
+      });
+      
+      // ANÁLISIS ADICIONAL DE TODOS LOS CAMPOS DISPONIBLES
+      console.log('🔍 ANÁLISIS COMPLETO - Primer empleado:');
+      const firstEmp = uniqueEmployees[0];
+      const allFields = Object.keys(firstEmp).sort();
+      
+      console.log('📋 TODOS los campos disponibles (ordenados alfabéticamente):');
+      allFields.forEach((field, index) => {
+        const value = firstEmp[field];
+        const isCompanyLike = field.toLowerCase().includes('compañ') || field.toLowerCase().includes('compan') || 
+                             field.toLowerCase().includes('sucursal') || field.toLowerCase().includes('branch');
+        
+        if (index < 30 || isCompanyLike) { // Mostrar primeros 30 campos + cualquier campo que parezca de compañía
+          console.log(`    ${index + 1}. "${field}" = "${value}" (${typeof value}) ${isCompanyLike ? '🏢 POSIBLE SUCURSAL' : ''}`);
+        }
+      });
+      
+      console.log(`📊 Total de campos en el primer empleado: ${allFields.length}`);
+    }
+
+    // CONTADORES ADICIONALES PARA DEBUG
+    let empleadosConSucursal = 0;
+    let empleadosSinSucursal = 0;
+    const sucursalesEncontradas = new Set();
+    
+    uniqueEmployees.forEach((emp, index) => {
+      processedCount++;
+      
+      // Buscar campo de sucursal con logging detallado
+      let sucursal = null;
+      let campoEncontrado = null;
+      
+      for (const field of branchFields) {
+        if (emp[field] && typeof emp[field] === 'string') {
+          sucursal = emp[field].trim();
+          campoEncontrado = field;
+          break;
+        }
+      }
+      
+      if (sucursal) {
+        empleadosConSucursal++;
+        sucursalesEncontradas.add(sucursal);
+        
+        // Log para primeros empleados con sucursal
+        if (empleadosConSucursal <= 3) {
+          console.log(`✅ Empleado ${index + 1} CON sucursal:`, {
+            sucursal: sucursal,
+            campo_usado: campoEncontrado,
+            valor_original: emp[campoEncontrado]
+          });
+        }
+      } else {
+        empleadosSinSucursal++;
+        if (empleadosSinSucursal <= 5) {
+          console.warn(`⚠️ Empleado ${index + 1} SIN sucursal:`, {
+            campos_disponibles: Object.keys(emp).slice(0, 10),
+            valores_sucursal: branchFields.reduce((acc, field) => {
+              acc[field] = emp[field];
+              return acc;
+            }, {})
+          });
+        }
+        return;
+      }
+      
+      // Obtener años de antigüedad del empleado
+      const yearsOfSeniority = getYearsOfSeniority(emp);
+      const seniorityBand = getSeniorityBand(yearsOfSeniority);
+      
+      if (seniorityBand && yearsOfSeniority !== null) {
+        validSeniorityCount++;
+        
+        // Inicializar sucursal si no existe
+        if (!branchData[sucursal]) {
+          branchData[sucursal] = {
+            total: 0,
+            bands: {}
+          };
+          
+          // Inicializar todas las bandas de antigüedad
+          SENIORITY_BANDS.forEach(band => {
+            branchData[sucursal].bands[band.name] = 0;
+          });
+        }
+        
+        // Incrementar contadores
+        branchData[sucursal].total++;
+        branchData[sucursal].bands[seniorityBand.name]++;
+        
+        // Log para los primeros empleados
+        if (index < 5) {
+          console.log(`🔍 Empleado ${index + 1}:`, {
+            sucursal,
+            antiguedad: `${yearsOfSeniority.toFixed(1)} años`,
+            banda: seniorityBand.name,
+            bandaLabel: seniorityBand.label,
+            fechaAntiguedad: emp['Fecha antigüedad']
+          });
+        }
+      } else {
+        invalidSeniorityCount++;
+        if (index < 10) {
+          console.warn(`⚠️ Empleado ${index + 1} con antigüedad inválida:`, {
+            sucursal,
+            yearsOfSeniority,
+            seniorityBand,
+            camposAntiguedad: ['Fecha antigüedad', 'fecha_antiguedad', 'fechaAntiguedad'].map(f => `${f}: ${emp[f]}`)
+          });
+        }
+      }
+    });
+
+    // Ordenar sucursales alfabéticamente
+    const sortedBranches = Object.keys(branchData).sort((a, b) => 
+      a.localeCompare(b, 'es', { sensitivity: 'base' })
+    );
+
+    const stats = {
+      totalEmployees: processedCount,
+      totalBranches: Object.keys(branchData).length,
+      validSeniorityCount,
+      invalidSeniorityCount
+    };
+
+    console.log('📊 AntiguedadPorSucursal - RESUMEN FINAL:');
+    console.log('- Total empleados procesados:', stats.totalEmployees);
+    console.log('- Empleados CON sucursal:', empleadosConSucursal);
+    console.log('- Empleados SIN sucursal:', empleadosSinSucursal);
+    console.log('- Sucursales únicas encontradas:', sucursalesEncontradas.size);
+    console.log('- Sucursales en branchData:', stats.totalBranches);
+    console.log('- Con antigüedad válida:', stats.validSeniorityCount);
+    console.log('- Con antigüedad inválida:', stats.invalidSeniorityCount);
+    console.log('- Lista de sucursales:', Array.from(sucursalesEncontradas).slice(0, 10).join(', '), sucursalesEncontradas.size > 10 ? '...' : '');
+    console.log('- Sucursales ordenadas en resultado:', sortedBranches.slice(0, 10).join(', '), sortedBranches.length > 10 ? '...' : '');
+
+    return { branchData, sortedBranches, stats };
+  }, [allEmployees, filters]);
+
+  // Calcular alturas máximas para normalización
+  const maxEmployeeCount = useMemo(() => {
+    const max = Math.max(...Object.values(seniorityData.branchData).map(branch => branch.total), 1);
+    console.log(`📊 AntiguedadPorSucursal - Máximo empleados por sucursal: ${max}`);
+    return max;
+  }, [seniorityData.branchData]);
+
+  return (
+    <ChartContainer>
+      <ChartHeader $collapsed={collapsed}>
+        <ChartTitle>
+          <TitleText>
+            <FaBuilding />
+            {title}
+            {periodFilter && (
+              <span style={{ 
+                fontSize: '0.8rem', 
+                color: 'rgba(255, 255, 255, 0.8)', 
+                background: 'rgba(46, 204, 113, 0.2)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '6px',
+                marginLeft: '0.5rem',
+                border: '1px solid rgba(46, 204, 113, 0.3)'
+              }}>
+                {periodFilter}
+              </span>
+            )}
+            {(filters.sucursales?.length > 0 || filters.puestos?.length > 0 || filters.puestosCategorias?.length > 0) && (
+              <span style={{ 
+                fontSize: '0.8rem', 
+                color: 'rgba(255, 255, 255, 0.8)', 
+                background: 'rgba(30, 58, 138, 0.2)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '6px',
+                marginLeft: '0.5rem',
+                border: '1px solid rgba(30, 58, 138, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}>
+                <FaFilter size={10} />
+                Filtros Activos
+              </span>
+            )}
+          </TitleText>
+        </ChartTitle>
+        <ToggleButton onClick={() => setCollapsed(!collapsed)}>
+          {collapsed ? <FaChevronDown /> : <FaChevronUp />}
+          {collapsed ? 'Expandir' : 'Contraer'}
+        </ToggleButton>
+      </ChartHeader>
+
+      <ChartContent $collapsed={collapsed}>
+        {loading ? (
+          <LoadingContainer>
+            <FaSpinner size={32} style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ marginTop: '1rem' }}>Analizando distribución por sucursal...</p>
+          </LoadingContainer>
+        ) : (
+          <ChartWrapper>
+            {/* Estadísticas en la parte superior */}
+            <TopStatsContainer>
+              <StatItem>
+                <StatValue>{seniorityData.stats?.totalEmployees || 0}</StatValue>
+                <StatLabel>Total Empleados</StatLabel>
+              </StatItem>
+              <StatItem>
+                <StatValue>{seniorityData.stats?.totalBranches || 0}</StatValue>
+                <StatLabel>Total Sucursales</StatLabel>
+              </StatItem>
+              <StatItem>
+                <LegendContainer>
+                  <div style={{ fontSize: '0.95rem', color: OFFICIAL_BLUE, marginBottom: '0.8rem', fontWeight: '600', textAlign: 'center' }}>
+                    Rangos de Antigüedad
+                  </div>
+                  <LegendGrid>
+                    {SENIORITY_BANDS.map(band => (
+                      <LegendItem key={band.name}>
+                        <LegendColor $color={band.color} />
+                        <span>{band.label}</span>
+                      </LegendItem>
+                    ))}
+                  </LegendGrid>
+                </LegendContainer>
+              </StatItem>
+            </TopStatsContainer>
+            
+            <ContentContainer>
+              <MainChartArea>
+                <BarsContainer>
+                  {seniorityData.sortedBranches?.map(branchName => {
+                    const branchInfo = seniorityData.branchData[branchName];
+                    const totalEmployees = branchInfo.total;
+                    
+                    return (
+                      <BarRow key={branchName}>
+                        <BranchLabel>{branchName}</BranchLabel>
+                        <BarStack>
+                          {SENIORITY_BANDS.map(band => {
+                            const count = branchInfo.bands[band.name] || 0;
+                            if (count === 0) return null;
+                            
+                            // Calcular ancho proporcional para barras horizontales
+                            const width = maxEmployeeCount > 0 ? (count / maxEmployeeCount) * 100 : 0;
+                            
+                            return (
+                              <BarSegment
+                                key={band.name}
+                                $color={band.color}
+                                style={{ width: `${width}%` }}
+                              >
+                                {count > 3 && count} {/* Solo mostrar números si hay suficiente espacio */}
+                                <Tooltip>
+                                  {branchName}<br/>
+                                  {band.label}: {count} empleado{count !== 1 ? 's' : ''}
+                                </Tooltip>
+                              </BarSegment>
+                            );
+                          })}
+                        </BarStack>
+                      </BarRow>
+                    );
+                  })}
+                </BarsContainer>
+              </MainChartArea>
+            </ContentContainer>
+          </ChartWrapper>
+        )}
+      </ChartContent>
+    </ChartContainer>
+  );
+}

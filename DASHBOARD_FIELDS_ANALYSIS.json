@@ -1,0 +1,312 @@
+{
+  "VALES DESPENSA NETO": {
+    "exists": true,
+    "db_field": " VALES DESPENSA NETO ",
+    "has_data": true,
+    "positive_count": 3549,
+    "min_value": 20.0,
+    "max_value": 1568.04,
+    "avg_value": 592.2608396731474,
+    "sample_values": [
+      1568.04,
+      1568.04,
+      1568.04,
+      60.0,
+      60.0
+    ]
+  },
+  "VALES DESPENSA PENSIÓN ALIMENTICIA": {
+    "exists": true,
+    "db_field": " VALES DESPENSA PENSION ALIMENT ",
+    "has_data": true,
+    "positive_count": 50,
+    "min_value": 12.0,
+    "max_value": 313.62,
+    "avg_value": 113.776,
+    "sample_values": [
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0
+    ]
+  },
+  "BONO": {
+    "exists": true,
+    "db_field": " BONO ",
+    "has_data": true,
+    "positive_count": 4171,
+    "min_value": 0.01,
+    "max_value": 659536.5,
+    "avg_value": 1987.3262670822344,
+    "sample_values": [
+      666.7,
+      400.02,
+      0.08,
+      143.94,
+      493.74
+    ]
+  },
+  "DÍA FESTIVO TRABAJADO": {
+    "exists": true,
+    "db_field": " DIA FESTIVO TRABAJADO ",
+    "has_data": true,
+    "positive_count": 488,
+    "min_value": 285.7,
+    "max_value": 3044.4,
+    "avg_value": 577.1668647540984,
+    "sample_values": [
+      414.9,
+      414.9,
+      414.9,
+      414.9,
+      416.0
+    ]
+  },
+  "SUELDO X DÍAS ACUMULADOS VACACIONES": {
+    "exists": true,
+    "db_field": " SUELDO X DIAS AC VACACIONES ",
+    "has_data": true,
+    "positive_count": 8432,
+    "min_value": 71.11,
+    "max_value": 106602.72,
+    "avg_value": 2229.99277158444,
+    "sample_values": [
+      1260.0,
+      1266.66,
+      666.66,
+      933.34,
+      266.67
+    ]
+  },
+  "PRIMA VACACIONAL": {
+    "exists": true,
+    "db_field": " PRIMA VACACIONAL ",
+    "has_data": true,
+    "positive_count": 7338,
+    "min_value": 4.1,
+    "max_value": 209237.46,
+    "avg_value": 1848.2130103570455,
+    "sample_values": [
+      3199.92,
+      4116.66,
+      8526.24,
+      104.0,
+      425.25
+    ]
+  },
+  "AGUINALDO": {
+    "exists": true,
+    "db_field": " AGUINALDO ",
+    "has_data": true,
+    "positive_count": 5471,
+    "min_value": 11.46,
+    "max_value": 523093.5,
+    "avg_value": 6742.106066532627,
+    "sample_values": [
+      60828.6,
+      38919.96,
+      6239.08,
+      4068.82,
+      4228.56
+    ]
+  },
+  "GRATIFICACIÓN": {
+    "exists": true,
+    "db_field": " GRATIFICACION ",
+    "has_data": true,
+    "positive_count": 4027,
+    "min_value": 0.01,
+    "max_value": 676909.32,
+    "avg_value": 11067.616170846784,
+    "sample_values": [
+      1110.98,
+      1110.98,
+      382.92,
+      639.72,
+      2518.64
+    ]
+  },
+  "COMPENSACIÓN": {
+    "exists": true,
+    "db_field": " COMPENSACION ",
+    "has_data": true,
+    "positive_count": 1628,
+    "min_value": 0.02,
+    "max_value": 592760.88,
+    "avg_value": 10357.110853808354,
+    "sample_values": [
+      400.02,
+      42768.66,
+      76102.26,
+      49996.56,
+      62422.62
+    ]
+  },
+  "PRIMA DOMINICAL": {
+    "exists": true,
+    "db_field": " PRIMA DOMINICAL ",
+    "has_data": true,
+    "positive_count": 3448,
+    "min_value": 43.22,
+    "max_value": 1998.78,
+    "avg_value": 126.35519721577727,
+    "sample_values": [
+      52.5,
+      52.5,
+      52.5,
+      105.0,
+      52.5
+    ]
+  },
+  "PRIMA DE ANTIGÜEDAD": {
+    "exists": true,
+    "db_field": " PRIMA DE ANTIGÜEDAD ",
+    "has_data": false,
+    "positive_count": 0
+  },
+  "PAGO POR SEPARACIÓN": {
+    "exists": true,
+    "db_field": " PAGO POR SEPARACION ",
+    "has_data": true,
+    "positive_count": 90,
+    "min_value": 40.26,
+    "max_value": 353026.56,
+    "avg_value": 33105.250222222225,
+    "sample_values": [
+      20187.2,
+      20610.4,
+      101945.84,
+      49600.62,
+      4508.76
+    ]
+  },
+  "VACACIONES PENDIENTES": {
+    "exists": true,
+    "db_field": " VACACIONES PENDIENTES ",
+    "has_data": true,
+    "positive_count": 281,
+    "min_value": 207.45,
+    "max_value": 278344.68,
+    "avg_value": 8586.99462633452,
+    "sample_values": [
+      11400.12,
+      3319.04,
+      3111.6,
+      3080.0,
+      7184.1
+    ]
+  },
+  "VACACIONES FINIQUITO": {
+    "exists": true,
+    "db_field": " VACACIONES FINIQUITO ",
+    "has_data": true,
+    "positive_count": 1309,
+    "min_value": 12.3,
+    "max_value": 254364.84,
+    "avg_value": 3675.388899923606,
+    "sample_values": [
+      1146.1,
+      1035.61,
+      3680.62,
+      1796.27,
+      328.78
+    ]
+  },
+  "SUBSIDIO POR INCAPACIDAD": {
+    "exists": true,
+    "db_field": " SUBSIDIO POR INCAPACIDAD ",
+    "has_data": true,
+    "positive_count": 57,
+    "min_value": 414.88,
+    "max_value": 114929.76,
+    "avg_value": 5470.443333333334,
+    "sample_values": [
+      1124.58,
+      1124.58,
+      1124.58,
+      414.88,
+      1124.58
+    ]
+  },
+  "SUBSIDIO AL EMPLEO": {
+    "exists": true,
+    "db_field": " SUBSIDIO AL EMPLEO ",
+    "has_data": true,
+    "positive_count": 434,
+    "min_value": 0.04,
+    "max_value": 2387.16,
+    "avg_value": 28.085023041474653,
+    "sample_values": [
+      8.95,
+      23.29,
+      8.95,
+      8.95,
+      1559.22
+    ]
+  },
+  "HORAS EXTRA DOBLE": {
+    "exists": true,
+    "db_field": " HORAS EXTRA DOBLE ",
+    "has_data": true,
+    "positive_count": 170,
+    "min_value": 25.93,
+    "max_value": 2205.86,
+    "avg_value": 600.2357058823529,
+    "sample_values": [
+      348.14,
+      523.82,
+      416.0,
+      559.65,
+      322.2
+    ]
+  },
+  "HORAS EXTRA DOBLE3": {
+    "exists": true,
+    "db_field": " HORAS EXTRA DOBLE3 ",
+    "has_data": true,
+    "positive_count": 17,
+    "min_value": 128.82,
+    "max_value": 1702.46,
+    "avg_value": 647.3435294117647,
+    "sample_values": [
+      378.32,
+      912.68,
+      418.2,
+      485.36,
+      487.9
+    ]
+  },
+  "HORAS EXTRA TRIPLE": {
+    "exists": true,
+    "db_field": " HORAS EXTRA TRIPLE ",
+    "has_data": true,
+    "positive_count": 7,
+    "min_value": 313.65,
+    "max_value": 969.36,
+    "avg_value": 601.4871428571429,
+    "sample_values": [
+      969.36,
+      313.65,
+      731.85,
+      627.3,
+      731.85
+    ]
+  },
+  "SÉPTIMO DÍA": {
+    "exists": true,
+    "db_field": " SEPTIMO DIA ",
+    "has_data": true,
+    "positive_count": 836,
+    "min_value": 216.96,
+    "max_value": 6656.38,
+    "avg_value": 814.4388875598086,
+    "sample_values": [
+      926.65,
+      1366.95,
+      1301.51,
+      733.5,
+      646.78
+    ]
+  }
+}

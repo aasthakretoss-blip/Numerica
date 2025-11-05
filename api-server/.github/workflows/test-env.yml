@@ -1,0 +1,65 @@
+name: Test Environment Variables
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permite ejecutar manualmente
+
+jobs:
+  test-env:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Test environment variables (non-sensitive)
+      env:
+        DB_HOST: ${{ vars.DB_HOST }}
+        DB_PORT: ${{ vars.DB_PORT }}
+        DB_NAME: ${{ vars.DB_NAME }}
+        DB_USER: ${{ vars.DB_USER }}
+        AWS_REGION: ${{ vars.AWS_REGION }}
+        COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+      run: |
+        echo "Testing environment variables..."
+        echo "DB_HOST: $DB_HOST"
+        echo "DB_PORT: $DB_PORT"
+        echo "DB_NAME: $DB_NAME"
+        echo "DB_USER: $DB_USER"
+        echo "AWS_REGION: $AWS_REGION"
+        echo "COGNITO_USER_POOL_ID: $COGNITO_USER_POOL_ID"
+    
+    - name: Test sensitive variables (without revealing values)
+      env:
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        PGPASSWORD: ${{ secrets.PGPASSWORD }}
+      run: |
+        echo "Testing sensitive variables..."
+        if [ -n "$DB_PASSWORD" ]; then
+          echo "✅ DB_PASSWORD is set"
+        else
+          echo "❌ DB_PASSWORD is NOT set"
+        fi
+        
+        if [ -n "$PGPASSWORD" ]; then
+          echo "✅ PGPASSWORD is set"  
+        else
+          echo "❌ PGPASSWORD is NOT set"
+        fi
+    
+    - name: Test database connection (without actual connection)
+      env:
+        DB_HOST: ${{ vars.DB_HOST }}
+        DB_PORT: ${{ vars.DB_PORT }}
+        DB_NAME: ${{ vars.DB_NAME }}
+        DB_USER: ${{ vars.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        echo "Would attempt to connect to:"
+        echo "Host: $DB_HOST"
+        echo "Port: $DB_PORT"
+        echo "Database: $DB_NAME"
+        echo "User: $DB_USER"
+        echo "Password: [REDACTED - $(echo $DB_PASSWORD | wc -c) characters]"

@@ -1,0 +1,34 @@
+{
+  "empleados_con_datos_reales": [
+    {
+      "rfc": "AAAA860220K76",
+      "nombre": "ALVAREZ ARROYO ANTONIO DE JESUS",
+      "mes": "FEBRERO", 
+      "datos_disponibles": {
+        "prima_vacacional": 1369.12
+      }
+    },
+    {
+      "rfc": "AAAJ681205QB4", 
+      "nombre": "ALFARO ARREOLA JUAN CARLOS",
+      "mes": "ENERO",
+      "datos_disponibles": {
+        "aguinaldo": 532.10,
+        "prima_vacacional": 170.28
+      }
+    }
+  ],
+  "configuracion_correcta": {
+    "host": "dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com",
+    "database": "Historic",
+    "tabla": "historico_nominas_gsau",
+    "registros_disponibles": 152932
+  },
+  "acciones_requeridas": [
+    "1. REINICIAR todos los servicios backend/API",
+    "2. Actualizar frontend para usar Historic en lugar de GSAUDB", 
+    "3. Probar con empleados que SI tienen datos (lista arriba)",
+    "4. Verificar que las queries usen los nombres de campos con espacios exactos"
+  ],
+  "query_correcta_ejemplo": "SELECT \" AGUINALDO \", \" PRIMA VACACIONAL \" FROM historico_nominas_gsau WHERE \"RFC\" = 'AAAJ681205QB4' AND \"Mes\" = 'ENERO'"
+}

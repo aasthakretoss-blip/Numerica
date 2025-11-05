@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-09T16:35:56.659Z",
+  "user": {
+    "Username": "alberto.ochoaf@gmail.com",
+    "UserAttributes": [
+      {
+        "Name": "email",
+        "Value": "alberto.ochoaf@gmail.com"
+      },
+      {
+        "Name": "email_verified",
+        "Value": "true"
+      },
+      {
+        "Name": "sub",
+        "Value": "047844c8-2031-70d1-c7ca-fa5254c0ca91"
+      }
+    ],
+    "UserCreateDate": "2025-08-28T18:12:12.712000-06:00",
+    "UserLastModifiedDate": "2025-08-31T10:39:11.881000-06:00",
+    "Enabled": true,
+    "UserStatus": "CONFIRMED"
+  },
+  "status": "found"
+}

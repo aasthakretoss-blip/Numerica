@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-09-09T01:22:09.679Z",
+  "action": "dev-bypass-removed",
+  "backupFile": "./api-server/middleware/auth.js.backup.1757380929675",
+  "changes": [
+    "Bypass de desarrollo comentado",
+    "Validación estricta para producción agregada",
+    "Advertencias mejoradas para desarrollo"
+  ]
+}

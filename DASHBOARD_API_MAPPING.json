@@ -1,0 +1,121 @@
+{
+  "vales_despensa_neto": {
+    "database_field": " VALES DESPENSA NETO ",
+    "has_data": true,
+    "sample_query": "SELECT \" VALES DESPENSA NETO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "vales_despensa_pension_alimenticia": {
+    "database_field": " VALES DESPENSA PENSION ALIMENT ",
+    "has_data": true,
+    "sample_query": "SELECT \" VALES DESPENSA PENSION ALIMENT \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "bono": {
+    "database_field": " BONO ",
+    "has_data": true,
+    "sample_query": "SELECT \" BONO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "dia_festivo_trabajado": {
+    "database_field": " DIA FESTIVO TRABAJADO ",
+    "has_data": true,
+    "sample_query": "SELECT \" DIA FESTIVO TRABAJADO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "sueldo_x_dias_acumulados_vacaciones": {
+    "database_field": " SUELDO X DIAS AC VACACIONES ",
+    "has_data": true,
+    "sample_query": "SELECT \" SUELDO X DIAS AC VACACIONES \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "prima_vacacional": {
+    "database_field": " PRIMA VACACIONAL ",
+    "has_data": true,
+    "sample_query": "SELECT \" PRIMA VACACIONAL \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "aguinaldo": {
+    "database_field": " AGUINALDO ",
+    "has_data": true,
+    "sample_query": "SELECT \" AGUINALDO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "gratificacion": {
+    "database_field": " GRATIFICACION ",
+    "has_data": true,
+    "sample_query": "SELECT \" GRATIFICACION \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "compensacion": {
+    "database_field": " COMPENSACION ",
+    "has_data": true,
+    "sample_query": "SELECT \" COMPENSACION \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "prima_dominical": {
+    "database_field": " PRIMA DOMINICAL ",
+    "has_data": true,
+    "sample_query": "SELECT \" PRIMA DOMINICAL \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "prima_de_antigüedad": {
+    "database_field": " PRIMA DE ANTIGÜEDAD ",
+    "has_data": false,
+    "data_available": false
+  },
+  "pago_por_separacion": {
+    "database_field": " PAGO POR SEPARACION ",
+    "has_data": true,
+    "sample_query": "SELECT \" PAGO POR SEPARACION \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "vacaciones_pendientes": {
+    "database_field": " VACACIONES PENDIENTES ",
+    "has_data": true,
+    "sample_query": "SELECT \" VACACIONES PENDIENTES \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "vacaciones_finiquito": {
+    "database_field": " VACACIONES FINIQUITO ",
+    "has_data": true,
+    "sample_query": "SELECT \" VACACIONES FINIQUITO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "subsidio_por_incapacidad": {
+    "database_field": " SUBSIDIO POR INCAPACIDAD ",
+    "has_data": true,
+    "sample_query": "SELECT \" SUBSIDIO POR INCAPACIDAD \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "subsidio_al_empleo": {
+    "database_field": " SUBSIDIO AL EMPLEO ",
+    "has_data": true,
+    "sample_query": "SELECT \" SUBSIDIO AL EMPLEO \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "horas_extra_doble": {
+    "database_field": " HORAS EXTRA DOBLE ",
+    "has_data": true,
+    "sample_query": "SELECT \" HORAS EXTRA DOBLE \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "horas_extra_doble3": {
+    "database_field": " HORAS EXTRA DOBLE3 ",
+    "has_data": true,
+    "sample_query": "SELECT \" HORAS EXTRA DOBLE3 \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "horas_extra_triple": {
+    "database_field": " HORAS EXTRA TRIPLE ",
+    "has_data": true,
+    "sample_query": "SELECT \" HORAS EXTRA TRIPLE \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  },
+  "séptimo_dia": {
+    "database_field": " SEPTIMO DIA ",
+    "has_data": true,
+    "sample_query": "SELECT \" SEPTIMO DIA \" FROM historico_nominas_gsau WHERE \"RFC\" = :rfc AND \"Mes\" = :mes",
+    "data_available": true
+  }
+}

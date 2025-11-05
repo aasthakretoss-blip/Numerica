@@ -1,0 +1,1155 @@
+{
+  "informacion_personal": {
+    "nombreCompleto": {
+      "database_field": "Nombre completo",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "ROJAS JIMENEZ ROSA I",
+        "GARCIA ACEVEDO ANA L",
+        "RODRIGUEZ MEDINA KAR"
+      ]
+    },
+    "rfc": {
+      "database_field": "RFC",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "ROJR9005202R6",
+        "GAAA950427R76",
+        "ROMK860922TV0"
+      ]
+    },
+    "curp": {
+      "database_field": "CURP",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "ROJR900520MZSJMS04",
+        "GAAA950427MZSRCN05",
+        "ROMK860922MZSDDR09"
+      ]
+    },
+    "sexo": {
+      "database_field": "Sexo",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "M",
+        "M",
+        "M"
+      ]
+    },
+    "numeroIMSS": {
+      "database_field": "Número IMSS",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152928,
+      "sample_data": [
+        "34109009943.0",
+        "28169506608.0",
+        "81128601978.0"
+      ]
+    },
+    "imssPatronal": {
+      "database_field": " IMSS PATRONAL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 136796,
+      "sample_data": [
+        "4886.43",
+        "2515.62",
+        "2879.37"
+      ]
+    },
+    "descuentoImss": {
+      "database_field": " DESCUENTO IMSS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 124422,
+      "sample_data": [
+        "1034.06",
+        "371.51",
+        "400.62"
+      ]
+    }
+  },
+  "informacion_laboral": {
+    "empresa": {
+      "database_field": "Compañía",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "GSAU ZACATECAS",
+        "GSAU ZACATECAS",
+        "GSAU ZACATECAS"
+      ]
+    },
+    "sucursal": {
+      "database_field": "Sucursal",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "HONDA ZAC QUINCENAL",
+        "HONDA ZAC QUINCENAL",
+        "HONDA ZAC QUINCENAL"
+      ]
+    },
+    "periodicidad": {
+      "database_field": "Periodicidad",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "Quincenal",
+        "Quincenal",
+        "Quincenal"
+      ]
+    },
+    "claveTrabajador": {
+      "database_field": "Clave trabajador",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "HZA0022",
+        "HZA0037",
+        "HZA0024"
+      ]
+    },
+    "puesto": {
+      "database_field": "Puesto",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "AUXILIAR DE VENTAS",
+        "ASISTENTE DE GERENCI",
+        "COORDINADOR VIRTUAL "
+      ]
+    },
+    "status": {
+      "database_field": "Status",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "A",
+        "A",
+        "A"
+      ]
+    },
+    "impuestoSobreNómina": {
+      "database_field": " IMPUESTO SOBRE NÓMINA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 143655,
+      "sample_data": [
+        "937.74",
+        "333.72",
+        "497.31"
+      ]
+    }
+  },
+  "percepciones": {
+    "sdi": {
+      "database_field": " SDI ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152912,
+      "sample_data": [
+        "363.55",
+        "363.55",
+        "248.94"
+      ]
+    },
+    "sdies": {
+      "database_field": " sdi_es ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152698,
+      "sample_data": [
+        "564.30",
+        "609.89",
+        "566.20"
+      ]
+    },
+    "sdim": {
+      "database_field": " sdim ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152912,
+      "sample_data": [
+        "474.13",
+        "496.93",
+        "414.56"
+      ]
+    },
+    "sueldoCliente": {
+      "database_field": " SUELDO CLIENTE ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 125971,
+      "sample_data": [
+        "5453.25",
+        "5453.25",
+        "3734.10"
+      ]
+    },
+    "sueldo": {
+      "database_field": " SUELDO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 125966,
+      "sample_data": [
+        "5453.25",
+        "5453.25",
+        "3734.10"
+      ]
+    },
+    "comisionesCliente": {
+      "database_field": " COMISIONES CLIENTE ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 29407,
+      "sample_data": [
+        "6418.10",
+        "21519.06",
+        "800.00"
+      ]
+    },
+    "comisionesFacturadas": {
+      "database_field": " COMISIONES FACTURADAS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 1235,
+      "sample_data": [
+        "3179.05",
+        "600.00",
+        "3200.00"
+      ]
+    },
+    "bono": {
+      "database_field": " BONO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 4171,
+      "sample_data": [
+        "466.69",
+        "466.69",
+        "66.67"
+      ]
+    },
+    "comisiones": {
+      "database_field": " COMISIONES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 35632,
+      "sample_data": [
+        "16176.37",
+        "21146.86",
+        "39738.19"
+      ]
+    },
+    "sueldoXDiasAcVacaciones": {
+      "database_field": " SUELDO X DIAS AC VACACIONES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 8432,
+      "sample_data": [
+        "207.44",
+        "990.16",
+        "2407.60"
+      ]
+    },
+    "diasPendientesPorIngreso": {
+      "database_field": " DIAS PENDIENTES POR INGRESO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 50,
+      "sample_data": [
+        "207.45",
+        "414.88",
+        "829.76"
+      ]
+    },
+    "totalDePercepciones": {
+      "database_field": " TOTAL DE PERCEPCIONES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 151903,
+      "sample_data": [
+        "25783.26",
+        "10563.39",
+        "13215.12"
+      ]
+    }
+  },
+  "deducciones": {
+    "descuentoIndebido": {
+      "database_field": " DESCUENTO INDEBIDO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 26,
+      "sample_data": [
+        "3000.00",
+        "160.00",
+        "934.49"
+      ]
+    },
+    "diferenciaInfonavit": {
+      "database_field": " DIFERENCIA INFONAVIT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 36,
+      "sample_data": [
+        "1663.80",
+        "1400.00",
+        "3.65"
+      ]
+    },
+    "infonavit": {
+      "database_field": " INFONAVIT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 136636,
+      "sample_data": [
+        "1533.60",
+        "659.25",
+        "797.91"
+      ]
+    },
+    "totalDeducciones": {
+      "database_field": " TOTAL DEDUCCIONES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 146558,
+      "sample_data": [
+        "3396.84",
+        "1006.08",
+        "1293.24"
+      ]
+    },
+    "descuentoInfonavit": {
+      "database_field": " DESCUENTO INFONAVIT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 31689,
+      "sample_data": [
+        "1382.68",
+        "2799.36",
+        "1690.56"
+      ]
+    },
+    "diferenciaInfonavit4": {
+      "database_field": " DIFERENCIA INFONAVIT4 ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 365,
+      "sample_data": [
+        "200.00",
+        "990.08",
+        "600.00"
+      ]
+    },
+    "otrosDescuentos": {
+      "database_field": " OTROS DESCUENTOS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 8716,
+      "sample_data": [
+        "290.62",
+        "1000.00",
+        "6000.00"
+      ]
+    },
+    "descuentosVarios": {
+      "database_field": " DESCUENTOS VARIOS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 218,
+      "sample_data": [
+        "750.00",
+        "354.55",
+        "69.83"
+      ]
+    },
+    "descuentoPorUniformes": {
+      "database_field": " DESCUENTO POR UNIFORMES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 99,
+      "sample_data": [
+        "900.00",
+        "1800.00",
+        "900.00"
+      ]
+    }
+  },
+  "calculos_nomina": {
+    "valesDespensaNeto": {
+      "database_field": " VALES DESPENSA NETO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 3549,
+      "sample_data": [
+        "1568.04",
+        "1568.04",
+        "1568.04"
+      ]
+    },
+    "netoAntesDeVales": {
+      "database_field": " NETO ANTES DE VALES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 149681,
+      "sample_data": [
+        "22386.42",
+        "9557.31",
+        "11921.88"
+      ]
+    },
+    "netoAPagar": {
+      "database_field": " NETO A PAGAR ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 151757,
+      "sample_data": [
+        "23954.46",
+        "9617.31",
+        "13489.92"
+      ]
+    },
+    "subtotalCostoDeNomina": {
+      "database_field": " SUBTOTAL COSTO DE NOMINA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152850,
+      "sample_data": [
+        "38615.55",
+        "14632.56",
+        "20751.51"
+      ]
+    },
+    "costoDeNomina": {
+      "database_field": " COSTO DE NOMINA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152877,
+      "sample_data": [
+        "40178.43",
+        "15188.76",
+        "21580.35"
+      ]
+    },
+    "totalAFacturar": {
+      "database_field": " TOTAL A FACTURAR ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 143720,
+      "sample_data": [
+        "1812.93",
+        "645.18",
+        "961.44"
+      ]
+    },
+    "ptu": {
+      "database_field": " PTU ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 4923,
+      "sample_data": [
+        "58146.20",
+        "117150.24",
+        "61720.68"
+      ]
+    }
+  },
+  "fechas": {
+    "antigüedadEnFpl": {
+      "database_field": "Antigüedad en FPL",
+      "data_type": "date",
+      "has_data": true,
+      "record_count": 152160,
+      "sample_data": [
+        "2022-08-16",
+        "2022-08-16",
+        "2022-08-16"
+      ]
+    },
+    "fechaAntiguedad": {
+      "database_field": "Fecha antigüedad",
+      "data_type": "date",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "2016-03-11",
+        "2016-09-19",
+        "2017-03-01"
+      ]
+    },
+    "fechaBaja": {
+      "database_field": "Fecha baja",
+      "data_type": "date",
+      "has_data": true,
+      "record_count": 46882,
+      "sample_data": [
+        "2025-06-01",
+        "2024-07-15",
+        "2024-07-15"
+      ]
+    },
+    "cveper": {
+      "database_field": "cveper",
+      "data_type": "date",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "2024-07-15",
+        "2024-07-15",
+        "2024-07-15"
+      ]
+    }
+  },
+  "otros": {
+    "cvecia": {
+      "database_field": "cvecia",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "192",
+        "192",
+        "192"
+      ]
+    },
+    "cvetno": {
+      "database_field": "cvetno",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "1",
+        "1",
+        "1"
+      ]
+    },
+    "localidad": {
+      "database_field": "Localidad",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "Zacatecas",
+        "Zacatecas",
+        "Zacatecas"
+      ]
+    },
+    "mes": {
+      "database_field": "Mes",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "JULIO",
+        "JULIO",
+        "JULIO"
+      ]
+    },
+    "periodo": {
+      "database_field": "Periodo",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "QNA 13 15.07.24 GSAU",
+        "QNA 13 15.07.24 GSAU",
+        "QNA 13 15.07.24 GSAU"
+      ]
+    },
+    "tipo": {
+      "database_field": " tipo ",
+      "data_type": "text",
+      "has_data": true,
+      "record_count": 152932,
+      "sample_data": [
+        "N",
+        "N",
+        "N"
+      ]
+    },
+    "sd": {
+      "database_field": " SD ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 152912,
+      "sample_data": [
+        "363.55",
+        "363.55",
+        "248.94"
+      ]
+    },
+    "destajoInformado": {
+      "database_field": " DESTAJO INFORMADO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 27389,
+      "sample_data": [
+        "5692.96",
+        "1104.14",
+        "1104.14"
+      ]
+    },
+    "premioPuntualidad": {
+      "database_field": " PREMIO PUNTUALIDAD ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 8492,
+      "sample_data": [
+        "128.95",
+        "24.89",
+        "149.36"
+      ]
+    },
+    "premioAsistencia": {
+      "database_field": " PREMIO ASISTENCIA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 8482,
+      "sample_data": [
+        "149.36",
+        "87.13",
+        "199.15"
+      ]
+    },
+    "valesDeDespensa": {
+      "database_field": " VALES DE DESPENSA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 11571,
+      "sample_data": [
+        "300.00",
+        "300.00",
+        "300.00"
+      ]
+    },
+    "diaFestivoTrabajado": {
+      "database_field": " DIA FESTIVO TRABAJADO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 488,
+      "sample_data": [
+        "414.90",
+        "414.90",
+        "414.90"
+      ]
+    },
+    "primaVacacional": {
+      "database_field": " PRIMA VACACIONAL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 7338,
+      "sample_data": [
+        "51.86",
+        "1518.18",
+        "1703.08"
+      ]
+    },
+    "aguinaldo": {
+      "database_field": " AGUINALDO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 5471,
+      "sample_data": [
+        "2326.00",
+        "2182.48",
+        "371.53"
+      ]
+    },
+    "gratificacion": {
+      "database_field": " GRATIFICACION ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 4027,
+      "sample_data": [
+        "194.46",
+        "3200.16",
+        "2119.47"
+      ]
+    },
+    "compensacion": {
+      "database_field": " COMPENSACION ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 1628,
+      "sample_data": [
+        "4915.26",
+        "1980.12",
+        "454.18"
+      ]
+    },
+    "primaDominical": {
+      "database_field": " PRIMA DOMINICAL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 3448,
+      "sample_data": [
+        "311.16",
+        "155.58",
+        "311.16"
+      ]
+    },
+    "primaDeAntigüedad": {
+      "database_field": " PRIMA DE ANTIGÜEDAD ",
+      "data_type": "numeric",
+      "has_data": false,
+      "record_count": 0,
+      "sample_data": []
+    },
+    "pagoPorSeparacion": {
+      "database_field": " PAGO POR SEPARACION ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 90,
+      "sample_data": [
+        "4508.76",
+        "4593.64",
+        "9532.05"
+      ]
+    },
+    "vacacionesPendientes": {
+      "database_field": " VACACIONES PENDIENTES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 281,
+      "sample_data": [
+        "1950.00",
+        "5717.16",
+        "3364.08"
+      ]
+    },
+    "subsidioPorIncapacidad": {
+      "database_field": " SUBSIDIO POR INCAPACIDAD ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 57,
+      "sample_data": [
+        "544.77",
+        "2723.85",
+        "3909.74"
+      ]
+    },
+    "subsidioAlEmpleo": {
+      "database_field": " SUBSIDIO AL EMPLEO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 434,
+      "sample_data": [
+        "14.37",
+        "10.27",
+        "12.49"
+      ]
+    },
+    "destajo": {
+      "database_field": " DESTAJO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 27387,
+      "sample_data": [
+        "637.42",
+        "648.70",
+        "1174.23"
+      ]
+    },
+    "horasExtraDoble": {
+      "database_field": " HORAS EXTRA DOBLE ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 170,
+      "sample_data": [
+        "557.60",
+        "1134.96",
+        "209.10"
+      ]
+    },
+    "horasExtraDoble3": {
+      "database_field": " HORAS EXTRA DOBLE3 ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 17,
+      "sample_data": [
+        "912.68",
+        "418.20",
+        "485.36"
+      ]
+    },
+    "horasExtraTriple": {
+      "database_field": " HORAS EXTRA TRIPLE ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 7,
+      "sample_data": [
+        "969.36",
+        "418.20",
+        "313.65"
+      ]
+    },
+    "diasPromedio": {
+      "database_field": " DIAS PROMEDIO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 21,
+      "sample_data": [
+        "1660.44",
+        "335.10",
+        "352.23"
+      ]
+    },
+    "septimoDia": {
+      "database_field": " SEPTIMO DIA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 836,
+      "sample_data": [
+        "905.85",
+        "763.14",
+        "750.64"
+      ]
+    },
+    "reintegroIsr": {
+      "database_field": " REINTEGRO ISR ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 3091,
+      "sample_data": [
+        "113.91",
+        "1406.48",
+        "73.55"
+      ]
+    },
+    "isrAnualAFavor": {
+      "database_field": " ISR ANUAL A FAVOR ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 1053,
+      "sample_data": [
+        "108.55",
+        "704.54",
+        "54.83"
+      ]
+    },
+    "diferenciaFonacot": {
+      "database_field": " DIFERENCIA FONACOT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 23,
+      "sample_data": [
+        "407.00",
+        "1486.08",
+        "124.02"
+      ]
+    },
+    "indemnizacion90Dias": {
+      "database_field": " INDEMNIZACION 90 DIAS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 76,
+      "sample_data": [
+        "75416.50",
+        "19010.95",
+        "52796.32"
+      ]
+    },
+    "vacacionesFiniquito": {
+      "database_field": " VACACIONES FINIQUITO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 1309,
+      "sample_data": [
+        "1787.39",
+        "3360.88",
+        "2097.94"
+      ]
+    },
+    "valesDespensaPensionAliment": {
+      "database_field": " VALES DESPENSA PENSION ALIMENT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 50,
+      "sample_data": [
+        "12.00",
+        "12.00",
+        "12.00"
+      ]
+    },
+    "pfpl": {
+      "database_field": " P.FPL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 138737,
+      "sample_data": [
+        "3124.14",
+        "1168.59",
+        "1214.52"
+      ]
+    },
+    "ayudaPorIncapacidad": {
+      "database_field": " AYUDA POR INCAPACIDAD ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 932,
+      "sample_data": [
+        "1463.64",
+        "13409.28",
+        "58.20"
+      ]
+    },
+    "aportacionCompraPrestación": {
+      "database_field": " APORTACION COMPRA PRESTACIÓN ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 141671,
+      "sample_data": [
+        "3906.48",
+        "500.58",
+        "1793.76"
+      ]
+    },
+    "apCompPrimasSeguro": {
+      "database_field": " AP COMP PRIMAS SEGURO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 142311,
+      "sample_data": [
+        "7030.62",
+        "1669.17",
+        "3008.28"
+      ]
+    },
+    "prestamosPersonales": {
+      "database_field": " PRESTAMOS PERSONALES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 2,
+      "sample_data": [
+        "1000.00",
+        "2400.00"
+      ]
+    },
+    "regalías": {
+      "database_field": " REGALÍAS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 143624,
+      "sample_data": [
+        "1562.88",
+        "556.20",
+        "828.84"
+      ]
+    },
+    "iva": {
+      "database_field": " IVA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 143669,
+      "sample_data": [
+        "250.05",
+        "88.98",
+        "132.60"
+      ]
+    },
+    "isr": {
+      "database_field": " ISR ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 133650,
+      "sample_data": [
+        "15272.12",
+        "1358.18",
+        "1542.62"
+      ]
+    },
+    "retardos": {
+      "database_field": " RETARDOS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 2221,
+      "sample_data": [
+        "758.04",
+        "103.72",
+        "154.83"
+      ]
+    },
+    "seguroALaVivienda": {
+      "database_field": " SEGURO A LA VIVIENDA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 30996,
+      "sample_data": [
+        "3.75",
+        "3.75",
+        "3.75"
+      ]
+    },
+    "fonacot": {
+      "database_field": " FONACOT ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 11071,
+      "sample_data": [
+        "900.50",
+        "534.66",
+        "1103.98"
+      ]
+    },
+    "diferenciaFonacot5": {
+      "database_field": " DIFERENCIA FONACOT5 ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 43,
+      "sample_data": [
+        "412.02",
+        "480.26",
+        "480.26"
+      ]
+    },
+    "prestamosPersonales6": {
+      "database_field": " PRESTAMOS PERSONALES6 ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 356,
+      "sample_data": [
+        "500.00",
+        "500.00",
+        "514.85"
+      ]
+    },
+    "pensiónAlimenticia": {
+      "database_field": " PENSIÓN ALIMENTICIA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 2083,
+      "sample_data": [
+        "18788.08",
+        "9947.51",
+        "2760.00"
+      ]
+    },
+    "anticipoDeNomina": {
+      "database_field": " ANTICIPO DE NOMINA ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 95,
+      "sample_data": [
+        "350.00",
+        "350.00",
+        "350.00"
+      ]
+    },
+    "cuotaSindical": {
+      "database_field": " CUOTA SINDICAL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 6826,
+      "sample_data": [
+        "18.00",
+        "18.00",
+        "30.00"
+      ]
+    },
+    "dctoPensionAlimenticiaVales": {
+      "database_field": " DCTO PENSION ALIMENTICIA VALES ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 21,
+      "sample_data": [
+        "720.00",
+        "690.00",
+        "690.00"
+      ]
+    },
+    "isrIndemnizacion": {
+      "database_field": " ISR INDEMNIZACION ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 95,
+      "sample_data": [
+        "5658.34",
+        "2768.52",
+        "741.52"
+      ]
+    },
+    "destruccionHerramientas": {
+      "database_field": " DESTRUCCION HERRAMIENTAS ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 17,
+      "sample_data": [
+        "3124.20",
+        "2400.00",
+        "2669.28"
+      ]
+    },
+    "aportacionCajaDeAhorro": {
+      "database_field": " APORTACION CAJA DE AHORRO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 134172,
+      "sample_data": [
+        "74.72",
+        "109.35",
+        "68.48"
+      ]
+    },
+    "prestamoFpl": {
+      "database_field": " PRESTAMO FPL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 5576,
+      "sample_data": [
+        "151.67",
+        "2333.33",
+        "51.33"
+      ]
+    },
+    "pensionAlimenticiaFpl": {
+      "database_field": " PENSION ALIMENTICIA FPL ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 1030,
+      "sample_data": [
+        "127.68",
+        "106.70",
+        "140.23"
+      ]
+    },
+    "ajusteSubsAlEmpleoPagado": {
+      "database_field": " AJUSTE SUBS AL EMPLEO PAGADO ",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 31,
+      "sample_data": [
+        "10.46",
+        "126.42",
+        "12.84"
+      ]
+    },
+    "ayudaFpl": {
+      "database_field": "AYUDA FPL",
+      "data_type": "numeric",
+      "has_data": true,
+      "record_count": 6397,
+      "sample_data": [
+        "83951.36",
+        "255.00",
+        "21439.62"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vscode/
+.env*
+*.pyc
+__pycache__/
+.cdk.out/
+cdk.out/
+.DS_Store
+.aws-sam/
+

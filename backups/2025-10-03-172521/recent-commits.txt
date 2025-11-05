@@ -1,0 +1,4 @@
+b7c93a40 Refactor: Eliminar referencias hardcodeadas localhost:3001 en BusquedaEmpleados
+834f4be8 feat: Configuración inicial del proyecto - Estructura básica de CDK con Lambda backend, configuración de entorno de producción y archivos de infraestructura principales
+9389cc8b Add Vercel deployment configuration
+9ce31f9d first commit

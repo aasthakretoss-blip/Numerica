@@ -1,0 +1,4 @@
+packages:
+  - 'frontend-react'
+  - 'backend-lambda'
+  - 'infra-cdk'

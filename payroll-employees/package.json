@@ -1,0 +1,20 @@
+{
+  "name": "payroll-employees",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -C frontend-react dev",
+    "build": "pnpm -C frontend-react build",
+    "test": "pnpm -C frontend-react test",
+    "deploy:infra": "pnpm -C infra-cdk cdk:deploy",
+    "deploy:front": "pnpm -C frontend-react build && echo Deploy frontend with aws s3 sync (configure in infra outputs)",
+    "lint": "pnpm -C frontend-react lint",
+    "db:test": "node test-db-connection.js",
+    "db:setup-local": "setup-local-db.bat"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
+  }
+}

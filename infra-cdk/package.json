@@ -1,0 +1,21 @@
+{
+  "name": "infra-cdk",
+  "private": true,
+  "version": "0.1.0",
+  "bin": {
+    "cdk": "cdk.mjs"
+  },
+  "scripts": {
+    "cdk:deploy": "cdk deploy",
+    "cdk:diff": "cdk diff",
+    "cdk:synth": "cdk synth"
+  },
+  "devDependencies": {
+    "aws-cdk-lib": "^2.153.0",
+    "constructs": "^10.3.0",
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {}
+}
+

@@ -1,0 +1,19 @@
+{
+  "name": "numerica-auth-pretoken-lambda",
+  "version": "1.0.0",
+  "description": "Pre Token Generation Lambda function for Numerica Auth",
+  "main": "index.mjs",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.645.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "cognito",
+    "dynamodb",
+    "jwt"
+  ],
+  "author": "Numerica Auth System",
+  "license": "MIT"
+}

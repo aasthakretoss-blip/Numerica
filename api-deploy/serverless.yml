@@ -1,0 +1,73 @@
+service: numerica-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  timeout: 60
+  memorySize: 1024
+  
+  environment:
+    DB_HOST: ${env:DB_HOST, 'dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com'}
+    DB_PORT: ${env:DB_PORT, '5432'}
+    DB_NAME: ${env:DB_NAME, 'Historic'}
+    DB_DATABASE: ${env:DB_DATABASE, 'Historic'}
+    DB_USER: ${env:DB_USER, 'postgres'}
+    DB_PASSWORD: ${env:DB_PASSWORD, 'cd5!A-%aisPF186W'}
+    DB_NOMINAS: ${env:DB_NOMINAS, 'Historic'}
+    DB_FONDOS: ${env:DB_FONDOS, 'Historic'}
+    COGNITO_USER_POOL_ID: ${env:COGNITO_USER_POOL_ID, 'us-east-1_JwP9gBEvr'}
+    COGNITO_CLIENT_ID: ${env:COGNITO_CLIENT_ID, '18l43dor2k5fja5pu0caf64u2f'}
+    AWS_SECRET_NAME: ${env:AWS_SECRET_NAME, 'numerica/db/credentials'}
+    PGHOST: ${env:DB_HOST, 'dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com'}
+    PGPORT: ${env:DB_PORT, '5432'}
+    PGDATABASE: ${env:DB_NAME, 'Historic'}
+    PGUSER: ${env:DB_USER, 'postgres'}
+    PGPASSWORD: ${env:DB_PASSWORD, 'cd5!A-%aisPF186W'}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds:DescribeDBInstances
+        - secretsmanager:GetSecretValue
+        - cognito-idp:*
+      Resource: "*"
+
+functions:
+  api:
+    handler: handler.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: '*'
+
+package:
+  patterns:
+    - '!.env*'
+    - '!*.md'
+    - '!*.log'
+    - '!.git/**'
+    - '!node_modules/**/test/**'
+    - '!node_modules/**/tests/**'
+    - '!node_modules/**/docs/**'
+    - '!node_modules/**/example/**'
+    - '!node_modules/**/examples/**'
+    - '!node_modules/**/*.md'
+    - '!node_modules/**/LICENSE*'
+    - '!node_modules/**/CHANGELOG*'
+    - '!node_modules/**/*.map'

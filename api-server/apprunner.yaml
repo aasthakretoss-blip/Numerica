@@ -1,0 +1,46 @@
+version: 1.0
+runtime: nodejs18
+build:
+  commands:
+    build:
+      - echo "Installing dependencies"
+      - npm ci --only=production
+      - echo "Build completed"
+run:
+  runtime-version: 18
+  command: node server.js
+  network:
+    port: 8080
+  env:
+    - name: PORT
+      value: "8080"
+    - name: NODE_ENV
+      value: "production"
+    - name: DB_HOST
+      value: "dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com"
+    - name: DB_PORT
+      value: "5432"
+    - name: DB_NAME
+      value: "Historic"
+    - name: DB_USER
+      value: "postgres"
+    - name: DB_PASSWORD
+      value: "cd5!A-%aisPF186W"
+    - name: DB_NOMINAS
+      value: "Historic"
+    - name: DB_FONDOS
+      value: "Historic"
+    - name: PGHOST
+      value: "dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com"
+    - name: PGPORT
+      value: "5432"
+    - name: PGDATABASE
+      value: "Historic"
+    - name: PGUSER
+      value: "postgres"
+    - name: PGPASSWORD
+      value: "cd5!A-%aisPF186W"
+    - name: COGNITO_USER_POOL_ID
+      value: "us-east-1_JwP9gBEvr"
+    - name: COGNITO_CLIENT_ID
+      value: "18l43dor2k5fja5pu0caf64u2f"

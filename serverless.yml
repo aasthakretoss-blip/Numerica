@@ -1,0 +1,76 @@
+service: numerica-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  timeout: 30
+  memorySize: 512
+  
+  environment:
+    DB_HOST: dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com
+    DB_PORT: 5432
+    DB_NAME: Historic
+    DB_USER: postgres
+    DB_PASSWORD: cd5!A-%aisPF186W
+    DB_NOMINAS: Historic
+    DB_FONDOS: Historic
+    COGNITO_USER_POOL_ID: us-east-1_JwP9gBEvr
+    COGNITO_CLIENT_ID: 18l43dor2k5fja5pu0caf64u2f
+    PGHOST: dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com
+    PGPORT: 5432
+    PGDATABASE: Historic
+    PGUSER: postgres
+    PGPASSWORD: cd5!A-%aisPF186W
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds:DescribeDBInstances
+        - secretsmanager:GetSecretValue
+        - cognito-idp:*
+      Resource: "*"
+
+functions:
+  api:
+    handler: handler.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: '*'
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!.env*'
+    - '!README.md'
+    - '!*.log'
+    - '!.git/**'
+    - 'node_modules/aws-jwt-verify/**'
+    - 'node_modules/cors/**'
+    - 'node_modules/dotenv/**'
+    - 'node_modules/express/**'
+    - 'node_modules/helmet/**'
+    - 'node_modules/jsonwebtoken/**'
+    - 'node_modules/jwks-client/**'
+    - 'node_modules/multer/**'
+    - 'node_modules/pg/**'
+    - 'node_modules/serverless-http/**'
+
+plugins:
+  - serverless-offline

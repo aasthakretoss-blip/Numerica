@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-09-09T16:35:58.142Z",
+  "permissions": {
+    "Items": [
+      {
+        "user_sub": {
+          "S": "047844c8-2031-70d1-c7ca-fa5254c0ca91"
+        },
+        "role": {
+          "S": "admin"
+        },
+        "can_view_funds": {
+          "S": "true"
+        },
+        "can_upload": {
+          "S": "true"
+        }
+      },
+      {
+        "user_sub": {
+          "S": "84b82408-8091-704a-5831-78ee00d8be4f"
+        },
+        "role": {
+          "S": "admin"
+        },
+        "can_view_funds": {
+          "S": "true"
+        },
+        "can_upload": {
+          "S": "true"
+        }
+      }
+    ],
+    "Count": 2,
+    "ScannedCount": 2,
+    "ConsumedCapacity": null
+  },
+  "albertoFound": false
+}

@@ -1,0 +1,1105 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const { authenticate: verifyToken, requirePermission } = require('./middleware/auth');
+const { testConnections } = require('./config/database');
+const nominasService = require('./services/nominasService');
+const fondosService = require('./services/fondosService');
+const uploadService = require('./services/uploadService');
+const payrollFilterService = require('./services/payrollFilterService'); // Mover aquí
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept Excel and CSV files
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+        file.mimetype === 'text/csv') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos Excel (.xlsx) o CSV (.csv)'));
+    }
+  }
+});
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware global
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configuración CORS
+const corsOptions = {
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
+    'http://localhost:5173',
+    'http://localhost:3000', 
+    'http://localhost:3002',
+    'http://localhost:3003'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+app.use(cors(corsOptions));
+
+// Middleware de logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// ============================================================================
+// RUTAS PÚBLICAS
+// ============================================================================
+
+// Endpoint de compatibilidad para búsqueda de empleados (usado por el frontend)
+app.get('/busqueda-empleados', async (req, res) => {
+  try {
+    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
+    
+    console.log('🔍 /busqueda-empleados: Parámetros recibidos:', req.query);
+    
+    // Usar el mismo servicio que /api/payroll
+    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+      pageSize: parseInt(pageSize) || 100,
+      page: parseInt(page) || 1,
+      search,
+      puesto,
+      compania,
+      sucursal,
+      status,
+      puestoCategorizado,
+      cveper,
+      orderBy,
+      orderDirection
+    });
+    
+    console.log('✅ /busqueda-empleados: Datos obtenidos exitosamente:', {
+      records: result.data?.length || 0,
+      total: result.pagination?.total || 0
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error en búsqueda de empleados:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Health check
+app.get('/health', async (req, res) => {
+  try {
+    const connections = await testConnections();
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      connections: connections,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Info de la API
+app.get('/api/info', (req, res) => {
+  res.json({
+    name: 'Historic Data API',
+    version: '1.0.0',
+    description: 'API para consultar datos históricos de nóminas y fondos',
+    endpoints: {
+      public: ['/health', '/api/info'],
+      protected: {
+        nominas: ['/api/nominas/*'],
+        fondos: ['/api/fondos/*']
+      },
+      permissions: {
+        'custom:can_upload': 'Permite subir archivos',
+        'custom:can_view_funds': 'Permite ver información de fondos',
+        'custom:role': 'admin | user'
+      }
+    }
+  });
+});
+
+// ============================================================================
+// MIDDLEWARE DE AUTENTICACIÓN
+// ============================================================================
+
+// Middleware de autenticación que se aplicará manualmente a las rutas protegidas
+
+// ============================================================================
+// RUTAS DE NÓMINAS - Requiere autenticación
+// ============================================================================
+
+// Obtener tablas disponibles en base de datos de nóminas
+app.get('/api/nominas/tables', verifyToken, async (req, res) => {
+  try {
+    const result = await nominasService.getTables();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error en /api/nominas/tables:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener estructura de una tabla específica
+app.get('/api/nominas/tables/:tableName/structure', verifyToken, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const result = await nominasService.getTableStructure(tableName);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estructura de tabla:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Consultar datos de una tabla con paginación y filtros
+app.get('/api/nominas/tables/:tableName/data', verifyToken, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const { limit, offset, orderBy, order, ...filters } = req.query;
+    
+    // Construir filtros WHERE si se proporcionan
+    const where = [];
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && key !== 'limit' && key !== 'offset' && key !== 'orderBy' && key !== 'order') {
+        where.push({
+          column: key,
+          value: value,
+          operator: 'ILIKE' // Para búsquedas de texto parcial
+        });
+      }
+    });
+    
+    const options = {
+      limit,
+      offset,
+      orderBy,
+      order,
+      where: where.length > 0 ? where : undefined
+    };
+    
+    const result = await nominasService.queryTable(tableName, options);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error consultando tabla:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Buscar empleados
+app.get('/api/nominas/search/employees', verifyToken, async (req, res) => {
+  try {
+    const { q: searchTerm, limit, offset } = req.query;
+    
+    if (!searchTerm) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro de búsqueda "q" es requerido'
+      });
+    }
+    
+    const result = await nominasService.searchEmployees(searchTerm, { limit, offset });
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error buscando empleados:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener estadísticas de nóminas
+app.get('/api/nominas/stats', verifyToken, async (req, res) => {
+  try {
+    const result = await nominasService.getStats();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas de nóminas:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener valores únicos de una columna para filtros
+app.get('/api/nominas/unique/:tableName/:columnName', verifyToken, async (req, res) => {
+  try {
+    const { tableName, columnName } = req.params;
+    const { search, limit } = req.query;
+    
+    const result = await nominasService.getUniqueValues(tableName, columnName, {
+      search,
+      limit
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo valores únicos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener último periodo disponible
+app.get('/api/nominas/latest-period', verifyToken, async (req, res) => {
+  try {
+    const result = await nominasService.getLatestPeriod();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo último periodo:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// RUTAS ESPECÍFICAS DE PAYROLL - DEBEN IR ANTES QUE LA RUTA GENERAL
+// ============================================================================
+
+// Obtener todas las categorías de puestos disponibles (sin autenticación para desarrollo)
+app.get('/api/payroll/categorias-puestos', async (req, res) => {
+  try {
+    const categorias = nominasService.getPuestosCategorias();
+    
+    // Formatear para el DropDownMenu (incluir conteos)
+    const categoriasConConteo = categorias.map(categoria => ({
+      value: categoria,
+      count: 0 // El conteo real se calculará cuando se implemente el filtrado completo
+    }));
+    
+    res.json({
+      success: true,
+      data: categoriasConConteo,
+      count: categorias.length
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo categorías de puestos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener categoría de un puesto específico
+app.get('/api/payroll/puesto-categoria/:puesto', async (req, res) => {
+  try {
+    const { puesto } = req.params;
+    const categoria = nominasService.getPuestoCategorizado(puesto);
+    
+    res.json({
+      success: true,
+      puesto: puesto,
+      categoria: categoria
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo categoría del puesto:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener estadísticas completas de payroll
+app.get('/api/payroll/stats', async (req, res) => {
+  try {
+    const result = await nominasService.getDatasetStats();
+    res.json({
+      success: true,
+      stats: result // Asegurar que está envuelto en la estructura esperada
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas de payroll:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener periodos únicos (cveper) desde payroll_data
+app.get('/api/payroll/periodos', async (req, res) => {
+  try {
+    const result = await nominasService.getUniquePayrollPeriods();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo periodos de payroll:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// NUEVO: Obtener filtros con cardinalidad en tiempo real
+app.get('/api/payroll/filters', async (req, res) => {
+  console.log('🔍 DEBUG: Accediendo a /api/payroll/filters');
+  console.log('🔍 DEBUG: Query params:', req.query);
+  
+  try {
+    // Extraer filtros activos de los parámetros de consulta
+    const activeFilters = {};
+    
+    if (req.query.search) activeFilters.search = req.query.search;
+    if (req.query.sucursal) {
+      activeFilters.sucursal = Array.isArray(req.query.sucursal) ? req.query.sucursal : [req.query.sucursal];
+    }
+    if (req.query.puesto) {
+      activeFilters.puesto = Array.isArray(req.query.puesto) ? req.query.puesto : [req.query.puesto];
+    }
+    if (req.query.status) {
+      activeFilters.status = Array.isArray(req.query.status) ? req.query.status : [req.query.status];
+    }
+    if (req.query.cveper) activeFilters.cveper = req.query.cveper;
+    if (req.query.puestoCategorizado) {
+      activeFilters.puestoCategorizado = Array.isArray(req.query.puestoCategorizado) 
+        ? req.query.puestoCategorizado : [req.query.puestoCategorizado];
+    }
+    
+    console.log('🔍 DEBUG: Active filters:', activeFilters);
+    
+    const result = await payrollFilterService.getFiltersWithCardinality(activeFilters);
+    
+    console.log('✅ DEBUG: Filtros obtenidos exitosamente:', {
+      sucursales: result.data?.sucursales?.length || 0,
+      puestos: result.data?.puestos?.length || 0,
+      estados: result.data?.estados?.length || 0
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo filtros con cardinalidad:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
+});
+
+// Endpoint específico para tabla demográfica con server-side sorting
+app.get('/api/payroll/demographic', async (req, res) => {
+  try {
+    const { page, pageSize, sortBy, sortDir, search, puesto, sucursal, status, puestoCategorizado, cveper } = req.query;
+    
+    console.log('📊 /api/payroll/demographic: Parámetros recibidos:', {
+      page, pageSize, sortBy, sortDir, cveper
+    });
+    
+    // DEBUGGING ESPECIAL para cveper
+    if (cveper) {
+      console.log('📅 DEBUGGING CVEPER en demographic:', {
+        cveper,
+        tipoCveper: typeof cveper,
+        esArray: Array.isArray(cveper),
+        longitud: cveper.length,
+        formatoYYYY_MM: /^\d{4}-\d{2}$/.test(cveper),
+        formatoYYYY_MM_DD: /^\d{4}-\d{2}-\d{2}$/.test(cveper)
+      });
+    }
+    
+    // Usar el mismo servicio que /api/payroll para consistencia COMPLETA
+    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+      pageSize: parseInt(pageSize) || 50,
+      page: parseInt(page) || 1,
+      orderBy: sortBy || 'nombre',
+      orderDirection: sortDir || 'asc',
+      // AÑADIR TODOS LOS FILTROS
+      search,
+      puesto,
+      sucursal,
+      status,
+      puestoCategorizado,
+      cveper  // ¡ESTE ERA EL FILTRO FALTANTE!
+    });
+    
+    console.log('✅ /api/payroll/demographic: Datos obtenidos exitosamente:', {
+      records: result.data?.length || 0,
+      total: result.pagination?.total || 0,
+      filtroAplicado: cveper ? `cveper=${cveper}` : 'sin filtro'
+    });
+    
+    res.json({
+      success: true,
+      data: result.data,
+      total: result.pagination?.total || 0,
+      page: parseInt(page) || 1,
+      pageSize: parseInt(pageSize) || 50
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo datos demográficos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// NUEVO: Obtener conteo de empleados únicos (CURPs únicos) con filtros
+app.get('/api/payroll/demographic/unique-count', async (req, res) => {
+  try {
+    const { search, puesto, sucursal, status, puestoCategorizado, cveper } = req.query;
+    
+    console.log('🔢 /api/payroll/demographic/unique-count: Parámetros recibidos:', {
+      search, puesto, sucursal, status, puestoCategorizado, cveper
+    });
+    
+    const { nominasPool } = require('./config/database');
+    const client = await nominasPool.connect();
+    
+    let query = `
+      SELECT COUNT(DISTINCT "CURP") as unique_count
+      FROM historico_nominas_gsau
+      WHERE "CURP" IS NOT NULL AND "CURP" != ''
+    `;
+    
+    const params = [];
+    let paramIndex = 1;
+    
+    // Aplicar filtro de período si se proporciona
+    if (cveper) {
+      if (cveper.match(/^\d{4}-\d{2}$/)) {
+        query += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
+        params.push(`${cveper}-01`);
+      } else if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        query += ` AND DATE(cveper) = $${paramIndex}`;
+        params.push(cveper);
+      }
+      paramIndex++;
+    }
+    
+    // Aplicar filtro de estado si se proporciona
+    if (status) {
+      query += ` AND "Status" = $${paramIndex}`;
+      if (status === 'Activo') {
+        params.push('A');
+      } else if (status === 'Baja') {
+        params.push('B');
+      } else if (status === 'Finiquito') {
+        params.push('F');
+      }
+      paramIndex++;
+    }
+    
+    // Aplicar otros filtros si se proporcionan
+    if (search) {
+      const searchPattern = `%${search}%`;
+      query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+      params.push(searchPattern);
+      paramIndex++;
+    }
+    
+    if (puesto) {
+      query += ` AND "Puesto" ILIKE $${paramIndex}`;
+      params.push(`%${puesto}%`);
+      paramIndex++;
+    }
+    
+    if (sucursal) {
+      query += ` AND "Compañía" ILIKE $${paramIndex}`;
+      params.push(`%${sucursal}%`);
+      paramIndex++;
+    }
+    
+    console.log('🔢 Query para conteo CURPs únicos:', query);
+    console.log('📋 Parámetros:', params);
+    
+    const result = await client.query(query, params);
+    client.release();
+    
+    const uniqueCurpCount = parseInt(result.rows[0]?.unique_count || 0);
+    
+    console.log('✅ Conteo CURPs únicos:', uniqueCurpCount);
+    
+    res.json({
+      success: true,
+      uniqueCurpCount
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo conteo de CURPs únicos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// ENDPOINT DE PERCEPCIONES - Para componente Percepciones
+// ============================================================================
+
+// Obtener datos de percepciones de un empleado específico por CURP y CVEPER
+app.get('/api/percepciones', async (req, res) => {
+  try {
+    const { curp, cveper, pageSize = '10', page = '1' } = req.query;
+    
+    console.log('💰 /api/percepciones: Parámetros recibidos:', { curp, cveper, pageSize, page });
+    
+    if (!curp) {
+      return res.status(400).json({
+        success: false,
+        error: 'CURP es requerido'
+      });
+    }
+
+    // Conectar directamente a la base de datos para obtener todos los campos
+    const { nominasPool } = require('./config/database');
+    const client = await nominasPool.connect();
+    
+    let query = `
+      SELECT *
+      FROM historico_nominas_gsau
+      WHERE "CURP" = $1
+    `;
+    
+    const params = [curp];
+    let paramIndex = 2;
+    
+    // Aplicar filtro de período si se proporciona
+    if (cveper) {
+      if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        query += ` AND DATE(cveper) = $${paramIndex}`;
+        params.push(cveper);
+      } else if (cveper.match(/^\d{4}-\d{2}$/)) {
+        query += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
+        params.push(`${cveper}-01`);
+      } else {
+        query += ` AND cveper = $${paramIndex}`;
+        params.push(cveper);
+      }
+      paramIndex++;
+    }
+    
+    // Ordenar por período más reciente primero
+    query += ` ORDER BY cveper DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(pageSize));
+    
+    console.log('🔍 Query para percepciones:', query);
+    console.log('📋 Parámetros:', params);
+    
+    const result = await client.query(query, params);
+    client.release();
+    
+    console.log('✅ /api/percepciones: Datos completos obtenidos:', {
+      records: result.rows?.length || 0,
+      curp: curp,
+      cveper: cveper || 'sin filtro de período',
+      columnsCount: result.fields?.length || 0
+    });
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total: result.rows.length,
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        totalPages: Math.ceil(result.rows.length / parseInt(pageSize))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo datos de percepciones:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// RUTA GENERAL DE PAYROLL - DEBE IR AL FINAL
+// ============================================================================
+
+// Obtener datos de empleados con filtros (sin autenticación para desarrollo)
+app.get('/api/payroll', async (req, res) => {
+  try {
+    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
+    
+    console.log('🔍 /api/payroll: Parámetros recibidos (RAW):', req.query);
+    console.log('🔍 /api/payroll: Parámetros destructurados:', { 
+      pageSize, page, search, puesto, compania, sucursal, status, 
+      puestoCategorizado, cveper, orderBy, orderDirection 
+    });
+    
+    // DEBUGGING ESPECIAL para cveper
+    if (cveper) {
+      console.log('🗓️ DEBUGGING CVEPER:', {
+        cveper,
+        tipoCveper: typeof cveper,
+        esArray: Array.isArray(cveper),
+        longitud: cveper.length,
+        formatoYYYY_MM: /^\d{4}-\d{2}$/.test(cveper),
+        formatoYYYY_MM_DD: /^\d{4}-\d{2}-\d{2}$/.test(cveper)
+      });
+    }
+    
+    // NUEVO: Usar payrollFilterService para un sorting más preciso
+    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+      pageSize: parseInt(pageSize) || 100,
+      page: parseInt(page) || 1,
+      search,
+      puesto,
+      compania, // Para compatibilidad hacia atrás
+      sucursal, // Para nuevo sistema de filtros
+      status,
+      puestoCategorizado,
+      cveper,
+      orderBy, // Campo por el cual ordenar
+      orderDirection // Dirección del ordenamiento (asc/desc)
+    });
+    
+    console.log('✅ /api/payroll: Datos obtenidos exitosamente:', {
+      records: result.data?.length || 0,
+      total: result.pagination?.total || 0
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo datos de nómina:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// TEMPORAL: Consultar tabla historico_fondos_gsau (sin autenticación para desarrollo)
+app.get('/api/historico-fondos/check', async (req, res) => {
+  try {
+    const result = await fondosService.getHistoricoFondosData();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error consultando historico_fondos_gsau:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// TEMPORAL: Listar todas las tablas de fondos (sin autenticación para desarrollo)
+app.get('/api/fondos-tables/list', async (req, res) => {
+  try {
+    const result = await fondosService.getTables();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo tablas de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// TEMPORAL: Consultar tabla fondos_data específicamente (sin autenticación para desarrollo)
+app.get('/api/fondos-data/check', async (req, res) => {
+  try {
+    const result = await fondosService.getFondosDataInfo();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error consultando fondos_data:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener datos de empleados con filtros (versión autenticada)
+app.post('/api/nominas/employees', verifyToken, async (req, res) => {
+  try {
+    const filters = req.body;
+    const result = await nominasService.getEmployeesData(filters);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo datos de empleados:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// RUTAS DE FONDOS - Requiere autenticación + permiso can_view_funds
+// ============================================================================
+
+// Middleware para verificar permisos de fondos
+const requireFundsPermission = requirePermission('view_funds');
+
+// Obtener tablas disponibles en base de datos de fondos
+app.get('/api/fondos/tables', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const result = await fondosService.getTables();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error en /api/fondos/tables:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener estructura de una tabla de fondos
+app.get('/api/fondos/tables/:tableName/structure', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const result = await fondosService.getTableStructure(tableName);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estructura de tabla de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Consultar datos de una tabla de fondos
+app.get('/api/fondos/tables/:tableName/data', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const { limit, offset, orderBy, order, ...filters } = req.query;
+    
+    const where = [];
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && key !== 'limit' && key !== 'offset' && key !== 'orderBy' && key !== 'order') {
+        where.push({
+          column: key,
+          value: value,
+          operator: 'ILIKE'
+        });
+      }
+    });
+    
+    const options = {
+      limit,
+      offset,
+      orderBy,
+      order,
+      where: where.length > 0 ? where : undefined
+    };
+    
+    const result = await fondosService.queryTable(tableName, options);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error consultando tabla de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Buscar fondos
+app.get('/api/fondos/search', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const { q: searchTerm, limit, offset } = req.query;
+    
+    if (!searchTerm) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro de búsqueda "q" es requerido'
+      });
+    }
+    
+    const result = await fondosService.searchFunds(searchTerm, { limit, offset });
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error buscando fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener resumen financiero de fondos
+app.get('/api/fondos/summary', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const result = await fondosService.getFinancialSummary();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo resumen financiero:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener movimientos de fondos con filtros
+app.get('/api/fondos/movements', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin, tipoMovimiento, limit, offset } = req.query;
+    
+    const options = {
+      fechaInicio,
+      fechaFin,
+      tipoMovimiento,
+      limit,
+      offset
+    };
+    
+    const result = await fondosService.getMovements(options);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo movimientos de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Obtener estadísticas de fondos
+app.get('/api/fondos/stats', verifyToken, requireFundsPermission, async (req, res) => {
+  try {
+    const result = await fondosService.getStats();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// RUTAS ADMINISTRATIVAS - Solo para administradores
+// ============================================================================
+
+const requireAdminRole = requirePermission('admin');
+
+// Información del usuario autenticado
+app.get('/api/user/profile', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      sub: req.user.sub,
+      email: req.user.email,
+      username: req.user['cognito:username'],
+      role: req.user.permissions?.role,
+      permissions: req.user.permissions
+    }
+  });
+});
+
+// Endpoint administrativo para pruebas
+app.get('/api/admin/test', verifyToken, requireAdminRole, async (req, res) => {
+  try {
+    const [nominasStats, fondosStats] = await Promise.all([
+      nominasService.getStats(),
+      fondosService.getStats()
+    ]);
+    
+    res.json({
+      success: true,
+      message: 'Acceso administrativo confirmado',
+      user: req.user['cognito:username'],
+      statistics: {
+        nominas: nominasStats,
+        fondos: fondosStats
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error en endpoint administrativo:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// RUTAS DE UPLOAD - Requiere autenticación
+// ============================================================================
+
+// Validar archivo Excel y detectar formato
+app.post('/api/validate-file', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se proporcionó ningún archivo'
+      });
+    }
+
+    const result = await uploadService.validateFile(req.file.buffer, req.file.mimetype);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        type: result.type,
+        headers: result.headers,
+        rowCount: result.rowCount,
+        mappingValidation: result.mappingValidation,
+        message: result.message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error validando archivo:', error);
+    res.status(500).json({
+      success: false,
+      message: `Error del servidor: ${error.message}`
+    });
+  }
+});
+
+// Subir datos a la base de datos
+app.post('/api/upload-data', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se proporcionó ningún archivo'
+      });
+    }
+
+    const { type } = req.body;
+    
+    if (!type || (type !== 'nominas' && type !== 'fondos')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de archivo no válido. Debe ser "nominas" o "fondos"'
+      });
+    }
+
+    console.log(`📁 Procesando archivo de ${type}: ${req.file.originalname}`);
+    
+    const result = await uploadService.uploadData(req.file.buffer, type, req.file.mimetype);
+    
+    if (result.success) {
+      console.log(`✅ Upload exitoso: ${result.recordsInserted} registros insertados`);
+      res.json({
+        success: true,
+        recordsInserted: result.recordsInserted,
+        duplicatesSkipped: result.duplicatesSkipped,
+        errors: result.errors || [],
+        message: result.message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error subiendo datos:', error);
+    res.status(500).json({
+      success: false,
+      message: `Error del servidor: ${error.message}`
+    });
+  }
+});
+
+// ============================================================================
+// MANEJO DE ERRORES GLOBAL
+// ============================================================================
+
+// Manejo global de errores (debe estar antes que las rutas no encontradas)
+app.use((error, req, res, next) => {
+  console.error('❌ Error global capturado:', error);
+  
+  res.status(error.status || 500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : error.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+  });
+});
+
+// Manejo de rutas no encontradas (debe estar al final)
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint no encontrado',
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
+// ============================================================================
+// INICIO DEL SERVIDOR
+// ============================================================================
+
+const startServer = async () => {
+  try {
+    // Probar conexiones a las bases de datos
+    console.log('🔄 Probando conexiones a bases de datos...');
+    const connections = await testConnections();
+    
+    console.log('✅ Estado de conexiones:');
+    Object.entries(connections).forEach(([db, status]) => {
+      console.log(`   ${db}: ${status.success ? '✅ Conectado' : '❌ Error - ' + status.error}`);
+    });
+    
+    // Iniciar servidor
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor API ejecutándose en puerto ${PORT}`);
+      console.log(`🌐 URL base: http://localhost:${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`ℹ️  Info de API: http://localhost:${PORT}/api/info`);
+      console.log(`🔒 Rutas protegidas requieren JWT token de AWS Cognito`);
+      console.log(`📝 Logs: ${new Date().toISOString()}`);
+    });
+    
+  } catch (error) {
+    console.error('❌ Error al iniciar servidor:', error);
+    process.exit(1);
+  }
+};
+
+// Inicializar servidor
+startServer();
+
+// Manejo graceful de cierre
+process.on('SIGTERM', () => {
+  console.log('🛑 Recibida señal SIGTERM, cerrando servidor...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Recibida señal SIGINT (Ctrl+C), cerrando servidor...');
+  process.exit(0);
+});
+
+module.exports = app;

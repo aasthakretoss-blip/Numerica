@@ -1,0 +1,139 @@
+{
+  "timestamp": "2025-09-01T09:05:43.698163",
+  "postgres_analysis": {
+    "total_records": 51000,
+    "unique_employees": 2449,
+    "unique_months": 12,
+    "gsau_records": 6345,
+    "date_range": "24_ABRIL a 24_SEPTIEMBRE",
+    "monthly_data": [
+      [
+        "24_ABRIL",
+        3766,
+        1643
+      ],
+      [
+        "24_AGOSTO",
+        4209,
+        1702
+      ],
+      [
+        "24_DICIEMBRE",
+        5809,
+        1715
+      ],
+      [
+        "24_ENERO",
+        4034,
+        1681
+      ],
+      [
+        "24_FEBRERO",
+        3866,
+        1638
+      ],
+      [
+        "24_JULIO",
+        3886,
+        1682
+      ],
+      [
+        "24_JUNIO",
+        4020,
+        1858
+      ],
+      [
+        "24_MARZO",
+        3818,
+        1621
+      ],
+      [
+        "24_MAYO",
+        5463,
+        1743
+      ],
+      [
+        "24_NOVIEMBRE",
+        3968,
+        1707
+      ],
+      [
+        "24_OCTUBRE",
+        4271,
+        1702
+      ],
+      [
+        "24_SEPTIEMBRE",
+        3890,
+        1689
+      ]
+    ],
+    "companies": [
+      [
+        "TOYOMOTORS",
+        5592,
+        243
+      ],
+      [
+        "SAU MOTORS",
+        4888,
+        208
+      ],
+      [
+        "CHEVROLET DEL PARQUE",
+        3926,
+        201
+      ],
+      [
+        "GRUPO SUZUKA",
+        3630,
+        174
+      ],
+      [
+        "AUTOS GP IRAPUATO",
+        2748,
+        137
+      ],
+      [
+        "TOYOMOTORS DE IRAPUATO",
+        2479,
+        114
+      ],
+      [
+        "GSAU PACHUCA",
+        2301,
+        105
+      ],
+      [
+        "AUTOS CAMPESTRE",
+        2280,
+        113
+      ],
+      [
+        "SAU IRAPUATO",
+        2239,
+        113
+      ],
+      [
+        "SAU LEON",
+        2116,
+        120
+      ]
+    ]
+  },
+  "gsaudb_analysis": {
+    "nominas_count": 500,
+    "fondos_count": 0,
+    "vista_count": 0
+  },
+  "migration_script": "C:\\Users\\alber\\Autonumerica\\Numerica\\scripts\\migration_script.sql",
+  "recommendations": [
+    "Los datos cubren un año completo, ideal para análisis anual",
+    "Volumen de datos adecuado para reportes y análisis",
+    "postgres tiene significativamente más datos - migrar a GSAUDB",
+    "Actualizar endpoints del API para usar postgres.payroll_data",
+    "Implementar paginación para manejar 51k registros",
+    "Crear índices en campos de búsqueda frecuente",
+    "Establecer proceso de sincronización de datos"
+  ]
+}

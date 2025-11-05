@@ -1,0 +1,23 @@
+{
+  "database_config": {
+    "correct_connection": {
+      "host": "dbgsau.cgt6iqqkqla7.us-east-1.rds.amazonaws.com",
+      "port": 5432,
+      "database": "Historic",
+      "user": "postgres",
+      "password": "SanNicolasTotolapan23_Gloria5!",
+      "ssl": true
+    },
+    "incorrect_connection": {
+      "host": "gsaudb.cgt6iqqkqla7.us-east-1.rds.amazonaws.com",
+      "database": "GSAUDB",
+      "note": "Esta conexi\u00f3n tiene datos vac\u00edos - NO USAR"
+    }
+  },
+  "dashboard_fields": {
+    "connection_required": "Historic",
+    "table": "historico_nominas_gsau",
+    "total_columns": 104,
+    "records_with_data": 152932
+  }
+}
