@@ -1,15 +1,8 @@
 {
   "version": 2,
   "name": "numerica",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run vercel-build",
+  "outputDirectory": "build",
   "routes": [
     {
       "src": "/static/(.*)",
