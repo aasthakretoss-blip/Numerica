@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react';
-import { updateUserAttribute, confirmUserAttribute } from '@aws-amplify/auth';
+import { updateUserAttribute, confirmUserAttribute } from 'aws-amplify/auth';
 import styled from 'styled-components';
 import { useTheme } from '../contexts/ThemeContext';
 

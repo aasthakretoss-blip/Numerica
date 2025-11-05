@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthenticator } from '@aws-amplify/ui-react';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import styled, { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { useTheme } from '../contexts/ThemeContext';
 import { buildApiUrl } from '../config/apiConfig';

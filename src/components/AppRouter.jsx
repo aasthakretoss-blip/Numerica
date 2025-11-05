@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuthenticator } from '@aws-amplify/ui-react';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import LayoutWithSidebar from './LayoutWithSidebar';
 import Dashboard from '../pages/Dashboard';
 import BusquedaEmpleados from '../pages/BusquedaEmpleados';
