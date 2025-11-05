@@ -170,7 +170,7 @@ const PercepcionesHistoricoChart = ({ curp, onPeriodClick }) => {
           page: '1'
         });
         
-        const response = await fetch(`https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/percepciones?${params.toString()}`);
+        const response = await fetch(`https://numerica-1.onrender.com/api/percepciones?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener datos históricos');

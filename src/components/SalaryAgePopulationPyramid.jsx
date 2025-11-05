@@ -397,7 +397,7 @@ export default function SalaryAgePopulationPyramid({
   // Cargar último período disponible (igual que TablaDemografico)
   const loadLatestPeriod = async () => {
     try {
-      const response = await fetch('https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/periodos');
+      const response = await fetch('https://numerica-1.onrender.com/api/payroll/periodos');
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && result.data.length > 0) {
@@ -433,7 +433,7 @@ export default function SalaryAgePopulationPyramid({
       
       console.log('🔍 SalaryAgePopulationPyramid: Contando CURPs únicos con filtros:', filterParams);
 
-      const url = `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/demographic/unique-count?${params}`;
+      const url = `https://numerica-1.onrender.com/api/payroll/demographic/unique-count?${params}`;
       console.log('🔍 DEBUG: Llamando endpoint para conteo CURPs:', url);
       
       const response = await fetch(url);
@@ -466,7 +466,7 @@ export default function SalaryAgePopulationPyramid({
       
       console.log('📊 SalaryAgePopulationPyramid: Aplicando filtros demográficos:', {
         filterParams,
-        finalUrl: `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/demographic`
+        finalUrl: `https://numerica-1.onrender.com/api/payroll/demographic`
       });
 
       // 🚀 CARGAR TODAS LAS PÁGINAS COMO HACE DEMOGRAFICO.JSX
@@ -487,7 +487,7 @@ export default function SalaryAgePopulationPyramid({
         
         console.log(`📄 SalaryAgePopulationPyramid: Cargando página ${currentPage}/${totalPages}...`);
         
-        const response = await fetch(`https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/demographic?${params}`);
+        const response = await fetch(`https://numerica-1.onrender.com/api/payroll/demographic?${params}`);
         
         if (response.ok) {
           const result = await response.json();

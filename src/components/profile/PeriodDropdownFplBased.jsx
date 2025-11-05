@@ -27,7 +27,7 @@ const PeriodDropdownFplBased = ({
     try {
       console.log(`📅 Fetching fecpla periods for RFC: ${rfcValue}`);
       
-      const url = `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfcValue)}`;
+      const url = `https://numerica-1.onrender.com/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfcValue)}`;
       console.log('🌐 Calling URL:', url);
       
       const response = await fetch(url);

@@ -346,7 +346,7 @@ const PerfilDocumentos = ({ rfc }) => {
       console.log('🔍 Buscando documentos para empleado:', nombreData.nombreCompleto);
       
       const response = await fetch(
-        `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/documents/search-by-name?employeeName=${encodeURIComponent(nombreData.nombreCompleto)}`
+        `https://numerica-1.onrender.com/api/documents/search-by-name?employeeName=${encodeURIComponent(nombreData.nombreCompleto)}`
       );
       
       if (!response.ok) {
@@ -383,7 +383,7 @@ const PerfilDocumentos = ({ rfc }) => {
       setSelectedDocument({ ...document, loading: true });
       
       const response = await fetch(
-        `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/documents/download/${document.id}`
+        `https://numerica-1.onrender.com/api/documents/download/${document.id}`
       );
       
       if (!response.ok) {
@@ -419,7 +419,7 @@ const PerfilDocumentos = ({ rfc }) => {
       setDownloadingDocument(documentFile.id);
       
       const response = await fetch(
-        `https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/documents/download/${documentFile.id}`
+        `https://numerica-1.onrender.com/api/documents/download/${documentFile.id}`
       );
       
       if (!response.ok) {
@@ -461,7 +461,7 @@ const PerfilDocumentos = ({ rfc }) => {
       try {
         console.log('🔍 Buscando nombre completo para CURP:', curpFromURL);
         
-        const response = await fetch(`https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod/api/payroll/name-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
+        const response = await fetch(`https://numerica-1.onrender.com/api/payroll/name-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener nombre completo');

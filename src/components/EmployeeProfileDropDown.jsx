@@ -164,7 +164,7 @@ const EmployeeProfileDropDown = ({
         page: '1'
       });
       
-      const url = `${process.env.REACT_APP_API_BASE_URL || 'https://ki6h36kbh4.execute-api.us-east-1.amazonaws.com/prod'}/api/percepciones?${params.toString()}`;
+      const url = `${process.env.REACT_APP_API_BASE_URL || 'https://numerica-1.onrender.com'}/api/percepciones?${params.toString()}`;
       
       const response = await fetch(url);
       
