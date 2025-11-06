@@ -417,8 +417,10 @@ export default function EmployeeTable({
             </tr>
           </TableHeader>
           <TableBody>
-            {displayData.map((employee, index) => (
-              <TableRow key={`employee-${employee.curp}-${employee.periodo}-${index}`}>
+            {displayData.map((employee, index) => {
+              const rowKey = `${(employee.curp || employee.rfc || employee.nombre || 'noid')}-${(employee.periodo || employee.mes || 'noperiod')}`;
+              return (
+              <TableRow key={rowKey}>
                 <TableCell>
                   <EmployeeNameButton
                     onClick={() => handleViewEmployee(employee)}
@@ -463,7 +465,7 @@ export default function EmployeeTable({
                   <StatusBadge $status={employee.estado}>{employee.estado}</StatusBadge>
                 </TableCell>
               </TableRow>
-            ))}
+            );})}
             {displayData.length === 0 && !loading && (
               <tr>
                 <TableCell colSpan={columns.length}>

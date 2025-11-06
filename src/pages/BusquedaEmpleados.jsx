@@ -1623,6 +1623,8 @@ const BusquedaEmpleados = () => {
   // Función unificada para cargar empleados con paginación
   const loadEmployeesWithPagination = async (page = 1, pageSize = 50) => {
 
+    // Always clear current data to avoid showing stale rows and force a re-render
+    setEmployees([]);
     setLoading(true);
     setError(null);
 
