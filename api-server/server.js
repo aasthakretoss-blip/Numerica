@@ -2189,7 +2189,7 @@ app.get('/api/payroll/data', async (req, res) => {
 // Obtener datos de empleados con filtros
 app.get('/api/payroll', async (req, res) => {
   try {
-    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
+    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection, fullData } = req.query;
     
     // Clean and decode search parameter
     let cleanedSearch = search;
@@ -2214,7 +2214,8 @@ app.get('/api/payroll', async (req, res) => {
       puestoCategorizado,
       cveper,
       orderBy,
-      orderDirection
+      orderDirection,
+      fullData: fullData === 'true' || fullData === true
     });
     
     res.json(result);

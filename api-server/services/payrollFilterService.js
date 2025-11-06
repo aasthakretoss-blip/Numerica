@@ -460,16 +460,20 @@ class PayrollFilterService {
     try {
       const client = await nominasPool.connect();
       
-      const pageSize = Math.max(parseInt(options.pageSize) || 100, 1);
+      // Handle fullData flag - if true, skip pagination
+      const fullData = options.fullData === true || options.fullData === 'true';
+      const pageSize = fullData ? 999999 : Math.max(parseInt(options.pageSize) || 100, 1);
       const page = Math.max(parseInt(options.page) || 1, 1);
-      const offset = (page - 1) * pageSize;
+      const offset = fullData ? 0 : (page - 1) * pageSize;
       
       // Query base para obtener datos de la tabla historico_nominas_gsau
       // MAPEO CORRECTO: usando los nombres exactos de las columnas como aparecen en la BD
       let query = `
         SELECT 
+          "RFC" as rfc,
           "CURP" as curp,
           "Nombre completo" as nombre,
+          "Nombre completo" as name,
           "Puesto" as puesto,
           "Compañía" as sucursal,
           TO_CHAR(cveper, 'YYYY-MM-DD') as mes,
@@ -536,8 +540,9 @@ class PayrollFilterService {
         
         if (cleanedSearch && cleanedSearch.length > 0) {
           const searchPattern = `%${cleanedSearch}%`;
-          query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+          // Search in nombre, name (same as nombre), curp, and rfc
+          query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
+          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
           queryParams.push(searchPattern);
           paramIndex++;
         }
@@ -677,8 +682,25 @@ class PayrollFilterService {
       
       query += orderClause || ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
       
+      // Apply LIMIT and OFFSET (always apply, even for fullData - we use large limit)
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
+      
+      // Debug logging (only in development)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔍 SQL Query Debug:', {
+          hasSearch: !!options.search,
+          searchTerm: options.search,
+          orderBy: options.orderBy,
+          orderDirection: options.orderDirection,
+          page,
+          pageSize,
+          offset,
+          fullData,
+          paramCount: queryParams.length,
+          finalParamCount: finalParams.length
+        });
+      }
       
       const [dataResult, countResult] = await Promise.all([
         client.query(query, finalParams),
@@ -692,14 +714,17 @@ class PayrollFilterService {
         puestoCategorizado: nominasService.getPuestoCategorizado(employee.puesto)
       }));
       
+      const total = parseInt(countResult.rows[0].total);
+      
       return {
         success: true,
+        total: total,
         data: enrichedData,
         pagination: {
-          total: parseInt(countResult.rows[0].total),
+          total: total,
           page,
           pageSize,
-          totalPages: Math.ceil(parseInt(countResult.rows[0].total) / pageSize)
+          totalPages: Math.ceil(total / pageSize)
         }
       };
       
