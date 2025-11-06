@@ -1,24 +1,24 @@
-// URL de API - Usar variable de entorno de .env files
-// REACT_APP_API_URL se configura en .env.production o .env.development
-const PRODUCTION_API_URL = process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com';
+// URL de API - FORZAR uso de Render (numerica-2.onrender.com)
+// NO usar AWS endpoints antiguos
+const RENDER_API_URL = 'https://numerica-2.onrender.com';
 
 // CONFIGURACIÓN PARA DESARROLLO Y PRODUCCIÓN
 const API_CONFIG = {
   development: {
-    // Usar api-server local en desarrollo o API desde .env
-    BASE_URL: process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com'),
-    PAYROLL_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/payroll',
-    EMPLOYEES_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/employees',
-    DEMOGRAPHICS_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/demographics',
-    PROFILE_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || 'https://numerica-2.onrender.com')) + '/api/profile',
+    // Usar api-server local en desarrollo, sino Render
+    BASE_URL: process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL,
+    PAYROLL_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/payroll',
+    EMPLOYEES_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/employees',
+    DEMOGRAPHICS_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/demographics',
+    PROFILE_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/profile',
   },
   production: {
-    // SIEMPRE usar REACT_APP_API_URL de .env.production en builds de producción
-    BASE_URL: PRODUCTION_API_URL,
-    PAYROLL_API: PRODUCTION_API_URL + '/api/payroll',
-    EMPLOYEES_API: PRODUCTION_API_URL + '/api/employees',
-    DEMOGRAPHICS_API: PRODUCTION_API_URL + '/api/demographics',
-    PROFILE_API: PRODUCTION_API_URL + '/api/profile',
+    // SIEMPRE usar Render en producción
+    BASE_URL: RENDER_API_URL,
+    PAYROLL_API: RENDER_API_URL + '/api/payroll',
+    EMPLOYEES_API: RENDER_API_URL + '/api/employees',
+    DEMOGRAPHICS_API: RENDER_API_URL + '/api/demographics',
+    PROFILE_API: RENDER_API_URL + '/api/profile',
   }
 };
 

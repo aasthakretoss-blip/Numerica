@@ -4,6 +4,7 @@ import { FaSpinner, FaUsers, FaChevronUp, FaChevronDown, FaFilter } from 'react-
 import { applyPuestoFilters } from '../utils/puestoMapping'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
 import { useChartEvents, createSelection } from '../hooks/useChartEvents'
+import { buildApiUrl } from '../config/apiConfig'
 
 // Styled Components
 const PyramidContainer = styled.div`
@@ -550,7 +551,7 @@ export default function PopulationPyramid({
         
         // CORRECCIÓN: Usar endpoint existente /api/payroll en lugar del demographic inexistente
         console.log('🔄 PopulationPyramid - REDIRIGIENDO a endpoint existente /api/payroll');
-        const response = await fetch(`https://numerica-2.onrender.com/api/payroll?${params}`);
+        const response = await fetch(buildApiUrl(`/api/payroll?${params}`));
         
         if (response.ok) {
           const result = await response.json();

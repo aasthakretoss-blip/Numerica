@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { FaSpinner, FaChartBar, FaChevronUp, FaChevronDown, FaFilter } from 'react-icons/fa'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
 import { useChartEvents, createSelection } from '../hooks/useChartEvents'
+import { buildApiUrl } from '../config/apiConfig'
 
 // Color azul oficial del sitio (alineado con otros componentes)
 const OFFICIAL_BLUE = '#3b82f6'
@@ -397,7 +398,7 @@ export default function SalaryAgePopulationPyramid({
   // Cargar último período disponible (igual que TablaDemografico)
   const loadLatestPeriod = async () => {
     try {
-      const response = await fetch('https://numerica-2.onrender.com/api/payroll/periodos');
+      const response = await fetch(buildApiUrl('/api/payroll/periodos'));
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && result.data.length > 0) {
@@ -433,7 +434,7 @@ export default function SalaryAgePopulationPyramid({
       
       console.log('🔍 SalaryAgePopulationPyramid: Contando CURPs únicos con filtros:', filterParams);
 
-      const url = `https://numerica-2.onrender.com/api/payroll/demographic/unique-count?${params}`;
+      const url = buildApiUrl(`/api/payroll/demographic/unique-count?${params}`);
       console.log('🔍 DEBUG: Llamando endpoint para conteo CURPs:', url);
       
       const response = await fetch(url);
@@ -466,7 +467,7 @@ export default function SalaryAgePopulationPyramid({
       
       console.log('📊 SalaryAgePopulationPyramid: Aplicando filtros demográficos:', {
         filterParams,
-        finalUrl: `https://numerica-2.onrender.com/api/payroll/demographic`
+        finalUrl: buildApiUrl('/api/payroll/demographic')
       });
 
       // 🚀 CARGAR TODAS LAS PÁGINAS COMO HACE DEMOGRAFICO.JSX
@@ -487,7 +488,7 @@ export default function SalaryAgePopulationPyramid({
         
         console.log(`📄 SalaryAgePopulationPyramid: Cargando página ${currentPage}/${totalPages}...`);
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/payroll/demographic?${params}`);
+        const response = await fetch(buildApiUrl(`/api/payroll/demographic?${params}`));
         
         if (response.ok) {
           const result = await response.json();
