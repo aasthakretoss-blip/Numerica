@@ -9,7 +9,7 @@ echo [PROD]  User Pool: us-east-1_1NlXUqafP
 echo.
 
 echo [LOCAL] API: http://localhost:3001 (desarrollo)
-echo [PROD]  API: https://numerica-1.onrender.com
+echo [PROD]  API: https://numerica-2.onrender.com
 echo.
 
 echo ====================================

@@ -12,6 +12,8 @@ import {
   Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { buildApiUrl } from '../../../config/apiConfig';
+import { authenticatedFetch } from '../../../services/authenticatedFetch';
 
 // Registrar los componentes de Chart.js que necesitamos
 ChartJS.register(
@@ -165,7 +167,8 @@ const FondosHistoricoChart = ({ rfc, onPeriodClick }) => {
         console.log('📈 [FondosChart] Cargando datos FPL para RFC:', rfc);
         
         // PASO 1: Obtener todas las fechas FPL calculadas usando el mismo endpoint que el dropdown
-        const fechasResponse = await fetch(`https://numerica-2.onrender.com/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
+        const fechasUrl = buildApiUrl(`/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
+        const fechasResponse = await authenticatedFetch(fechasUrl);
         
         if (!fechasResponse.ok) {
           throw new Error(`Error obteniendo fechas FPL: ${fechasResponse.status}`);
@@ -185,8 +188,14 @@ const FondosHistoricoChart = ({ rfc, onPeriodClick }) => {
           const { value: fechaCalculada, metadata } = fechaFPL;
           
           try {
-            const dataUrl = `https://numerica-2.onrender.com/api/fpl/data-from-rfc?rfc=${encodeURIComponent(rfc)}&originalFecpla=${encodeURIComponent(metadata.originalFecpla)}&originalAntiguedad=${encodeURIComponent(metadata.originalAntiguedad)}`;
-            const dataResponse = await fetch(dataUrl);
+            // Use metadata for reverse lookup if available, otherwise use calculated date
+            let dataUrl;
+            if (metadata && metadata.originalFecpla && metadata.originalAntiguedad) {
+              dataUrl = buildApiUrl(`/api/fpl/data-from-rfc?rfc=${encodeURIComponent(rfc)}&originalFecpla=${encodeURIComponent(metadata.originalFecpla)}&originalAntiguedad=${encodeURIComponent(metadata.originalAntiguedad)}`);
+            } else {
+              dataUrl = buildApiUrl(`/api/fpl/data-from-rfc?rfc=${encodeURIComponent(rfc)}&fechaFPL=${encodeURIComponent(fechaCalculada)}`);
+            }
+            const dataResponse = await authenticatedFetch(dataUrl);
             
             if (dataResponse.ok) {
               const dataResult = await dataResponse.json();

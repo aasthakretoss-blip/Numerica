@@ -53,16 +53,22 @@ const PeriodDropdownCurpBased = ({
         const uniquePeriods = new Map();
         
         data.data.forEach(record => {
-          // Buscar el campo de período en diferentes propiedades posibles
-          let periodValue = record.cveper || record.mes;
+          // Buscar el campo de período - usar cveper (formato YYYY-MM-DD)
+          let periodValue = record.cveper || record.periodo || record.mes;
           
           if (periodValue) {
             let cleanValue = periodValue;
             
-            // Limpiar timestamp para mostrar solo año-mes-día
+            // Convertir a formato YYYY-MM-DD si es timestamp o otro formato
             try {
               if (cleanValue.includes && cleanValue.includes('T')) {
                 // Si tiene timestamp, extraer solo la fecha
+                const date = new Date(cleanValue);
+                if (!isNaN(date.getTime())) {
+                  cleanValue = date.toISOString().split('T')[0];
+                }
+              } else if (typeof cleanValue === 'string' && !cleanValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // Si no está en formato YYYY-MM-DD, intentar convertir
                 const date = new Date(cleanValue);
                 if (!isNaN(date.getTime())) {
                   cleanValue = date.toISOString().split('T')[0];
@@ -72,16 +78,19 @@ const PeriodDropdownCurpBased = ({
               console.warn('⚠️ Error procesando fecha:', cleanValue, error);
             }
             
-            // Agregar al mapa de períodos únicos
-            if (cleanValue && !uniquePeriods.has(cleanValue)) {
-              uniquePeriods.set(cleanValue, {
-                value: cleanValue,
-                count: 1
-              });
-            } else if (cleanValue && uniquePeriods.has(cleanValue)) {
-              // Incrementar contador si ya existe
-              const existing = uniquePeriods.get(cleanValue);
-              existing.count += 1;
+            // Solo agregar si está en formato YYYY-MM-DD válido
+            if (cleanValue && cleanValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // Agregar al mapa de períodos únicos
+              if (!uniquePeriods.has(cleanValue)) {
+                uniquePeriods.set(cleanValue, {
+                  value: cleanValue,
+                  count: 1
+                });
+              } else if (uniquePeriods.has(cleanValue)) {
+                // Incrementar contador si ya existe
+                const existing = uniquePeriods.get(cleanValue);
+                existing.count += 1;
+              }
             }
           }
         });
@@ -112,11 +121,20 @@ const PeriodDropdownCurpBased = ({
           // Normalizar el período forzado al mismo formato que los períodos en la lista (YYYY-MM-DD)
           let normalizedForcedPeriod = forcePeriodSelection;
           try {
-            if (forcePeriodSelection.includes('T')) {
+            if (forcePeriodSelection.includes && forcePeriodSelection.includes('T')) {
               const date = new Date(forcePeriodSelection);
               if (!isNaN(date.getTime())) {
                 normalizedForcedPeriod = date.toISOString().split('T')[0];
                 console.log('🔧 [DropdownCURP] Período forzado normalizado de', forcePeriodSelection, 'a', normalizedForcedPeriod);
+              }
+            } else if (typeof forcePeriodSelection === 'string' && forcePeriodSelection.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // Already in YYYY-MM-DD format
+              normalizedForcedPeriod = forcePeriodSelection;
+            } else {
+              // Try to convert if it's a month name or other format
+              const date = new Date(forcePeriodSelection);
+              if (!isNaN(date.getTime())) {
+                normalizedForcedPeriod = date.toISOString().split('T')[0];
               }
             }
           } catch (error) {

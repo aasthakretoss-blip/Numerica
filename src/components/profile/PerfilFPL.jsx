@@ -380,31 +380,17 @@ const PerfilFPL = ({ rfc }) => {
             <FieldLabel>RFC del Empleado</FieldLabel>
             <TextBox
               type="text"
-              value={loading ? 'Obteniendo RFC...' : 
-                     rfcData?.rfc ? formatearRFCConIndicador(rfcData.rfc) : 'RFC no encontrado'}
+              value={loading ? 'Obteniendo CURP...' : 
+                     curpFromURL ? curpFromURL : 'CURP no encontrado'}
               readOnly
-              placeholder="RFC del empleado"
-              title={rfcData?.generado ? 
-                     'RFC generado desde CURP (temporal hasta corrección de backend)' : 
-                     'RFC obtenido desde la base de datos'}
-              className={rfcProcesado ? (rfcProcesado.valido ? 'valid' : 'invalid') : ''}
+              placeholder="CURP del empleado"
+              title="CURP del empleado obtenido desde la URL"
             />
-            {rfcProcesado && (
+            {rfcData?.rfc && (
               <InfoRow>
-                <InfoBadge type={rfcProcesado.valido ? 'success' : 'error'}>
-                  {rfcProcesado.valido ? '✓' : '✗'} 
-                  {rfcProcesado.valido ? `RFC Válido (${rfcProcesado.tipo})` : 'RFC Inválido'}
+                <InfoBadge type="info">
+                  RFC: {rfcData.rfc}
                 </InfoBadge>
-                {rfcData?.generado && (
-                  <InfoBadge type="warning">
-                    🔧 Generado desde CURP
-                  </InfoBadge>
-                )}
-                {rfcProcesado.valido && rfcProcesado.edad && (
-                  <InfoBadge type="info">
-                    {rfcProcesado.edad} años
-                  </InfoBadge>
-                )}
               </InfoRow>
             )}
             {fechaFPLCalculada && (

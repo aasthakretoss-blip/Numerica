@@ -246,7 +246,7 @@ export default function EmployeeTable({
           }
         }
       } catch (error) {
-        console.error("Error loading stats:", error);
+        // Silently fail
       }
     };
     loadStats();

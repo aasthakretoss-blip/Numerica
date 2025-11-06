@@ -12,6 +12,8 @@ import {
   Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { buildApiUrl } from '../../../config/apiConfig';
+import { authenticatedFetch } from '../../../services/authenticatedFetch';
 
 // Registrar los componentes de Chart.js que necesitamos
 ChartJS.register(
@@ -170,7 +172,7 @@ const PercepcionesHistoricoChart = ({ curp, onPeriodClick }) => {
           page: '1'
         });
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`http://localhost:3001/api/percepciones?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener datos históricos');

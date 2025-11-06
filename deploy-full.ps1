@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 
 # URLs actuales funcionando
 $CLOUDFRONT_URL = "https://d3s6xfijfd78h6.cloudfront.net/busqueda-empleados"
-$API_URL_CURRENT = "https://numerica-2.onrender.com"
+$API_URL_CURRENT = "http://localhost:3001"
 $CLOUDFRONT_DISTRIBUTION_ID = "E3JFSGITJTR6NS"
 $CLOUDFRONT_BUCKET = "payroll-employees-845465762708-us-east-1"
 

@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DropDownMenu from '../DropDownMenu';
+import { buildApiUrl } from '../../config/apiConfig';
+import { authenticatedFetch } from '../../services/authenticatedFetch';
 
 const PeriodDropdownFplBased = ({ 
   rfc, 
+  curp,
   onPeriodChange, 
   selectedPeriod = [], 
   disabled = false, 
@@ -14,8 +17,27 @@ const PeriodDropdownFplBased = ({
   const hasAutoSelectedRef = useRef(false);
   const currentRfcRef = useRef(null);
 
-  const fetchPeriods = useCallback(async (rfcValue, shouldAutoSelect = false) => {
-    if (!rfcValue) {
+  const fetchPeriods = useCallback(async (rfcValue, curpValue, shouldAutoSelect = false) => {
+    // If no RFC but we have CURP, try to get RFC first
+    let actualRfc = rfcValue;
+    if (!actualRfc && curpValue) {
+      console.log('🔍 No RFC disponible, obteniendo RFC desde CURP:', curpValue);
+      try {
+        const rfcUrl = buildApiUrl(`/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpValue)}`);
+        const rfcResponse = await authenticatedFetch(rfcUrl);
+        if (rfcResponse.ok) {
+          const rfcResult = await rfcResponse.json();
+          if (rfcResult.success && rfcResult.data && rfcResult.data.rfc) {
+            actualRfc = rfcResult.data.rfc;
+            console.log('✅ RFC obtenido desde CURP:', actualRfc);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error obteniendo RFC desde CURP:', error);
+      }
+    }
+    
+    if (!actualRfc) {
       console.log('🔍 No RFC provided, clearing periods');
       setPeriods([]);
       return;
@@ -25,12 +47,12 @@ const PeriodDropdownFplBased = ({
     setError(null);
     
     try {
-      console.log(`📅 Fetching fecpla periods for RFC: ${rfcValue}`);
+      console.log(`📅 Fetching fecpla periods for RFC: ${actualRfc}`);
       
-      const url = `https://numerica-2.onrender.com/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfcValue)}`;
+      const url = `${buildApiUrl('/api/payroll/fecpla-from-rfc')}?rfc=${encodeURIComponent(actualRfc)}`;
       console.log('🌐 Calling URL:', url);
       
-      const response = await fetch(url);
+      const response = await authenticatedFetch(url);
       console.log('🔄 Response status:', response.status);
       
       if (!response.ok) {
@@ -46,17 +68,23 @@ const PeriodDropdownFplBased = ({
           let sortableDate = null;
           let displayLabel = period.label || cleanValue;
           
-          // Procesar fecha para ordenamiento y display
+          // Procesar fecha para ordenamiento y display - usar formato YYYY-MM-DD como PeriodDropdownCurpBased
           try {
             if (cleanValue) {
+              // Normalize to YYYY-MM-DD format
+              if (cleanValue.includes && cleanValue.includes('T')) {
+                cleanValue = cleanValue.split('T')[0];
+              } else if (!cleanValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const date = new Date(cleanValue);
+                if (!isNaN(date.getTime())) {
+                  cleanValue = date.toISOString().split('T')[0];
+                }
+              }
+              
               const date = new Date(cleanValue);
               if (!isNaN(date.getTime())) {
-                // Para el ordenamiento, usar el objeto Date
                 sortableDate = date;
-                // Para display, usar formato más limpio si no está ya formateado
-                if (!displayLabel || displayLabel === cleanValue) {
-                  displayLabel = date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-                }
+                displayLabel = cleanValue; // Use YYYY-MM-DD format directly
               }
             }
           } catch (error) {
@@ -85,13 +113,13 @@ const PeriodDropdownFplBased = ({
         
         // Seleccionar automáticamente el más reciente SOLO si se indica
         if (formattedPeriods.length > 0 && onPeriodChange && shouldAutoSelect) {
-          const mostRecent = formattedPeriods[0].value;
+          const mostRecent = [formattedPeriods[0].value];
           console.log('🎆 Auto-selecting most recent FPL period:', mostRecent);
           onPeriodChange(mostRecent);
           hasAutoSelectedRef.current = true;
         }
         
-        console.log(`✅ ${formattedPeriods.length} períodos FPL cargados y ordenados para RFC ${rfcValue}`);
+        console.log(`✅ ${formattedPeriods.length} períodos FPL cargados y ordenados para RFC ${actualRfc}`);
       } else {
         console.warn('⚠️ Unexpected API response structure:', data);
         setPeriods([]);
@@ -106,10 +134,10 @@ const PeriodDropdownFplBased = ({
     }
   }, [onPeriodChange]);
 
-  // Cargar períodos cuando cambia el RFC
+  // Cargar períodos cuando cambia el RFC o CURP
   useEffect(() => {
-    console.log('🔄 RFC changed to:', rfc);
-    if (rfc) {
+    console.log('🔄 RFC changed to:', rfc, 'CURP:', curp);
+    if (rfc || curp) {
       // Si es un nuevo RFC, resetear el flag de auto-selección
       if (currentRfcRef.current !== rfc) {
         console.log('🆕 New RFC detected, resetting auto-selection flag');
@@ -119,22 +147,22 @@ const PeriodDropdownFplBased = ({
       
       // Determinar si debe auto-seleccionar (solo si no lo ha hecho antes para este RFC)
       const shouldAutoSelect = !hasAutoSelectedRef.current;
-      fetchPeriods(rfc, shouldAutoSelect);
+      fetchPeriods(rfc, curp, shouldAutoSelect);
     } else {
       setPeriods([]);
       hasAutoSelectedRef.current = false;
       currentRfcRef.current = null;
     }
-  }, [rfc, fetchPeriods]);
+  }, [rfc, curp, fetchPeriods]);
 
   const handlePeriodSelection = (selectedValues) => {
     console.log('🎯 FPL handlePeriodSelection called with:', selectedValues);
     const selectedPeriod = selectedValues && selectedValues.length > 0 ? selectedValues[0] : null;
     
-    console.log(`📅 Período FPL seleccionado para RFC ${rfc}:`, selectedPeriod);
+    console.log(`📅 Período FPL seleccionado:`, selectedPeriod);
     
     if (onPeriodChange) {
-      onPeriodChange(selectedPeriod);
+      onPeriodChange(selectedValues);
     }
   };
 
@@ -142,12 +170,12 @@ const PeriodDropdownFplBased = ({
   const getDropdownLabel = () => {
     if (loading) return "Cargando fechas FPL...";
     if (error) return "Error al cargar";
-    if (!rfc) return "Selecciona RFC primero";
+    if (!rfc && !curp) return "Selecciona RFC/CURP primero";
     if (periods.length === 0 && !loading) return "Sin fechas FPL disponibles";
-    return "Fecha FPL:";
+    return "Fecha FPL Calculada:";
   };
 
-  console.log('🔧 FPL Component state:', { rfc, periods: periods.length, loading, error, selectedPeriod });
+  console.log('🔧 FPL Component state:', { rfc, curp, periods: periods.length, loading, error, selectedPeriod });
 
   return (
     <div className={className}>
@@ -159,7 +187,7 @@ const PeriodDropdownFplBased = ({
         placeholder="Seleccionar fecha FPL..."
         searchPlaceholder="Buscar fecha..."
         showCount={true}
-        disabled={disabled || loading || !rfc || periods.length === 0 || !!error}
+        disabled={disabled || loading || (!rfc && !curp) || periods.length === 0 || !!error}
         preserveOrder={true}
         singleSelect={true}
         className="period-dropdown-fpl-based"

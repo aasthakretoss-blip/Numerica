@@ -5,6 +5,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import MenuPerfil from '../MenuPerfil';
 import PercepcionesHistoricoChart from './charts/PercepcionesHistoricoChart';
 import FondosHistoricoChart from './charts/FondosHistoricoChart';
+import { authenticatedFetch } from '../../services/authenticatedFetch';
+import { buildApiUrl } from '../../config/apiConfig';
 
 const PerfilContainer = styled.div`
   display: flex;
@@ -195,7 +197,7 @@ const PerfilHistorico = ({ rfc }) => {
           page: '1'
         });
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`http://localhost:3001/api/percepciones?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener datos de nómina');
@@ -234,7 +236,7 @@ const PerfilHistorico = ({ rfc }) => {
       try {
         console.log('🔍 [Histórico] Buscando RFC para CURP:', curpFromURL);
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
+        const response = await authenticatedFetch(buildApiUrl(`/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpFromURL)}`));
         
         if (!response.ok) {
           throw new Error('Error al obtener RFC');

@@ -749,9 +749,9 @@ app.get('/api/payroll/rfc-from-curp', async (req, res) => {
       
       if (result.rows.length === 0) {
         console.log(`⚠️ No se encontró RFC para CURP: ${curp}`);
-        return res.json({
-          success: true,
-          data: null,
+        return res.status(404).json({
+          success: false,
+          error: 'Employee not found',
           curp: curp,
           message: `No se encontró RFC para el CURP: ${curp}`
         });
@@ -1848,11 +1848,13 @@ app.get('/api/debug/employee-fields', async (req, res) => {
 // ============================================================================
 
 // Obtener datos completos de nómina de un empleado específico por CURP y CVEPER
+// IMPORTANTE: Esta ruta debe estar ANTES de /api/payroll para evitar conflictos
 app.get('/api/payroll/employee-data', async (req, res) => {
   try {
     const { curp, cveper } = req.query;
     
     console.log('💼 /api/payroll/employee-data: Parámetros recibidos:', { curp, cveper });
+    console.log('💼 /api/payroll/employee-data: URL completa:', req.url);
     
     if (!curp) {
       return res.status(400).json({
@@ -1878,25 +1880,32 @@ app.get('/api/payroll/employee-data', async (req, res) => {
       // Aplicar filtro de período si se proporciona
       if (cveper) {
         if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          query += ` AND DATE(cveper) = $${paramIndex}`;
+          // Convert YYYY-MM-DD to date and compare with cveper (which is a timestamp)
+          query += ` AND DATE(cveper) = $${paramIndex}::date`;
           params.push(cveper);
         } else if (cveper.match(/^\d{4}-\d{2}$/)) {
-          query += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
+          query += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}::date`;
           params.push(`${cveper}-01`);
         } else {
-          query += ` AND cveper = $${paramIndex}`;
+          // Handle timestamp format (2025-06-30T00:00:00.000Z)
+          query += ` AND cveper = $${paramIndex}::timestamp`;
           params.push(cveper);
         }
         paramIndex++;
       }
       
-      // Ordenar por período más reciente primero
-      query += ` ORDER BY cveper DESC`;
+      // Ordenar por período más reciente primero y limitar a 1 resultado
+      query += ` ORDER BY cveper DESC LIMIT 1`;
       
       console.log('🔍 Query para datos de empleado:', query);
       console.log('📋 Parámetros:', params);
       
       const result = await client.query(query, params);
+      
+      console.log('📊 Resultado de la query:', {
+        rowsFound: result.rows.length,
+        hasData: result.rows.length > 0
+      });
       
       if (result.rows.length === 0) {
         return res.json({
@@ -2191,11 +2200,6 @@ app.get('/api/payroll', async (req, res) => {
   try {
     const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection, fullData } = req.query;
     
-    // Log incoming request parameters
-    console.log('🌐 ========== /api/payroll REQUEST ==========');
-    console.log('📥 Raw query params:', req.query);
-    console.log('🔍 Raw search value:', search, '(type:', typeof search, ')');
-    
     // Clean and decode search parameter
     let cleanedSearch = null;
     if (search && String(search).trim().length > 0) {
@@ -2225,7 +2229,12 @@ app.get('/api/payroll', async (req, res) => {
     };
     
     // Only add optional parameters if they have values
-    if (cleanedSearch) serviceOptions.search = cleanedSearch;
+    // Handle curp parameter (map to search) - prioritize curp if both are provided
+    if (req.query.curp) {
+      serviceOptions.search = req.query.curp;
+    } else if (cleanedSearch) {
+      serviceOptions.search = cleanedSearch;
+    }
     if (puesto) serviceOptions.puesto = puesto;
     if (compania) serviceOptions.compania = compania;
     if (sucursal) serviceOptions.sucursal = sucursal;
@@ -2233,23 +2242,26 @@ app.get('/api/payroll', async (req, res) => {
     if (puestoCategorizado) serviceOptions.puestoCategorizado = puestoCategorizado;
     if (cveper) serviceOptions.cveper = cveper;
     
-    console.log('📤 Service options being passed:', serviceOptions);
-    console.log('🌐 =========================================');
+    // 🔍 FILTERING/SORTING LOG: Log only when filtering or sorting is active
+    if (cleanedSearch || orderBy || puesto || sucursal || status || puestoCategorizado || cveper) {
+      console.log('🔍 FILTER/SORT:', {
+        search: cleanedSearch || null,
+        orderBy: orderBy || null,
+        orderDirection: orderDirection || null,
+        filters: { puesto, sucursal, status, puestoCategorizado, cveper: cveper ? 'set' : null }
+      });
+    }
     
     const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
     
-    console.log('✅ Response prepared:', {
-      success: result.success,
-      total: result.total,
-      dataLength: result.data?.length || 0
-    });
-    
     res.json(result);
   } catch (error) {
-    console.error('Error obteniendo datos de nómina:', error);
+    console.error('❌ Error obteniendo datos de nómina:', error);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -2314,6 +2326,68 @@ app.post('/api/nominas/employees', verifyToken, async (req, res) => {
 // ============================================================================
 // RUTAS DE FONDOS - Requiere autenticación + permiso can_view_funds
 // ============================================================================
+
+// Obtener datos de fondos por RFC (endpoint simple para frontend) - MUST BE BEFORE /api/fondos/tables
+app.get('/api/fondos', async (req, res) => {
+  try {
+    const { rfc, pageSize = 1, page = 1 } = req.query;
+    
+    if (!rfc) {
+      return res.status(400).json({
+        success: false,
+        error: 'RFC es requerido'
+      });
+    }
+    
+    const { fondosPool } = require('./config/database');
+    const client = await fondosPool.connect();
+    
+    try {
+      const limit = parseInt(pageSize) || 1;
+      const offset = (parseInt(page) - 1) * limit;
+      
+      const query = `
+        SELECT *
+        FROM historico_fondos_gsau
+        WHERE numrfc = $1
+        ORDER BY fecpla DESC
+        LIMIT $2 OFFSET $3
+      `;
+      
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM historico_fondos_gsau
+        WHERE numrfc = $1
+      `;
+      
+      const [result, countResult] = await Promise.all([
+        client.query(query, [rfc, limit, offset]),
+        client.query(countQuery, [rfc])
+      ]);
+      
+      const total = parseInt(countResult.rows[0].total);
+      
+      res.json({
+        success: true,
+        data: result.rows,
+        pagination: {
+          page: parseInt(page),
+          pageSize: limit,
+          total: total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo datos de fondos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Middleware para verificar permisos de fondos
 const requireFundsPermission = requirePermission('view_funds');

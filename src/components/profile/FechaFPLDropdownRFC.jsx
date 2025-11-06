@@ -109,6 +109,7 @@ const LoadingText = styled.div`
 
 const FechaFPLDropdownRFC = ({ 
   rfc, 
+  curp,
   selectedFecha, 
   onFechaChange, 
   placeholder = "Seleccionar fecha FPL...",
@@ -119,9 +120,28 @@ const FechaFPLDropdownRFC = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Cargar fechas FPL cuando cambie el RFC
+  // Cargar fechas FPL cuando cambie el RFC o CURP
   useEffect(() => {
     const loadFechasFPL = async () => {
+      // If no RFC but we have CURP, try to get RFC first
+      if (!rfc && curp) {
+        console.log('🔍 No RFC disponible, obteniendo RFC desde CURP:', curp);
+        try {
+          const rfcUrl = buildApiUrl(`/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curp)}`);
+          const rfcResponse = await authenticatedFetch(rfcUrl);
+          if (rfcResponse.ok) {
+            const rfcResult = await rfcResponse.json();
+            if (rfcResult.success && rfcResult.data && rfcResult.data.rfc) {
+              // RFC obtained, will trigger this effect again with RFC
+              console.log('✅ RFC obtenido desde CURP:', rfcResult.data.rfc);
+              return; // Exit early, will retry with RFC
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error obteniendo RFC desde CURP:', error);
+        }
+      }
+      
       if (!rfc) {
         setFechasFPL([]);
         return;
@@ -131,10 +151,12 @@ const FechaFPLDropdownRFC = ({
       setError(null);
       
       try {
-        console.log('🔍 Cargando fechas FPL para RFC:', rfc);
+        console.log('🔍 Cargando fechas FPL calculadas para RFC:', rfc);
         
-        // Buscar datos FPL usando el endpoint de payroll con filtro RFC
-        const apiUrl = buildApiUrl(`/api/payroll?rfc=${encodeURIComponent(rfc)}`);
+        // Usar el endpoint dedicado que calcula fechas FPL desde historico_fondos_gsau
+        // usando "Antigüedad en fondo" (seniority factor)
+        // Formula: fecpla + (antiguedad_anos * 365.25 días)
+        const apiUrl = buildApiUrl(`/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
         console.log('📡 URL FPL API:', apiUrl);
         
         const response = await authenticatedFetch(apiUrl);
@@ -146,61 +168,73 @@ const FechaFPLDropdownRFC = ({
         const result = await response.json();
         console.log('🔍 Respuesta API FPL:', result);
         
-        if (result.success && result.data && result.data.length > 0) {
-          console.log(`✅ ${result.data.length} registros encontrados para RFC ${rfc}`);
+        if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+          console.log(`✅ ${result.data.length} fechas FPL calculadas para RFC ${rfc}`);
           
-          // Procesar datos de payroll para extraer fechas únicas
-          const fechasUnicas = new Map();
-          
-          result.data.forEach(record => {
-            // Usar cveper como fecha FPL (puede ser timestamp o fecha)
-            let fecha = record.cveper || record.mes;
-            if (fecha) {
-              // Normalizar fecha a YYYY-MM-DD si es timestamp
-              if (typeof fecha === 'string' && fecha.includes('T')) {
-                fecha = fecha.split('T')[0];
-              }
-              
-              // Crear label legible para la fecha en formato dd-mm-yyyy
-              const fechaObj = new Date(fecha + 'T12:00:00');
-              const day = String(fechaObj.getDate()).padStart(2, '0');
-              const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
-              const year = fechaObj.getFullYear();
-              const label = `${day}-${month}-${year}`;
-              
-              // Contar registros por fecha
-              if (fechasUnicas.has(fecha)) {
-                const existing = fechasUnicas.get(fecha);
-                existing.count += 1;
-                fechasUnicas.set(fecha, existing);
-              } else {
-                fechasUnicas.set(fecha, {
-                  value: fecha,
-                  label: label,
-                  count: 1,
-                  metadata: {
-                    rfc: rfc,
-                    originalRecord: record
+          // El endpoint ya devuelve fechas calculadas en formato correcto
+          // Formato: { value: "2025-06-30", label: "30-06-2025", count: 1, metadata: {...} }
+          const fechasArray = result.data.map(item => {
+            // Asegurar que tenemos value y label
+            const fechaValue = item.value || item.fecha_fpl_calculada || item.fechaCalculada;
+            const fechaLabel = item.label || item.fechaFormateada;
+            
+            // Si no hay label, usar el value directamente (ya está en formato YYYY-MM-DD)
+            // Match the format used in PeriodDropdownCurpBased - just show YYYY-MM-DD
+            let label = fechaLabel;
+            if (!label && fechaValue) {
+              // Normalize to YYYY-MM-DD format if needed
+              try {
+                if (fechaValue.includes && fechaValue.includes('T')) {
+                  // If it's a timestamp, extract just the date part
+                  label = fechaValue.split('T')[0];
+                } else if (fechaValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                  // Already in YYYY-MM-DD format
+                  label = fechaValue;
+                } else {
+                  // Try to convert to YYYY-MM-DD
+                  const fechaObj = new Date(fechaValue + 'T12:00:00');
+                  if (!isNaN(fechaObj.getTime())) {
+                    label = fechaObj.toISOString().split('T')[0];
+                  } else {
+                    label = fechaValue;
                   }
-                });
+                }
+              } catch (e) {
+                label = fechaValue;
               }
             }
+            
+            // Use metadata from backend if available, otherwise create minimal metadata
+            const metadata = item.metadata || {
+              rfc: rfc,
+              fecpla: item.fecpla,
+              antiguedad: item.antiguedad_anos || item.antiguedad,
+              originalFecpla: item.metadata?.originalFecpla || item.fecpla,
+              originalAntiguedad: item.metadata?.originalAntiguedad || (item.antiguedad_anos || item.antiguedad)
+            };
+            
+            return {
+              value: fechaValue,
+              label: label || fechaValue,
+              count: item.count || 1,
+              metadata: metadata
+            };
+          }).sort((a, b) => {
+            // Ordenar por fecha (más reciente primero)
+            return new Date(b.value) - new Date(a.value);
           });
-          
-          // Convertir Map a array y ordenar por fecha (más reciente primero)
-          const fechasArray = Array.from(fechasUnicas.values())
-            .sort((a, b) => new Date(b.value) - new Date(a.value));
           
           console.log(`📅 ${fechasArray.length} fechas FPL únicas procesadas:`, fechasArray);
           setFechasFPL(fechasArray);
           
           // Si no hay fecha seleccionada, seleccionar la primera (más reciente)
+          // Pass the full object with metadata
           if (!selectedFecha && fechasArray.length > 0 && onFechaChange) {
-            onFechaChange(fechasArray[0].value);
+            onFechaChange(fechasArray[0]);
           }
         } else {
           setFechasFPL([]);
-          console.warn('No se encontraron registros de payroll para RFC:', rfc);
+          console.warn('No se encontraron fechas FPL calculadas para RFC:', rfc);
         }
       } catch (err) {
         console.error('Error loading fechas FPL:', err);
@@ -212,36 +246,46 @@ const FechaFPLDropdownRFC = ({
     };
 
     loadFechasFPL();
-  }, [rfc, selectedFecha, onFechaChange]);
+  }, [rfc, curp]);
 
   const handleItemClick = (fecha) => {
     if (onFechaChange) {
-      onFechaChange(fecha.value);
+      // Pass the full fecha object with metadata for reverse lookup
+      onFechaChange(fecha);
     }
     setIsOpen(false);
   };
 
-  const toggleDropdown = () => {
-    if (!disabled && !loading) {
+  const toggleDropdown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled) {
       setIsOpen(!isOpen);
     }
   };
 
   // Encontrar la fecha seleccionada para mostrar en el botón
-  const selectedFechaValue = selectedFecha;
-  const selectedFechaObj = fechasFPL.find(f => f.value === selectedFechaValue);
+  // selectedFecha can be null, a string (value), or an object with metadata
+  const selectedFechaValue = selectedFecha && typeof selectedFecha === 'object' && selectedFecha.value 
+    ? selectedFecha.value 
+    : (selectedFecha || null);
+  const selectedFechaObj = selectedFechaValue ? fechasFPL.find(f => f.value === selectedFechaValue) : null;
   const displayText = selectedFechaObj ? selectedFechaObj.label : placeholder;
 
   const showLoading = loading && fechasFPL.length === 0;
   const showError = error && !loading;
-  const showEmpty = !loading && !error && fechasFPL.length === 0 && rfc;
+  const showEmpty = !loading && !error && fechasFPL.length === 0 && (rfc || curp);
 
   return (
     <DropdownContainer>
       <DropdownButton
         onClick={toggleDropdown}
-        disabled={disabled || loading}
+        disabled={disabled}
         type="button"
+        style={{ 
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.7 : 1
+        }}
       >
         <span>
           {showLoading ? 'Cargando fechas FPL...' : 
@@ -265,7 +309,7 @@ const FechaFPLDropdownRFC = ({
               <DropdownItem
                 key={fecha.value || index}
                 onClick={() => handleItemClick(fecha)}
-                className={fecha.value === selectedFechaValue ? 'selected' : ''}
+                className={(selectedFechaValue && fecha.value === selectedFechaValue) ? 'selected' : ''}
               >
                 <span>{fecha.label}</span>
                 {fecha.count && <CountBadge>{fecha.count}</CountBadge>}

@@ -23,35 +23,54 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
     try {
       console.log('🏦 Cargando datos FPL para RFC:', rfcValue, 'Fecha FPL:', fechaFPLValue);
       
-      // Build params for fondos API
-      const params = new URLSearchParams({
-        rfc: rfcValue
-      });
+      let apiUrl;
       
-      // Handle date filtering based on selected FPL date
+      // If fechaFPLValue is provided, use /api/fpl/data-from-rfc with metadata for reverse lookup
       if (fechaFPLValue) {
-        let fechaValue;
+        let fechaValue = Array.isArray(fechaFPLValue) ? fechaFPLValue[0] : fechaFPLValue;
         
-        // Extract date value from object or use directly
-        if (typeof fechaFPLValue === 'object' && fechaFPLValue.fechaCalculada) {
-          fechaValue = fechaFPLValue.fechaCalculada;
+        // Normalize date format if needed
+        if (typeof fechaValue === 'string' && fechaValue.includes('T')) {
+          fechaValue = fechaValue.split('T')[0];
+        }
+        
+        // The fechaFPLValue might be just a string (date) or an object with metadata
+        // Check if we have metadata for reverse lookup
+        let metadata = null;
+        if (typeof fechaFPLValue === 'object' && !Array.isArray(fechaFPLValue) && fechaFPLValue.metadata) {
+          metadata = fechaFPLValue.metadata;
+        }
+        
+        const params = new URLSearchParams({
+          rfc: rfcValue
+        });
+        
+        // Use metadata for precise reverse lookup if available
+        if (metadata && metadata.originalFecpla && metadata.originalAntiguedad) {
+          params.append('originalFecpla', metadata.originalFecpla);
+          params.append('originalAntiguedad', metadata.originalAntiguedad);
+          console.log('📅 Usando endpoint FPL con metadata para búsqueda inversa:', {
+            originalFecpla: metadata.originalFecpla,
+            originalAntiguedad: metadata.originalAntiguedad
+          });
         } else {
-          fechaValue = Array.isArray(fechaFPLValue) ? fechaFPLValue[0] : fechaFPLValue;
+          // Fallback to calculated date
+          params.append('fechaFPL', fechaValue);
+          console.log('📅 Usando endpoint FPL con fecha calculada:', fechaValue);
         }
         
-        // Add date filter to search for specific period
-        if (fechaValue) {
-          // Normalize date format if needed
-          if (typeof fechaValue === 'string' && fechaValue.includes('T')) {
-            fechaValue = fechaValue.split('T')[0];
-          }
-          params.append('cveper', fechaValue);
-          console.log('📅 Filtrando por fecha FPL:', fechaValue);
-        }
+        apiUrl = buildApiUrl(`/api/fpl/data-from-rfc?${params.toString()}`);
+      } else {
+        // If no date selected, use /api/fondos to get most recent
+        const params = new URLSearchParams({
+          rfc: rfcValue,
+          pageSize: '1',
+          page: '1'
+        });
+        apiUrl = buildApiUrl(`/api/fondos?${params.toString()}`);
+        console.log('📅 Usando endpoint fondos para datos más recientes');
       }
       
-      // Usar endpoint de fondos estándar
-      const apiUrl = buildApiUrl(`/api/fondos?${params.toString()}`);
       console.log('📡 API URL para datos FPL:', apiUrl);
       
       const response = await authenticatedFetch(apiUrl);
@@ -63,29 +82,29 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
       const result = await response.json();
       console.log('🔍 DEBUG: Respuesta completa del servidor:', result);
       
-      // Extraer datos del endpoint de debug
-      let actualData;
-      if (result.originalResult && result.originalResult.data) {
-        actualData = result.originalResult.data;
-      } else if (result.data) {
-        actualData = result.data;
+      // Extract data based on endpoint used
+      let empleadoFPLData;
+      if (result.data) {
+        // /api/fpl/data-from-rfc returns single object
+        if (Array.isArray(result.data)) {
+          empleadoFPLData = result.data[0];
+        } else {
+          empleadoFPLData = result.data;
+        }
       } else {
-        actualData = null;
+        empleadoFPLData = null;
       }
       
-      if (!result.success || !actualData || actualData.length === 0) {
+      if (!result.success || !empleadoFPLData) {
         console.warn('No se encontraron datos FPL para el RFC:', rfcValue);
-        console.warn('Respuesta del debug:', result);
+        console.warn('Respuesta del servidor:', result);
         setFplData(null);
-        setError(`No se encontraron datos FPL: ${result.error || result.debug || 'Sin datos'}`);
+        setError(`No se encontraron datos FPL: ${result.error || result.message || 'Sin datos'}`);
         return;
       }
-      
-      // Use the first record from fondos data (they should all be for the same employee)
-      const empleadoFPLData = actualData[0];
       console.log('🔍 DEBUG: Datos extraídos:', empleadoFPLData);
       
-      console.log(`🏦 Datos FPL (fondos) encontrados: ${actualData.length} registros`);
+      console.log(`🏦 Datos FPL encontrados para RFC: ${rfcValue}`);
       
       // LOGGING DETALLADO PARA DEBUGGING - Mostrar TODAS las propiedades del empleado FPL
       console.log('🔍 EMPLEADO FPL COMPLETO - TODAS LAS PROPIEDADES:');

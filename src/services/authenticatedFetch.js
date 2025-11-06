@@ -10,9 +10,7 @@ export const authenticatedFetch = async (url, options = {}) => {
     const session = await fetchAuthSession();
     const idToken = session.tokens?.idToken;
 
-    if (!idToken) {
-      console.warn('⚠️ No se encontró token de autenticación, enviando petición sin Authorization header');
-    }
+    // Token will be added if available
 
     // Preparar los headers por defecto
     const defaultHeaders = {
@@ -36,19 +34,10 @@ export const authenticatedFetch = async (url, options = {}) => {
       headers
     });
 
-    console.log(`🔐 Petición autenticada a ${url}:`, {
-      status: response.status,
-      hasAuthToken: !!idToken,
-      headers: Object.keys(headers)
-    });
-
     return response;
 
   } catch (error) {
-    console.error('❌ Error en petición autenticada:', error);
-    
     // En caso de error de autenticación, intentar hacer la petición sin token
-    console.warn('⚠️ Reintentando petición sin token de autenticación...');
     return fetch(url, options);
   }
 };

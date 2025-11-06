@@ -32,33 +32,50 @@ const PayrollDataViewer = ({ curp, selectedPeriod }) => {
       console.log('🔍 CURP solicitada:', curpValue);
       console.log('📅 Período solicitado:', periodValue);
       
-      // USAR EL MISMO MÉTODO QUE DatosEmpleado.jsx
+      // Use /api/payroll endpoint with same format as AWS
+      // Format: GET /api/payroll?curp=AEMB930330MDFBGR07&pageSize=1000&page=1&cveper=2025-06-30T00:00:00.000Z
       const params = new URLSearchParams({
-        curp: curpValue, // El parámetro CURP
+        curp: curpValue,
         pageSize: '1000',
         page: '1'
       });
       
-      // Agregar período solo si está seleccionado
       if (periodValue) {
         let cveperValue = Array.isArray(periodValue) ? periodValue[0] : periodValue;
         
-        // 🔧 CONVERSIÓN: El dropdown envía formato limpio (2025-06-30)
-        // pero la BD tiene timestamps completos (2025-06-30T00:00:00.000Z)
-        // Necesitamos convertir el formato limpio de vuelta al timestamp
-        if (cveperValue && cveperValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          // Si está en formato YYYY-MM-DD, convertir a timestamp
-          cveperValue = cveperValue + 'T00:00:00.000Z';
-          console.log('🔧 Período convertido de formato limpio a timestamp:', periodValue, '→', cveperValue);
+        // Convert cveper to timestamp format (ISO string) like AWS endpoint
+        if (cveperValue) {
+          try {
+            let date;
+            // If it's already a timestamp, use it
+            if (cveperValue.includes && cveperValue.includes('T')) {
+              date = new Date(cveperValue);
+            } else if (cveperValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // If it's YYYY-MM-DD format, convert to timestamp
+              date = new Date(cveperValue + 'T00:00:00.000Z');
+            } else {
+              // Try to parse as date
+              date = new Date(cveperValue);
+            }
+            
+            if (!isNaN(date.getTime())) {
+              // Convert to ISO string format: 2025-06-30T00:00:00.000Z
+              cveperValue = date.toISOString();
+            }
+          } catch (error) {
+            console.warn('⚠️ Error normalizando cveper:', error);
+          }
         }
         
+        // Add cveper in timestamp format
         params.append('cveper', cveperValue);
-        console.log('📅 ✅ Agregando filtro cveper:', cveperValue);
+        console.log('📅 ✅ Agregando cveper en formato timestamp:', cveperValue);
       } else {
         console.log('📅 Cargando datos sin filtro de período específico');
       }
       
       const urlFinal = `${buildApiUrl('/api/payroll')}?${params.toString()}`;
+      
       console.log('🌐 URL COMPLETA DE LA API:', urlFinal);
       
       // USAR EL MISMO ENDPOINT QUE BusquedaEmpleados (que funciona)

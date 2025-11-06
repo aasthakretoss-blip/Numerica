@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { useTheme } from '../../contexts/ThemeContext';
 import MenuPerfil from '../MenuPerfil';
 import { FiSearch, FiDownload, FiFile, FiRefreshCw, FiEye } from 'react-icons/fi';
+import { authenticatedFetch } from '../../services/authenticatedFetch';
+import { buildApiUrl } from '../../config/apiConfig';
 
 const PerfilContainer = styled.div`
   display: flex;
@@ -461,7 +463,7 @@ const PerfilDocumentos = ({ rfc }) => {
       try {
         console.log('🔍 Buscando nombre completo para CURP:', curpFromURL);
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/payroll/name-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
+        const response = await authenticatedFetch(buildApiUrl(`/api/payroll/name-from-curp?curp=${encodeURIComponent(curpFromURL)}`));
         
         if (!response.ok) {
           throw new Error('Error al obtener nombre completo');

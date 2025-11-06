@@ -40,12 +40,15 @@ const getCurrentEnv = () => {
   // Priority 3: Hostname check (only if window is available)
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Check for localhost first (most common in development)
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
       return 'development';
     }
     // Production domains
     if (hostname.includes('cloudfront.net') || 
         hostname.includes('amazonaws.com') ||
+        hostname.includes('onrender.com') ||
+        hostname.includes('numerica.global') ||
         (hostname !== 'localhost' && window.location.protocol === 'https:')) {
       return 'production';
     }
@@ -58,12 +61,15 @@ const getCurrentEnv = () => {
 // Obtener la configuración actual
 const getApiConfig = () => {
   const env = getCurrentEnv();
-  console.log(`🌍 Usando configuración de API para entorno: ${env}`);
   return API_CONFIG[env];
 };
 
 export const apiConfig = getApiConfig();
 export const isProduction = getCurrentEnv() === 'production';
+
+// API URL will be:
+// - http://localhost:3001 if REACT_APP_USE_LOCAL=true in development
+// - https://numerica-2.onrender.com in production or if REACT_APP_USE_LOCAL is not set
 
 // URLs específicas para compatibilidad con el código existente
 export const API_BASE_URL = apiConfig.BASE_URL;
@@ -93,16 +99,5 @@ export const buildApiUrl = (endpoint) => {
   // Para otros casos, asumir que necesita /api como prefijo
   return apiConfig.BASE_URL + '/api/' + endpoint.replace(/^\//, '');
 };
-
-// Log de configuración para debug
-console.log('🔧 API Configuration:', {
-  environment: getCurrentEnv(),
-  isProduction,
-  baseUrl: API_BASE_URL,
-  payrollApi: PAYROLL_API_URL,
-  reactAppApiUrl: process.env.REACT_APP_API_URL,
-  nodeEnv: process.env.NODE_ENV,
-  reactAppEnv: process.env.REACT_APP_ENV
-});
 
 export default apiConfig;

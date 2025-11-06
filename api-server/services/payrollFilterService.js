@@ -615,22 +615,61 @@ class PayrollFilterService {
         if (cveperArray.length > 0) {
           const cveperConditions = [];
           
+          // Mapeo de nombres de meses en español a números
+          const monthMap = {
+            'ENERO': '01', 'FEBRERO': '02', 'MARZO': '03', 'ABRIL': '04',
+            'MAYO': '05', 'JUNIO': '06', 'JULIO': '07', 'AGOSTO': '08',
+            'SEPTIEMBRE': '09', 'OCTUBRE': '10', 'NOVIEMBRE': '11', 'DICIEMBRE': '12'
+          };
+          
           cveperArray.forEach(cveper => {
-            if (cveper.match(/^\d{4}-\d{2}$/)) {
+            // Si es un nombre de mes (ej: "SEPTIEMBRE"), buscar por mes usando TO_CHAR
+            const cveperUpper = typeof cveper === 'string' ? cveper.toUpperCase().trim() : String(cveper).toUpperCase().trim();
+            if (monthMap[cveperUpper]) {
+              const monthNum = monthMap[cveperUpper];
+              // Filtrar por mes usando TO_CHAR para extraer el mes del cveper (cveper es timestamp)
+              // Usar CAST con NULL check para evitar errores - usar DATE() para compatibilidad
+              cveperConditions.push(`(cveper IS NOT NULL AND TO_CHAR(DATE(cveper), 'MM') = $${paramIndex})`);
+              queryParams.push(monthNum);
+              paramIndex++;
+            } else if (typeof cveper === 'string' && cveper.match(/^\d{4}-\d{2}$/)) {
               // Filtro por mes completo (formato YYYY-MM)
               cveperConditions.push(`DATE_TRUNC('month', cveper) = $${paramIndex}`);
               queryParams.push(`${cveper}-01`);
               paramIndex++;
             } else if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
               // Filtro por fecha exacta (formato YYYY-MM-DD)
-              cveperConditions.push(`DATE(cveper) = $${paramIndex}`);
+              cveperConditions.push(`DATE(cveper) = $${paramIndex}::date`);
+              queryParams.push(cveper);
+              paramIndex++;
+            } else if (cveper.includes && cveper.includes('T') && cveper.includes('Z')) {
+              // Filtro por timestamp ISO (formato: 2025-06-30T00:00:00.000Z)
+              // Comparar directamente con timestamp o por fecha
+              cveperConditions.push(`DATE(cveper) = DATE($${paramIndex}::timestamp)`);
               queryParams.push(cveper);
               paramIndex++;
             } else {
-              // Filtro por timestamp completo
-              cveperConditions.push(`cveper = $${paramIndex}`);
-              queryParams.push(cveper);
-              paramIndex++;
+              // Filtro por timestamp completo o intentar parsear como fecha
+              try {
+                // Intentar parsear como fecha ISO
+                const date = new Date(cveper);
+                if (!isNaN(date.getTime())) {
+                  // Si es un timestamp válido, comparar por fecha
+                  cveperConditions.push(`DATE(cveper) = DATE($${paramIndex}::timestamp)`);
+                  queryParams.push(date.toISOString());
+                  paramIndex++;
+                } else {
+                  // Si no se puede parsear, usar comparación directa
+                  cveperConditions.push(`cveper = $${paramIndex}`);
+                  queryParams.push(cveper);
+                  paramIndex++;
+                }
+              } catch (e) {
+                // Si falla, usar comparación directa
+                cveperConditions.push(`cveper = $${paramIndex}`);
+                queryParams.push(cveper);
+                paramIndex++;
+              }
             }
           });
           
@@ -677,9 +716,7 @@ class PayrollFilterService {
         if (dbField) {
           const direction = (String(options.orderDirection || 'asc').toLowerCase() === 'desc') ? 'DESC' : 'ASC';
           orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
-          console.log(`✅ Sorting by: ${dbField} ${direction}`);
         } else {
-          console.warn(`⚠️ Unknown orderBy field: "${normalizedOrderBy}". Using default sort.`);
           orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
         }
       } else {
@@ -692,37 +729,51 @@ class PayrollFilterService {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
       
-      // CRITICAL: Log the actual SQL query and parameters for debugging
-      console.log('🔍 ========== PAYROLL QUERY DEBUG ==========');
-      console.log('📋 Options received:', {
-        search: options.search,
-        orderBy: options.orderBy,
-        orderDirection: options.orderDirection,
-        page: options.page,
-        pageSize: options.pageSize,
-        fullData: options.fullData,
-        puesto: options.puesto,
-        sucursal: options.sucursal,
-        status: options.status,
-        cveper: options.cveper
-      });
-      console.log('📊 Query Parameters:', finalParams);
-      console.log('📊 Count Query Parameters:', queryParams);
-      console.log('🔢 Parameter Index:', paramIndex);
-      console.log('📄 Data Query SQL:', query.replace(/\s+/g, ' ').trim());
-      console.log('📄 Count Query SQL:', countQuery.replace(/\s+/g, ' ').trim());
-      console.log('🔍 =========================================');
+      // 🔍 FILTERING/SORTING LOG: Only log when filtering or sorting is active
+      if (options.search || options.orderBy || options.puesto || options.sucursal || options.status || options.puestoCategorizado || options.cveper) {
+        console.log('🔍 SQL FILTER/SORT:', {
+          search: options.search || null,
+          orderBy: options.orderBy || null,
+          orderDirection: options.orderDirection || null,
+          filters: {
+            puesto: options.puesto || null,
+            sucursal: options.sucursal || null,
+            status: options.status || null,
+            puestoCategorizado: options.puestoCategorizado || null,
+            cveper: options.cveper || null
+          },
+          results: { rows: 0, total: 0 } // Will update after query
+        });
+      }
+      
+      // Log the final SQL query for debugging (only in development)
+      if (process.env.NODE_ENV === 'development' && (options.search || options.cveper)) {
+        console.log('🔍 Final SQL Query:', query.substring(0, 500) + '...');
+        console.log('🔍 Query Params:', finalParams);
+      }
       
       const [dataResult, countResult] = await Promise.all([
-        client.query(query, finalParams),
-        client.query(countQuery, queryParams)
+        client.query(query, finalParams).catch(err => {
+          console.error('❌ SQL Query Error:', err.message);
+          console.error('❌ Query:', query);
+          console.error('❌ Params:', finalParams);
+          throw err;
+        }),
+        client.query(countQuery, queryParams).catch(err => {
+          console.error('❌ SQL Count Query Error:', err.message);
+          console.error('❌ Count Query:', countQuery);
+          console.error('❌ Params:', queryParams);
+          throw err;
+        })
       ]);
       
-      console.log('✅ Query executed successfully');
-      console.log('📊 Results:', {
-        dataRows: dataResult.rows.length,
-        totalCount: countResult.rows[0]?.total || 0
-      });
+      // Update results in log if filtering/sorting was active
+      if (options.search || options.orderBy || options.puesto || options.sucursal || options.status || options.puestoCategorizado || options.cveper) {
+        console.log('🔍 SQL FILTER/SORT RESULTS:', {
+          rows: dataResult.rows.length,
+          total: parseInt(countResult.rows[0]?.total || 0)
+        });
+      }
       
       client.release();
       
