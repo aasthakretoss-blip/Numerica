@@ -93,11 +93,13 @@ app.use(cors(corsOptions));
 // Handle preflight requests explicitly for all routes
 app.options('*', cors(corsOptions));
 
-// Middleware de logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+// Middleware de logging (solo en desarrollo)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // ============================================================================
 // RUTAS PÚBLICAS
@@ -2184,57 +2186,40 @@ app.get('/api/payroll/data', async (req, res) => {
 // RUTA GENERAL DE PAYROLL - DEBE IR AL FINAL
 // ============================================================================
 
-// Obtener datos de empleados con filtros (sin autenticación para desarrollo)
+// Obtener datos de empleados con filtros
 app.get('/api/payroll', async (req, res) => {
-  // Production debugging - log all request details
-  console.log(' Production Debug - /api/payroll endpoint called');
-  console.log(' Production Debug - Query params:', JSON.stringify(req.query, null, 2));
-  console.log(' Production Debug - Environment:', process.env.NODE_ENV);
-  console.log(' Production Debug - Full URL:', req.url);
   try {
     const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
     
-    console.log('🔍 /api/payroll: Parámetros recibidos (RAW):', req.query);
-    console.log('🔍 /api/payroll: Parámetros destructurados:', { 
-      pageSize, page, search, puesto, compania, sucursal, status, 
-      puestoCategorizado, cveper, orderBy, orderDirection 
-    });
-    
-    // DEBUGGING ESPECIAL para cveper
-    if (cveper) {
-      console.log('🗓️ DEBUGGING CVEPER:', {
-        cveper,
-        tipoCveper: typeof cveper,
-        esArray: Array.isArray(cveper),
-        longitud: cveper.length,
-        formatoYYYY_MM: /^\d{4}-\d{2}$/.test(cveper),
-        formatoYYYY_MM_DD: /^\d{4}-\d{2}-\d{2}$/.test(cveper)
-      });
+    // Clean and decode search parameter
+    let cleanedSearch = search;
+    if (search) {
+      try {
+        cleanedSearch = decodeURIComponent(String(search));
+        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
+        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+      } catch (e) {
+        cleanedSearch = String(search).replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+      }
     }
     
-    // NUEVO: Usar payrollFilterService para un sorting más preciso
     const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
       pageSize: parseInt(pageSize) || 100,
       page: parseInt(page) || 1,
-      search,
+      search: cleanedSearch,
       puesto,
-      compania, // Para compatibilidad hacia atrás
-      sucursal, // Para nuevo sistema de filtros
+      compania,
+      sucursal,
       status,
       puestoCategorizado,
       cveper,
-      orderBy, // Campo por el cual ordenar
-      orderDirection // Dirección del ordenamiento (asc/desc)
-    });
-    
-    console.log('✅ /api/payroll: Datos obtenidos exitosamente:', {
-      records: result.data?.length || 0,
-      total: result.pagination?.total || 0
+      orderBy,
+      orderDirection
     });
     
     res.json(result);
   } catch (error) {
-    console.error('❌ Error obteniendo datos de nómina:', error);
+    console.error('Error obteniendo datos de nómina:', error);
     res.status(500).json({
       success: false,
       error: error.message

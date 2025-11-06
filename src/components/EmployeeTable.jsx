@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import styled from 'styled-components'
-import { 
-  FaSort, FaSortUp, FaSortDown, FaSpinner, 
-  FaAngleDoubleLeft, FaAngleDoubleRight, 
-  FaChevronLeft, FaChevronRight 
-} from 'react-icons/fa'
-import { parseMoney, formatCurrency, formatPeriod } from '../utils/data.js'
-import { formatCveperForTable } from '../utils/periodUtils.ts'
-import { useServerPagination } from '../hooks/useServerPagination.js'
-import { surfaces, textColors, effects, brandColors, semanticColors } from '../styles/ColorTokens'
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import {
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaSpinner,
+  FaAngleDoubleLeft,
+  FaAngleDoubleRight,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
+import { parseMoney, formatCurrency, formatPeriod } from "../utils/data.js";
+import { formatCveperForTable } from "../utils/periodUtils.ts";
+import { useServerPagination } from "../hooks/useServerPagination.js";
+import { surfaces, textColors, effects, brandColors, semanticColors } from "../styles/ColorTokens";
 
 // Styled Components
 const TableContainer = styled.div`
@@ -67,7 +72,7 @@ const SortButton = styled.button`
   gap: 0.5rem;
   font-weight: inherit;
   font-size: inherit;
-  
+
   &:hover {
     color: ${brandColors.primaryDark};
   }
@@ -79,7 +84,7 @@ const TableBody = styled.tbody`
 
 const TableRow = styled.tr`
   border-bottom: 1px solid ${surfaces.borders.subtle};
-  
+
   &:hover {
     background: ${surfaces.buttons.filter};
   }
@@ -102,7 +107,7 @@ const EmployeeNameButton = styled.button`
   text-decoration: underline;
   font-size: inherit;
   font-weight: 600;
-  
+
   &:hover {
     color: ${brandColors.primaryDark};
     text-decoration: underline;
@@ -114,33 +119,37 @@ const StatusBadge = styled.span`
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
-  background: ${
-    props => {
-      switch (props.$status) {
-        case 'Activo': return '${surfaces.buttons.success}';
-        case 'Baja': return '${surfaces.overlays.light}';
-        default: return '${surfaces.glass.light}';
-      }
+  background: ${(props) => {
+    switch (props.$status) {
+      case "Activo":
+        return "${surfaces.buttons.success}";
+      case "Baja":
+        return "${surfaces.overlays.light}";
+      default:
+        return "${surfaces.glass.light}";
     }
-  };
-  color: ${
-    props => {
-      switch (props.$status) {
-        case 'Activo': return '${semanticColors.success}';
-        case 'Baja': return '${semanticColors.error}';
-        default: return '${textColors.muted}';
-      }
+  }};
+  color: ${(props) => {
+    switch (props.$status) {
+      case "Activo":
+        return "${semanticColors.success}";
+      case "Baja":
+        return "${semanticColors.error}";
+      default:
+        return "${textColors.muted}";
     }
-  };
-  border: 1px solid ${
-    props => {
+  }};
+  border: 1px solid
+    ${(props) => {
       switch (props.$status) {
-        case 'Activo': return '${surfaces.borders.success}';
-        case 'Baja': return '${semanticColors.error}';
-        default: return '${surfaces.borders.subtle}';
+        case "Activo":
+          return "${surfaces.borders.success}";
+        case "Baja":
+          return "${semanticColors.error}";
+        default:
+          return "${surfaces.borders.subtle}";
       }
-    }
-  };
+    }};
 `;
 
 const NoResultsContainer = styled.div`
@@ -180,7 +189,7 @@ const PageSizeSelect = styled.select`
   color: ${textColors.primary};
   font-size: 0.9rem;
   margin-right: 1rem;
-  
+
   option {
     background: ${surfaces.glass.strong};
     color: ${textColors.primary};
@@ -188,42 +197,42 @@ const PageSizeSelect = styled.select`
 `;
 
 const PaginationButton = styled.button`
-  background: ${props => props.$active ? brandColors.primary : surfaces.glass.strong};
-  border: 1px solid ${props => props.$active ? brandColors.primary : surfaces.borders.medium};
+  background: ${(props) => (props.$active ? brandColors.primary : surfaces.glass.strong)};
+  border: 1px solid ${(props) => (props.$active ? brandColors.primary : surfaces.borders.medium)};
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
-  color: ${props => props.$active ? 'white' : textColors.primary};
+  color: ${(props) => (props.$active ? "white" : textColors.primary)};
   cursor: pointer;
   transition: ${effects.states.transitionFast};
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   &:hover:not(:disabled) {
-    background: ${props => props.$active ? brandColors.primary : surfaces.buttons.filter};
-    color: ${props => props.$active ? 'white' : brandColors.primary};
+    background: ${(props) => (props.$active ? brandColors.primary : surfaces.buttons.filter)};
+    color: ${(props) => (props.$active ? "white" : brandColors.primary)};
     border-color: ${brandColors.primary};
   }
 `;
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100, 250, 500, 1000]
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 250, 500, 1000];
 
-export default function EmployeeTable({ 
-  employees, 
-  loading, 
-  onViewEmployee, 
-  pagination, 
-  onPageChange, 
+export default function EmployeeTable({
+  employees,
+  loading,
+  onViewEmployee,
+  pagination,
+  onPageChange,
   onPageSizeChange,
   // Props para server-side sorting
-  sortBy = 'nombre',
-  sortDir = 'asc', 
-  onSortChange
+  sortBy = "nombre",
+  sortDir = "asc",
+  onSortChange,
 }) {
-  const navigate = useNavigate()
-  const [stats, setStats] = useState(null)
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
 
   // Load database statistics on component mount
   useEffect(() => {
@@ -231,109 +240,101 @@ export default function EmployeeTable({
       try {
         const response = await fetch('https://numerica-2.onrender.com/api/payroll/stats')
         if (response.ok) {
-          const result = await response.json()
+          const result = await response.json();
           if (result.success) {
-            setStats(result.stats)
+            setStats(result.stats);
           }
         }
       } catch (error) {
-        console.error('Error loading stats:', error)
+        console.error("Error loading stats:", error);
       }
-    }
-    loadStats()
-  }, [])
+    };
+    loadStats();
+  }, []);
 
   // Todas las columnas usan server-side sorting
 
   // Mapeo de campos frontend -> backend (DEBE estar ANTES de toggleSort)
   // NOTA: Los nombres de columnas de la base de datos tienen espacios AL PRINCIPIO Y AL FINAL
   const fieldMapping = {
-    'nombre': 'nombre',
-    'curp': 'curp',
-    'puesto': 'puesto',
-    'sucursal': 'sucursal',
-    'periodo': 'cveper',
-    'salario': ' SUELDO CLIENTE ',
-    'comisiones': ' COMISIONES CLIENTE ', // Backend debe sumar COMISIONES CLIENTE + COMISIONES FACTURADAS
-    'percepcionesTotales': ' TOTAL DE PERCEPCIONES ',
-    'estado': 'estado'
+    nombre: "nombre",
+    curp: "curp",
+    puesto: "puesto",
+    sucursal: "sucursal",
+    periodo: "cveper",
+    salario: " SUELDO CLIENTE ",
+    comisiones: " COMISIONES CLIENTE ", // Backend debe sumar COMISIONES CLIENTE + COMISIONES FACTURADAS
+    percepcionesTotales: " TOTAL DE PERCEPCIONES ",
+    estado: "estado",
   };
 
   const getMappedFieldName = (frontendFieldName) => {
     return fieldMapping[frontendFieldName] || frontendFieldName;
-  }
+  };
 
   const getSortIcon = (key) => {
     if (sortBy !== key) return <FaSort />;
-    return sortDir === 'asc' ? <FaSortUp /> : <FaSortDown />;
-  }
+    return sortDir === "asc" ? <FaSortUp /> : <FaSortDown />;
+  };
 
   // Función para manejar sorting (solo server-side)
   const toggleSort = (key) => {
     if (!onSortChange) {
-      console.warn('⚠️ onSortChange no está definido');
       return;
     }
-    
-    console.log('🔄 EmployeeTable.toggleSort llamado:', { key, sortBy, sortDir });
-    
+
     let newDirection;
     if (key === sortBy) {
-      newDirection = sortDir === 'asc' ? 'desc' : 'asc';
+      newDirection = sortDir === "asc" ? "desc" : "asc";
     } else {
-      newDirection = 'asc';
+      newDirection = "asc";
     }
-    
-    // Enviar la key directamente sin mapear - BusquedaEmpleados se encarga del mapeo
-    console.log('📤 EmployeeTable: Enviando cambio de sorting al servidor:', { 
-      key, 
-      direction: newDirection 
-    });
+
     onSortChange(key, newDirection);
-  }
+  };
 
   const columns = [
-    { key: 'nombre', label: 'Nombre completo', sortable: true },
-    { key: 'curp', label: 'CURP', sortable: true },
-    { key: 'puesto', label: 'Puesto', sortable: true },
-    { key: 'sucursal', label: 'Sucursal', sortable: true },
-    { key: 'periodo', label: 'Período', sortable: true },
-    { key: 'salario', label: 'Salario', sortable: true },
-    { key: 'comisiones', label: 'Comisiones', sortable: true },
-    { key: 'percepcionesTotales', label: 'Percepciones totales', sortable: true },
-    { key: 'estado', label: 'Estado', sortable: true }
+    { key: "nombre", label: "Nombre completo", sortable: true },
+    { key: "curp", label: "CURP", sortable: true },
+    { key: "puesto", label: "Puesto", sortable: true },
+    { key: "sucursal", label: "Sucursal", sortable: true },
+    { key: "periodo", label: "Período", sortable: true },
+    { key: "salario", label: "Salario", sortable: true },
+    { key: "comisiones", label: "Comisiones", sortable: true },
+    { key: "percepcionesTotales", label: "Percepciones totales", sortable: true },
+    { key: "estado", label: "Estado", sortable: true },
   ];
 
   // Transformar datos de empleados (sin sorting local, el sorting se hace en el servidor)
   const displayData = useMemo(() => {
-    console.log('🔍 EmployeeTable: Total empleados recibidos:', employees.length);
-    
-    return employees.map((emp, index) => {
+    const transformed = employees.map((emp, index) => {
       const mapped = {
-        nombre: emp.name || emp.nombre || 'N/A',
-        curp: emp.curp || emp.curve || emp.rfc || 'N/A',
-        puesto: emp.position || emp.puesto || 'N/A',
-        sucursal: emp.department || emp.sucursal || 'N/A',
-        periodo: formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || 'N/A',
+        nombre: emp.name || emp.nombre || "N/A",
+        curp: emp.curp || emp.curve || emp.rfc || "N/A",
+        puesto: emp.position || emp.puesto || "N/A",
+        sucursal: emp.department || emp.sucursal || "N/A",
+        periodo: formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || "N/A",
         salario: parseFloat(emp.salary || emp.sueldo) || 0,
         comisiones: parseFloat(emp.commissions || emp.comisiones) || 0,
         comisionesCliente: parseFloat(emp.comisionesCliente || 0),
         comisionesFacturadas: parseFloat(emp.comisionesFacturadas || 0),
-        percepcionesTotales: parseFloat(emp[' TOTAL DE PERCEPCIONES '] || emp.totalPercepciones) || 0,
-        estado: emp.status || emp.estado || 'N/A',
-        perfilUrl: null
+        percepcionesTotales: parseFloat(emp[" TOTAL DE PERCEPCIONES "] || emp.totalPercepciones) || 0,
+        estado: emp.status || emp.estado || "N/A",
+        perfilUrl: null,
       };
-      
+
       return mapped;
     });
-  }, [employees])
+
+    return transformed;
+  }, [employees]);
 
   if (loading) {
     return (
       <TableContainer>
         <LoadingContainer>
-          <FaSpinner size={32} style={{ animation: 'spin 1s linear infinite' }} />
-          <p style={{ marginTop: '1rem' }}>Cargando datos de empleados...</p>
+          <FaSpinner size={32} style={{ animation: "spin 1s linear infinite" }} />
+          <p style={{ marginTop: "1rem" }}>Cargando datos de empleados...</p>
         </LoadingContainer>
       </TableContainer>
     );
@@ -344,7 +345,7 @@ export default function EmployeeTable({
     const { page, totalPages } = pagination;
     const pages = [];
     const maxVisible = 7;
-    
+
     if (totalPages <= maxVisible) {
       // Mostrar todas las páginas si son 7 o menos
       for (let i = 1; i <= totalPages; i++) {
@@ -353,11 +354,11 @@ export default function EmployeeTable({
     } else {
       // Paginación inteligente
       if (page <= 4) {
-        pages.push(1, 2, 3, 4, 5, '...', totalPages);
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
       } else if (page >= totalPages - 3) {
-        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
       } else {
-        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+        pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
       }
     }
     return pages;
@@ -379,21 +380,20 @@ export default function EmployeeTable({
   const handleViewEmployee = (employee) => {
     // Priorizar RFC/CURP, si no está disponible usar nombre limpio
     let identifier = employee.curp;
-    
+
     // Si no hay CURP, crear un identificador basado en el nombre
-    if (!identifier || identifier === 'N/A' || identifier === '') {
+    if (!identifier || identifier === "N/A" || identifier === "") {
       identifier = employee.nombre
-        .replace(/\s+/g, '') // Quitar espacios
-        .replace(/[^a-zA-Z0-9]/g, '') // Quitar caracteres especiales
+        .replace(/\s+/g, "") // Quitar espacios
+        .replace(/[^a-zA-Z0-9]/g, "") // Quitar caracteres especiales
         .toUpperCase();
     }
-    
+
     // Construir URL completa para abrir en nueva pestaña
     const fullUrl = `${window.location.origin}/perfil/${encodeURIComponent(identifier)}`;
-    console.log('🔄 Abriendo perfil en nueva pestaña:', fullUrl, employee);
-    
+
     // Abrir en nueva pestaña
-    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    window.open(fullUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -402,7 +402,7 @@ export default function EmployeeTable({
         <Table>
           <TableHeader>
             <tr>
-              {columns.map(col => (
+              {columns.map((col) => (
                 <HeaderCell key={col.key}>
                   {col.sortable ? (
                     <SortButton onClick={() => toggleSort(col.key)}>
@@ -420,7 +420,7 @@ export default function EmployeeTable({
             {displayData.map((employee, index) => (
               <TableRow key={`employee-${employee.curp}-${employee.periodo}-${index}`}>
                 <TableCell>
-                  <EmployeeNameButton 
+                  <EmployeeNameButton
                     onClick={() => handleViewEmployee(employee)}
                     title={`Ver perfil de ${employee.nombre}`}
                   >
@@ -428,32 +428,39 @@ export default function EmployeeTable({
                   </EmployeeNameButton>
                 </TableCell>
                 <TableCell>
-                  <code style={{ background: surfaces.buttons.filter, padding: '0.25rem 0.5rem', borderRadius: '4px', color: brandColors.primary }}>
+                  <code
+                    style={{
+                      background: surfaces.buttons.filter,
+                      padding: "0.25rem 0.5rem",
+                      borderRadius: "4px",
+                      color: brandColors.primary,
+                    }}
+                  >
                     {employee.curp}
                   </code>
                 </TableCell>
                 <TableCell>{employee.puesto}</TableCell>
                 <TableCell>{employee.sucursal}</TableCell>
-                <TableCell style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: brandColors.primaryDark }}>
-                  {employee.periodo || 'N/A'}
+                <TableCell style={{ fontFamily: "monospace", fontSize: "0.85rem", color: brandColors.primaryDark }}>
+                  {employee.periodo || "N/A"}
                 </TableCell>
                 <TableCell>
                   <strong>
-                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.salario)}
+                    {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(employee.salario)}
                   </strong>
                 </TableCell>
                 <TableCell>
-                  {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.comisiones)}
+                  {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(employee.comisiones)}
                 </TableCell>
                 <TableCell>
                   <strong style={{ color: brandColors.primary }}>
-                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.percepcionesTotales)}
+                    {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+                      employee.percepcionesTotales
+                    )}
                   </strong>
                 </TableCell>
                 <TableCell>
-                  <StatusBadge $status={employee.estado}>
-                    {employee.estado}
-                  </StatusBadge>
+                  <StatusBadge $status={employee.estado}>{employee.estado}</StatusBadge>
                 </TableCell>
               </TableRow>
             ))}
@@ -461,7 +468,7 @@ export default function EmployeeTable({
               <tr>
                 <TableCell colSpan={columns.length}>
                   <NoResultsContainer>
-                    <h3 style={{ marginBottom: '0.5rem' }}>No se encontraron empleados</h3>
+                    <h3 style={{ marginBottom: "0.5rem" }}>No se encontraron empleados</h3>
                     <p>Ajusta los filtros o términos de búsqueda</p>
                   </NoResultsContainer>
                 </TableCell>
@@ -474,20 +481,20 @@ export default function EmployeeTable({
       {pagination && (
         <PaginationContainer>
           <PaginationInfo>
-            Mostrando {((pagination.page - 1) * pagination.pageSize) + 1} - {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total} empleados
+            Mostrando {(pagination.page - 1) * pagination.pageSize + 1} -{" "}
+            {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total} empleados
             {stats && (
-              <span style={{ marginLeft: '1rem', color: brandColors.primary }}>
+              <span style={{ marginLeft: "1rem", color: brandColors.primary }}>
                 Total en BD: {stats.totalRecords?.toLocaleString()}
               </span>
             )}
           </PaginationInfo>
           <PaginationControls>
-            <PageSizeSelect
-              value={pagination.pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-            >
-              {PAGE_SIZE_OPTIONS.map(size => (
-                <option key={size} value={size}>{size} por página</option>
+            <PageSizeSelect value={pagination.pageSize} onChange={(e) => handlePageSizeChange(Number(e.target.value))}>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size} por página
+                </option>
               ))}
             </PageSizeSelect>
 
@@ -507,9 +514,11 @@ export default function EmployeeTable({
               <FaChevronLeft />
             </PaginationButton>
 
-            {generatePageNumbers().map((pageNum, index) => (
-              pageNum === '...' ? (
-                <span key={`ellipsis-${index}`} style={{ padding: '0.5rem', color: textColors.muted }}>...</span>
+            {generatePageNumbers().map((pageNum, index) =>
+              pageNum === "..." ? (
+                <span key={`ellipsis-${index}`} style={{ padding: "0.5rem", color: textColors.muted }}>
+                  ...
+                </span>
               ) : (
                 <PaginationButton
                   key={`page-${pageNum}`}
@@ -519,7 +528,7 @@ export default function EmployeeTable({
                   {pageNum}
                 </PaginationButton>
               )
-            ))}
+            )}
 
             <PaginationButton
               onClick={() => handlePageChange(pagination.page + 1)}

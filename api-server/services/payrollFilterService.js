@@ -27,7 +27,6 @@ class PayrollFilterService {
       
       const client = await nominasPool.connect();
       
-      console.log('🔍 Calculando cardinalidad de filtros con filtros activos:', activeFilters);
       
       // Construir WHERE clause base usando los filtros activos
       let baseWhere = 'WHERE 1=1';
@@ -327,13 +326,6 @@ class PayrollFilterService {
         activeFilters
       };
       
-      console.log('✅ Filtros calculados con cardinalidad actualizada:', {
-        sucursales: sucursalResult.rows.length,
-        puestos: puestoResult.rows.length,
-        estados: estadoResult.rows.length,
-        categorias: puestosCategorias.length,
-        periodos: periodoResult.rows.length
-      });
       
       return result;
       
@@ -468,16 +460,9 @@ class PayrollFilterService {
     try {
       const client = await nominasPool.connect();
       
-      // Validar parámetros de paginación - SIN LÍMITE SUPERIOR para permitir cargar todos los registros
-      const pageSize = Math.max(parseInt(options.pageSize) || 100, 1); // Mínimo 1, sin máximo
+      const pageSize = Math.max(parseInt(options.pageSize) || 100, 1);
       const page = Math.max(parseInt(options.page) || 1, 1);
       const offset = (page - 1) * pageSize;
-      
-      console.log('🎯 PayrollFilterService: Obteniendo datos con filtros y sorting:', {
-        page, pageSize, offset,
-        orderBy: options.orderBy,
-        orderDirection: options.orderDirection
-      });
       
       // Query base para obtener datos de la tabla historico_nominas_gsau
       // MAPEO CORRECTO: usando los nombres exactos de las columnas como aparecen en la BD
@@ -517,27 +502,16 @@ class PayrollFilterService {
       let queryParams = [];
       let paramIndex = 1;
       
-      // Aplicar filtro por puesto categorizado PRIMERO a nivel SQL usando puestos específicos
+      // Aplicar filtro por puesto categorizado
       if (options.puestoCategorizado) {
-        console.log('🔍 DEBUGGING: Recibido puestoCategorizado:', JSON.stringify(options.puestoCategorizado));
-        
         const puestosIncluidos = Array.isArray(options.puestoCategorizado)
           ? options.puestoCategorizado
           : [options.puestoCategorizado];
 
-        console.log('🔍 DEBUGGING: Puestos incluidos procesados:', puestosIncluidos);
-
-        // Obtener todos los puestos que corresponden a las categorías incluidas
         const puestosParaCategorias = puestosIncluidos.flatMap(categoria => {
-          const puestosDeCategoria = nominasService.getPuestosPorCategoria(categoria);
-          console.log(`🔍 DEBUGGING: Categoria "${categoria}" -> ${puestosDeCategoria.length} puestos:`, puestosDeCategoria.slice(0, 5), '...');
-          return puestosDeCategoria;
+          return nominasService.getPuestosPorCategoria(categoria);
         });
 
-        console.log('🔍 DEBUGGING: Total puestos para filtrar:', puestosParaCategorias.length);
-        console.log('🔍 DEBUGGING: Primeros 10 puestos:', puestosParaCategorias.slice(0, 10));
-
-        // Si tenemos puestos específicos, agregarlos como filtro SQL
         if (puestosParaCategorias.length > 0) {
           const puestosConditions = puestosParaCategorias.map((_, index) => `$${paramIndex + index}`).join(', ');
           const sqlFragment = ` AND "Puesto" IN (${puestosConditions})`;
@@ -546,22 +520,27 @@ class PayrollFilterService {
           countQuery += sqlFragment;
           queryParams.push(...puestosParaCategorias);
           paramIndex += puestosParaCategorias.length;
-          
-          console.log(`🎯 PayrollFilterService: Aplicando filtro por categoría de puesto SQL:`, puestosIncluidos, `-> ${puestosParaCategorias.length} puestos específicos`);
-          console.log('🔍 DEBUGGING: SQL Fragment agregado:', sqlFragment);
-          console.log('🔍 DEBUGGING: Parámetros agregados:', puestosParaCategorias.slice(0, 5), '...');
-        } else {
-          console.log('⚠️ DEBUGGING: No se encontraron puestos para las categorías:', puestosIncluidos);
         }
       }
 
-      // Aplicar filtros (igual que en nominasService pero consolidado)
+      // Aplicar filtro de búsqueda
       if (options.search) {
-        const searchPattern = `%${options.search}%`;
-        query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        queryParams.push(searchPattern);
-        paramIndex++;
+        let cleanedSearch = String(options.search);
+        try {
+          cleanedSearch = decodeURIComponent(cleanedSearch);
+        } catch (e) {
+          // If already decoded or invalid, continue with original
+        }
+        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
+        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        
+        if (cleanedSearch && cleanedSearch.length > 0) {
+          const searchPattern = `%${cleanedSearch}%`;
+          query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+          queryParams.push(searchPattern);
+          paramIndex++;
+        }
       }
       
       if (options.puesto) {
@@ -636,19 +615,16 @@ class PayrollFilterService {
               // Filtro por mes completo (formato YYYY-MM)
               cveperConditions.push(`DATE_TRUNC('month', cveper) = $${paramIndex}`);
               queryParams.push(`${cveper}-01`);
-              console.log('🗓️ PayrollFilterService: Aplicando filtro por mes completo:', cveper);
               paramIndex++;
             } else if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
               // Filtro por fecha exacta (formato YYYY-MM-DD)
               cveperConditions.push(`DATE(cveper) = $${paramIndex}`);
               queryParams.push(cveper);
-              console.log('📅 PayrollFilterService: Aplicando filtro por fecha exacta:', cveper);
               paramIndex++;
             } else {
               // Filtro por timestamp completo
               cveperConditions.push(`cveper = $${paramIndex}`);
               queryParams.push(cveper);
-              console.log('⏰ PayrollFilterService: Aplicando filtro por timestamp completo:', cveper);
               paramIndex++;
             }
           });
@@ -657,15 +633,13 @@ class PayrollFilterService {
             const cveperClause = ` AND (${cveperConditions.join(' OR ')})`;
             query += cveperClause;
             countQuery += cveperClause;
-            console.log('✅ PayrollFilterService: Clausula cveper generada:', cveperClause);
           }
         }
       }
       
-      // CORREGIDO: Ordenamiento dinámico con conversión numérica adecuada
+      // Ordenamiento dinámico con conversión numérica adecuada
       let orderClause = '';
       if (options.orderBy) {
-        console.log('🎯 PayrollFilterService: Configurando ordenamiento:', { orderBy: options.orderBy, orderDirection: options.orderDirection });
         
         // Mapear campos del frontend a expresiones SQL correctas
         const fieldMapping = {
@@ -677,45 +651,35 @@ class PayrollFilterService {
           'periodo': 'cveper',
           'fecha': 'cveper',
           'salario': '(" SUELDO CLIENTE "::NUMERIC)',
-          ' SUELDO CLIENTE ': '(" SUELDO CLIENTE "::NUMERIC)',
           'salary': '(" SUELDO CLIENTE "::NUMERIC)',
+          'sueldo': '(" SUELDO CLIENTE "::NUMERIC)',
           'comisiones': '((COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0))::DECIMAL)',
-          ' COMISIONES CLIENTE ': '((COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0))::DECIMAL)',
+          'commissions': '((COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0))::DECIMAL)',
           'totalPercepciones': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
-          ' TOTAL DE PERCEPCIONES ': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
           'percepcionesTotales': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
-          'estado': '"Status"'
+          'estado': '"Status"',
+          'status': '"Status"'
         };
         
-        // Buscar el campo tanto con la clave original como con trim() por si tiene espacios extra
-        let dbField = fieldMapping[options.orderBy] || fieldMapping[options.orderBy.trim()];
+        // Normalizar el campo de ordenamiento (trim y lowercase para matching)
+        const normalizedOrderBy = String(options.orderBy || '').trim();
+        let dbField = fieldMapping[normalizedOrderBy];
         
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          // Add tertiary sort by cveper (date) for consistent ordering when nombre and CURP are same
           orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
-          console.log('✅ PayrollFilterService: Clausula ORDER BY generada:', orderClause);
         } else {
           orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
-          console.log('⚠️ PayrollFilterService: Campo no reconocido, usando orden por defecto:', options.orderBy, orderClause);
         }
       } else {
-        // Default sort with tertiary sort by date for consistent ordering
         orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
-        console.log('✅ PayrollFilterService: Aplicando orden por defecto (nombre ASC, CURP ASC, cveper DESC)');
       }
       
-      // Always ensure there's an order clause for consistent results
       query += orderClause || ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
       
-      // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
       
-      console.log('🚀 PayrollFilterService: Ejecutando consulta SQL:', query);
-      console.log('📋 Parámetros:', finalParams);
-      
-      // Ejecutar consultas
       const [dataResult, countResult] = await Promise.all([
         client.query(query, finalParams),
         client.query(countQuery, queryParams)
@@ -723,20 +687,10 @@ class PayrollFilterService {
       
       client.release();
       
-      // Agregar categorización de puestos a los datos
       const enrichedData = dataResult.rows.map(employee => ({
         ...employee,
         puestoCategorizado: nominasService.getPuestoCategorizado(employee.puesto)
       }));
-      
-      // El filtro por puesto categorizado ya se aplicó a nivel de SQL antes de la consulta
-      // Solo devolvemos los datos enriquecidos
-      
-      console.log('✅ PayrollFilterService: Datos obtenidos y procesados:', {
-        totalFromDB: dataResult.rows.length,
-        afterEnrichment: enrichedData.length,
-        totalRecords: parseInt(countResult.rows[0].total)
-      });
       
       return {
         success: true,
@@ -750,17 +704,15 @@ class PayrollFilterService {
       };
       
     } catch (error) {
-      console.error('❌ PayrollFilterService: Error obteniendo datos con filtros y sorting:', error);
-      throw new Error(`Error al obtener datos con filtros y sorting: ${error.message}`);
+      console.error('Error obteniendo datos con filtros y sorting:', error);
+      throw error;
     }
   }
 
-  // NUEVO: Obtener conteo de CURPs únicos con los mismos filtros aplicados
+  // Obtener conteo de CURPs únicos con los mismos filtros aplicados
   async getUniqueCurpCount(options = {}) {
     try {
       const client = await nominasPool.connect();
-      
-      console.log('🔢 PayrollFilterService: Obteniendo conteo de CURPs únicos con filtros:', options);
       
       // Query para contar CURPs únicos con los mismos filtros
       // CORREGIDA: Usar dígito de género de la CURP (posición 11, índice 10) en lugar de columna Sexo
@@ -789,16 +741,26 @@ class PayrollFilterService {
           countQuery += ` AND "Puesto" IN (${puestosConditions})`;
           queryParams.push(...puestosParaCategorias);
           paramIndex += puestosParaCategorias.length;
-          console.log(`🎯 PayrollFilterService (CURP count): Aplicando filtro por categoría de puesto SQL:`, puestosIncluidos, `-> ${puestosParaCategorias.length} puestos específicos`);
         }
       }
 
-      // Aplicar exactamente los mismos filtros que en getPayrollDataWithFiltersAndSorting
+      // Aplicar filtro de búsqueda
       if (options.search) {
-        const searchPattern = `%${options.search}%`;
-        countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        queryParams.push(searchPattern);
-        paramIndex++;
+        let cleanedSearch = String(options.search);
+        try {
+          cleanedSearch = decodeURIComponent(cleanedSearch);
+        } catch (e) {
+          // If already decoded or invalid, continue with original
+        }
+        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
+        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        
+        if (cleanedSearch && cleanedSearch.length > 0) {
+          const searchPattern = `%${cleanedSearch}%`;
+          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+          queryParams.push(searchPattern);
+          paramIndex++;
+        }
       }
       
       if (options.puesto) {
@@ -867,13 +829,11 @@ class PayrollFilterService {
               // Filtro por mes completo (formato YYYY-MM)
               cveperConditions.push(`DATE_TRUNC('month', cveper) = $${paramIndex}`);
               queryParams.push(`${cveper}-01`);
-              console.log('🗓️ PayrollFilterService: Aplicando filtro por mes completo para conteo CURP:', cveper);
               paramIndex++;
             } else if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
               // Filtro por fecha exacta (formato YYYY-MM-DD)
               cveperConditions.push(`DATE(cveper) = $${paramIndex}`);
               queryParams.push(cveper);
-              console.log('📅 PayrollFilterService: Aplicando filtro por fecha exacta para conteo CURP:', cveper);
               paramIndex++;
             } else {
               // Filtro por timestamp completo
