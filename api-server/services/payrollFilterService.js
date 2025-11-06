@@ -649,9 +649,13 @@ class PayrollFilterService {
         // Mapear campos del frontend a expresiones SQL correctas
         const fieldMapping = {
           'nombre': '"Nombre completo"',
+          'name': '"Nombre completo"',
           'curp': '"CURP"',
+          'rfc': '"RFC"',
           'puesto': '"Puesto"',
           'sucursal': '"Compañía"',
+          'compania': '"Compañía"',
+          'department': '"Compañía"',
           'mes': 'cveper',
           'periodo': 'cveper',
           'fecha': 'cveper',
@@ -667,13 +671,15 @@ class PayrollFilterService {
         };
         
         // Normalizar el campo de ordenamiento (trim y lowercase para matching)
-        const normalizedOrderBy = String(options.orderBy || '').trim();
+        const normalizedOrderBy = String(options.orderBy || '').trim().toLowerCase();
         let dbField = fieldMapping[normalizedOrderBy];
         
         if (dbField) {
-          const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
+          const direction = (String(options.orderDirection || 'asc').toLowerCase() === 'desc') ? 'DESC' : 'ASC';
           orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
+          console.log(`✅ Sorting by: ${dbField} ${direction}`);
         } else {
+          console.warn(`⚠️ Unknown orderBy field: "${normalizedOrderBy}". Using default sort.`);
           orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
         }
       } else {
@@ -686,26 +692,37 @@ class PayrollFilterService {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
       
-      // Debug logging (only in development)
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('🔍 SQL Query Debug:', {
-          hasSearch: !!options.search,
-          searchTerm: options.search,
-          orderBy: options.orderBy,
-          orderDirection: options.orderDirection,
-          page,
-          pageSize,
-          offset,
-          fullData,
-          paramCount: queryParams.length,
-          finalParamCount: finalParams.length
-        });
-      }
+      // CRITICAL: Log the actual SQL query and parameters for debugging
+      console.log('🔍 ========== PAYROLL QUERY DEBUG ==========');
+      console.log('📋 Options received:', {
+        search: options.search,
+        orderBy: options.orderBy,
+        orderDirection: options.orderDirection,
+        page: options.page,
+        pageSize: options.pageSize,
+        fullData: options.fullData,
+        puesto: options.puesto,
+        sucursal: options.sucursal,
+        status: options.status,
+        cveper: options.cveper
+      });
+      console.log('📊 Query Parameters:', finalParams);
+      console.log('📊 Count Query Parameters:', queryParams);
+      console.log('🔢 Parameter Index:', paramIndex);
+      console.log('📄 Data Query SQL:', query.replace(/\s+/g, ' ').trim());
+      console.log('📄 Count Query SQL:', countQuery.replace(/\s+/g, ' ').trim());
+      console.log('🔍 =========================================');
       
       const [dataResult, countResult] = await Promise.all([
         client.query(query, finalParams),
         client.query(countQuery, queryParams)
       ]);
+      
+      console.log('✅ Query executed successfully');
+      console.log('📊 Results:', {
+        dataRows: dataResult.rows.length,
+        totalCount: countResult.rows[0]?.total || 0
+      });
       
       client.release();
       

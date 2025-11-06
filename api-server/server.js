@@ -2191,31 +2191,57 @@ app.get('/api/payroll', async (req, res) => {
   try {
     const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection, fullData } = req.query;
     
+    // Log incoming request parameters
+    console.log('🌐 ========== /api/payroll REQUEST ==========');
+    console.log('📥 Raw query params:', req.query);
+    console.log('🔍 Raw search value:', search, '(type:', typeof search, ')');
+    
     // Clean and decode search parameter
-    let cleanedSearch = search;
-    if (search) {
+    let cleanedSearch = null;
+    if (search && String(search).trim().length > 0) {
       try {
         cleanedSearch = decodeURIComponent(String(search));
         cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
         cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        // Only use if not empty after cleaning
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
       } catch (e) {
         cleanedSearch = String(search).replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
       }
     }
     
-    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+    // Build options object with only defined values
+    const serviceOptions = {
       pageSize: parseInt(pageSize) || 100,
       page: parseInt(page) || 1,
-      search: cleanedSearch,
-      puesto,
-      compania,
-      sucursal,
-      status,
-      puestoCategorizado,
-      cveper,
-      orderBy,
-      orderDirection,
+      orderBy: orderBy || null,
+      orderDirection: orderDirection || null,
       fullData: fullData === 'true' || fullData === true
+    };
+    
+    // Only add optional parameters if they have values
+    if (cleanedSearch) serviceOptions.search = cleanedSearch;
+    if (puesto) serviceOptions.puesto = puesto;
+    if (compania) serviceOptions.compania = compania;
+    if (sucursal) serviceOptions.sucursal = sucursal;
+    if (status) serviceOptions.status = status;
+    if (puestoCategorizado) serviceOptions.puestoCategorizado = puestoCategorizado;
+    if (cveper) serviceOptions.cveper = cveper;
+    
+    console.log('📤 Service options being passed:', serviceOptions);
+    console.log('🌐 =========================================');
+    
+    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
+    
+    console.log('✅ Response prepared:', {
+      success: result.success,
+      total: result.total,
+      dataLength: result.data?.length || 0
     });
     
     res.json(result);
