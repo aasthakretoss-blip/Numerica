@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react'
 import type { PayrollData } from '../types'
 import { parseMoney, formatCurrency, formatPeriod } from '../utils/data'
 import { useServerPagination } from '../hooks/useServerPagination'
+import { buildApiUrl } from '../config/apiConfig'
+
+// ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
+const FRONTEND_TO_BACKEND_FIELD_MAP: Record<string, string> = {
+  'nombre': 'nombre',
+  'rfc': 'rfc',
+  'puesto': 'puesto',
+  'sucursal': 'sucursal',
+  'mes': 'periodo',        // Frontend uses 'mes', backend expects 'periodo'
+  'periodo': 'periodo',
+  'sueldo': 'salario',     // Frontend uses 'sueldo', backend expects 'salario'
+  'salario': 'salario',
+  'comisiones': 'comisiones',
+  'totalPercepciones': 'totalpercepciones',
+  'percepcionesTotales': 'percepcionestotales',
+  'estado': 'estado'
+}
 
 const columns: { key: string; label: string; sortable: boolean; dataKey: keyof PayrollData | 'profile' }[] = [
   { key: 'nombre', label: 'Empleado', sortable: true, dataKey: 'nombre' },
@@ -33,7 +50,7 @@ export default function EmployeeTable() {
     setPageSize,
     refresh,
     handleSortChange
-  } = useServerPagination('/api/payroll', 25)
+  } = useServerPagination('/api/payroll', 25, 'periodo', 'asc') // ✅ Default: periodo ASC as requested
 
   // Calculate display range
   const from = pagination.total > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0
@@ -43,39 +60,48 @@ export default function EmployeeTable() {
   const toggleSort = (key: string) => {
     console.log('🔄 EmployeeTable.toggleSort called:', { key, sortBy, sortDir })
     
+    // ✅ MAP frontend column key to backend field name
+    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
+    console.log('🔵 Field mapping:', { frontendKey: key, backendField: backendFieldName })
+    
     // LOG ESPECIAL PARA PERCEPCIONES TOTALES
     if (key === 'percepcionesTotales' || key === 'totalPercepciones') {
       console.log('💰 PERCEPCIONES TOTALES CLICKED:', {
         clickedKey: key,
+        mappedBackendField: backendFieldName,
         currentSortBy: sortBy,
         currentSortDir: sortDir,
-        willToggle: key === sortBy
+        willToggle: sortBy === backendFieldName
       })
     }
     
+    // ✅ Check if this column is currently sorted (compare backend field names)
     let newDirection: 'asc' | 'desc'
-    if (key === sortBy) {
+    if (sortBy === backendFieldName) {
+      // Same column clicked - toggle direction
       newDirection = sortDir === 'asc' ? 'desc' : 'asc'
     } else {
+      // Different column clicked - start with ascending
       newDirection = 'asc'
     }
     
-    console.log('📤 EmployeeTable: Sending sort change:', { key, newDirection })
+    console.log('📤 EmployeeTable: Sending sort change to backend:', { 
+      frontendKey: key, 
+      backendField: backendFieldName,
+      direction: newDirection 
+    })
     
-    // LOG ESPECIAL PARA PERCEPCIONES TOTALES
-    if (key === 'percepcionesTotales' || key === 'totalPercepciones') {
-      console.log('💰 PERCEPCIONES TOTALES - Sending to hook:', {
-        key,
-        newDirection,
-        timestamp: new Date().toISOString()
-      })
-    }
-    
-    handleSortChange(key, newDirection)
+    // ✅ IMPORTANT: Send backend field name, not frontend key
+    handleSortChange(backendFieldName, newDirection)
   }
 
   const getSortIcon = (key: string) => {
-    if (sortBy !== key) {
+    // ✅ Map frontend key to backend field name for comparison
+    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
+    // Compare with sortBy (which now contains backend field name)
+    const isActive = sortBy === backendFieldName
+    
+    if (!isActive) {
       return (
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
@@ -101,7 +127,7 @@ export default function EmployeeTable() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('https://numerica-2.onrender.com/api/payroll/stats')
+        const response = await fetch(buildApiUrl('/api/payroll/stats'))
         if (response.ok) {
           const result = await response.json()
           if (result.success) {

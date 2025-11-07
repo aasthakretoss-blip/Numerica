@@ -425,7 +425,8 @@ class NominasService {
         paramIndex++;
       }
       
-      query += ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
+      // ✅ DEFAULT: ASC order by periodo (cveper ASC) - as requested by user
+      query += ` ORDER BY cveper ASC, "Nombre completo" ASC`;
       
       // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -478,8 +479,7 @@ class NominasService {
           "Puesto" as puesto,
           "Compañía" as sucursal,
           "RFC" as rfc,
-          cveper as periodo,
-          cveper as fecha,
+          TO_CHAR(cveper, 'YYYY-MM-DD') as periodo,
           TO_CHAR(cveper, 'YYYY-MM-DD') as mes,
           COALESCE(" SUELDO CLIENTE ", 0) as sueldo,
           COALESCE(" SUELDO CLIENTE ", 0) as salary,
@@ -593,6 +593,17 @@ class NominasService {
       }
       
       // NUEVO: Ordenamiento dinámico (server-side sorting)
+      
+      // 🔍 LOG: Show sorting options received
+      console.log('\n\n═══════════════════════════════════════════════════════════════');
+      console.log('🔍 [SORTING DEBUG - nominasService START] Sorting Configuration:');
+      console.log('═══════════════════════════════════════════════════════════════');
+      console.log('📋 options.orderBy:', options.orderBy || 'UNDEFINED (will use default)');
+      console.log('📋 options.orderDirection:', options.orderDirection || 'UNDEFINED (will use default)');
+      console.log('📋 options.page:', options.page);
+      console.log('📋 options.pageSize:', options.pageSize);
+      console.log('═══════════════════════════════════════════════════════════════\n');
+      
       let orderClause = '';
       if (options.orderBy) {
         console.log('🎯 Configurando ordenamiento:', { orderBy: options.orderBy, orderDirection: options.orderDirection });
@@ -604,28 +615,49 @@ class NominasService {
           'curp': '"CURP"',
           'puesto': '"Puesto"',
           'sucursal': '"Compa\u00f1\u00eda"',
-          'periodo': 'cveper',
-          'mes': 'cveper',
-          'fecha': 'cveper',
-          'salario': 'CAST(" SUELDO CLIENTE" AS NUMERIC)',
-          'comisiones': '(COALESCE(CAST(" COMISIONES CLIENTE" AS NUMERIC), 0) + COALESCE(CAST(" COMISIONES FACTURADAS" AS NUMERIC), 0))',
-          'percepcionesTotales': 'CAST(" TOTAL DE PERCEPCIONES" AS NUMERIC)',
-          'totalPercepciones': 'CAST(" TOTAL DE PERCEPCIONES" AS NUMERIC)',
+          'periodo': 'cveper',  // Sort by full timestamp for periodo
+          'mes': 'cveper',  // Sort by full timestamp for mes
+          'fecha': 'cveper',  // Sort by full timestamp
+          'cveper': 'cveper',  // Direct cveper sorting
+          // ✅ FIXED: Salario/Salary/Sueldo sorting - MUST match SELECT query exactly (line 484)
+          // SELECT uses: COALESCE(" SUELDO CLIENTE ", 0) - but ORDER BY needs ::NUMERIC for proper sorting
+          'salario': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          'salary': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          'sueldo': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          // ✅ FIXED: Comisiones sorting - MUST match SELECT query exactly (line 488)
+          // SELECT uses: COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0)
+          'comisiones': '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
+          'commissions': '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
+          // ✅ FIXED: Total Percepciones sorting - MUST match SELECT query exactly (line 490)
+          // SELECT uses: COALESCE(" TOTAL DE PERCEPCIONES ", 0)
+          'percepcionestotales': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
+          'totalpercepciones': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
           'costoNomina': 'CAST("COSTO DE NOMINA" AS NUMERIC)',
-          'estado': '"Status"'
+          'estado': '"Status"',
+          'status': '"Status"'
         };
         
-        const dbField = fieldMapping[options.orderBy];
+        // Normalize orderBy field name
+        const normalizedOrderBy = String(options.orderBy || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const dbField = fieldMapping[normalizedOrderBy];
+        
+        // 🔍 LOG: Show what field mapping is being used
+        console.log('\n🔵 [FIELD MAPPING DEBUG - nominasService]');
+        console.log('🔵 Original orderBy:', options.orderBy);
+        console.log('🔵 Normalized orderBy:', normalizedOrderBy);
+        console.log('🔵 Mapped to dbField:', dbField || 'NOT FOUND IN MAPPING');
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          orderClause = ` ORDER BY ${dbField} ${direction}, "Nombre completo" ASC, "CURP" ASC, cveper DESC`;
+          orderClause = ` ORDER BY ${dbField} ${direction}`;
           console.log('✅ Clausula ORDER BY generada:', orderClause);
         } else {
-          orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`; // Fallback por defecto con sort secundario y terciario
+          // Default ordering - ASC by periodo
+          orderClause = ` ORDER BY cveper ASC, "Nombre completo" ASC`;
           console.log('⚠️ Campo no reconocido, usando orden por defecto:', orderClause);
         }
       } else {
-        orderClause = ` ORDER BY "Nombre completo" ASC, "CURP" ASC, cveper DESC`; // Orden por defecto con sort secundario y terciario para consistencia
+        // ✅ DEFAULT: ASC order by periodo (cveper ASC) - as requested by user
+        orderClause = ` ORDER BY cveper ASC, "Nombre completo" ASC`;
       }
       
       query += orderClause;
@@ -633,6 +665,42 @@ class NominasService {
       // Paginación
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
+      
+      // 🔍 DETAILED LOGGING: Show complete query structure - ALWAYS LOG THIS
+      console.log('\n═══════════════════════════════════════════════════════════════');
+      console.log('🔍 [SORTING DEBUG - nominasService FINAL] Complete Query Structure:');
+      console.log('═══════════════════════════════════════════════════════════════');
+      console.log('📋 Order By Field:', options.orderBy || 'DEFAULT (periodo ASC)');
+      console.log('📋 Order Direction:', options.orderDirection || 'ASC (default)');
+      console.log('📋 ORDER BY Clause:', orderClause);
+      console.log('📋 Pagination:', JSON.stringify({ page, pageSize, offset }, null, 2));
+      console.log('📋 Total Query Params (before pagination):', queryParams.length);
+      console.log('📋 Final Params Count (with pagination):', finalParams.length);
+      console.log('═══════════════════════════════════════════════════════════════');
+      
+      // 🔍 LOG COMPLETE FINAL QUERY - Show ORDER BY and LIMIT/OFFSET position
+      const orderByIndex = query.indexOf('ORDER BY');
+      const limitIndex = query.indexOf('LIMIT');
+      const orderBySection = orderByIndex !== -1 ? query.substring(orderByIndex, limitIndex !== -1 ? limitIndex : query.length).trim() : 'NOT FOUND';
+      const limitSection = limitIndex !== -1 ? query.substring(limitIndex).trim() : 'NOT FOUND';
+      
+      console.log('\n📝 [QUERY STRUCTURE] Ordering and Pagination:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ ORDER BY Position:', orderByIndex !== -1 ? `Found at index ${orderByIndex}` : '❌ NOT FOUND');
+      console.log('✅ ORDER BY Section:', orderBySection);
+      console.log('✅ LIMIT/OFFSET Position:', limitIndex !== -1 ? `Found at index ${limitIndex}` : '❌ NOT FOUND');
+      console.log('✅ LIMIT/OFFSET Section:', limitSection);
+      console.log('✅ VERIFICATION: ORDER BY comes BEFORE LIMIT:', orderByIndex !== -1 && limitIndex !== -1 && orderByIndex < limitIndex ? '✅ YES - CORRECT!' : '❌ NO - WRONG ORDER!');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      // Show full query (truncated)
+      const queryPreview = query.length > 3000 ? query.substring(0, 3000) + '\n... [TRUNCATED - Query is ' + query.length + ' chars long]' : query;
+      console.log('\n📝 [FINAL QUERY - nominasService] Complete SQL Query:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(queryPreview);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📋 Final Parameters:', JSON.stringify(finalParams, null, 2));
+      console.log('═══════════════════════════════════════════════════════════════\n\n');
       
       // Ejecutar consultas
       const [dataResult, countResult] = await Promise.all([

@@ -3,6 +3,20 @@ const cors = require('cors');
 const { Client } = require('pg');
 require('dotenv').config({ path: '.env.database' });
 const authService = require('./api-server/services/authService');
+// Try to load payrollFilterService - check both possible paths
+let payrollFilterService;
+try {
+  payrollFilterService = require('./services/payrollFilterService');
+  console.log('✅ Loaded payrollFilterService from ./services/payrollFilterService');
+} catch (e1) {
+  try {
+    payrollFilterService = require('./api-server/services/payrollFilterService');
+    console.log('✅ Loaded payrollFilterService from ./api-server/services/payrollFilterService');
+  } catch (e2) {
+    console.error('❌ Could not load payrollFilterService from either path:', e1.message, e2.message);
+    throw new Error('payrollFilterService not found');
+  }
+}
 
 const app = express();
 const PORT = 3001;
@@ -281,28 +295,24 @@ app.put('/api/user/profile', async (req, res) => {
   }
 });
 
-// GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
-app.get('/api/payroll', async (req, res) => {
+// FALLBACK: Simple query fallback if service fails
+async function fallbackSimpleQuery(req, res, serviceOptions) {
   try {
-    const { q, sucursal, puesto, status, cveper, sortBy = 'nombre', sortDir = 'asc', page = 1, pageSize = 50 } = req.query;
-    
-    // Validación para manejar grandes volúmenes (hasta 250,000 registros)
-    const maxPageSize = 1000; // Máximo registros por página
-    const validatedPageSize = Math.min(parseInt(pageSize), maxPageSize);
-    const validatedPage = Math.max(1, parseInt(page));
+    console.log('🔄 [FALLBACK] Using simple query fallback');
+    const { search, sucursal, puesto, status, cveper, orderBy, orderDirection, pageSize, page } = serviceOptions;
     
     const client = await getHistoricClient();
     
     // Build WHERE clause
-    const conditions = []; // Remover filtro que limitaba resultados
+    const conditions = [];
     const params = [];
     let paramIndex = 1;
     
-    if (q) {
-      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex + 1})`);
-      const searchTerm = `%${q.toLowerCase()}%`;
-      params.push(searchTerm, searchTerm);
-      paramIndex += 2;
+    if (search) {
+      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex})`);
+      const searchTerm = `%${search.toLowerCase()}%`;
+      params.push(searchTerm);
+      paramIndex++;
     }
     
     if (sucursal) {
@@ -323,125 +333,276 @@ app.get('/api/payroll', async (req, res) => {
       paramIndex++;
     }
     
-    if (cveper) {
-      // Detectar si es formato YYYY-MM (mes completo) o fecha exacta
-      const isMonthFormat = /^\d{4}-\d{2}$/.test(cveper);
-      if (isMonthFormat) {
-        // Filtrar por mes completo usando DATE_TRUNC
-        conditions.push(`DATE_TRUNC('month', "cveper") = $${paramIndex}`);
-        params.push(`${cveper}-01`); // Convertir 2025-06 a 2025-06-01
-      } else {
-        // Filtrar por fecha exacta
-        conditions.push(`"cveper" = $${paramIndex}`);
-        params.push(cveper);
-      }
-      paramIndex++;
-    }
-    
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     
-    // Validate and sanitize sort parameters
-    const validSortColumns = {
-      'nombre': '"Nombre completo"',
-      'curp': '"CURP"',
-      'sucursal': '"Compañía"',
-      'puesto': '"Puesto"',
-      'fecha': '"cveper"',
-      'sueldo': '" SUELDO CLIENTE "',
-      'salario': '" SUELDO CLIENTE "', // Alias para compatibilidad con frontend
-      'comisiones': '(COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" SUELDO CLIENTE " * 0.1, 0))',
-      'totalPercepciones': '" TOTAL DE PERCEPCIONES "',
-      'status': '"Status"',
-      'estado': '"Status"' // Alias para compatibilidad con frontend
-    };
-    
-    const sortColumn = validSortColumns[sortBy] || '"Nombre completo"';
-    const sortDirection = sortDir.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-    
     // Get total count
-    const countQuery = `SELECT COUNT(*) FROM historico_nominas_gsau ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM historico_nominas_gsau ${whereClause}`;
     const countResult = await client.query(countQuery, params);
-    const total = parseInt(countResult.rows[0].count);
+    const total = parseInt(countResult.rows[0].total);
     
-    // Log para diagnosticar
-    console.log(`📊 Query info: Total count query: ${countQuery}`);
-    console.log(`📊 Total found: ${total}`);
+    // Get paginated results
+    const offset = (parseInt(page) - 1) * parseInt(pageSize);
+    const sortColumn = orderBy === 'nombre' ? '"Nombre completo"' : '"Nombre completo"';
+    const sortDirection = orderDirection === 'desc' ? 'DESC' : 'ASC';
     
-    // Get paginated results with mapping
-    const offset = (validatedPage - 1) * validatedPageSize;
     const dataQuery = `
       SELECT 
         "RFC" as rfc,
         "Nombre completo" as nombre,
-        "Nombre completo" as name,
         "CURP" as curp,
         "Compañía" as sucursal,
-        "Compañía" as department,
         "Puesto" as puesto,
-        "Puesto" as position,
-        DATE(cveper)::text as periodo,
-        "cveper" as fecha,
-        "Mes" as mes,
+        cveper,
         COALESCE(" SUELDO CLIENTE ", 0) as sueldo,
-        COALESCE(" SUELDO CLIENTE ", 0) as salary,
-        COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" SUELDO CLIENTE " * 0.1, 0) as comisiones,
-        COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" SUELDO CLIENTE " * 0.1, 0) as commissions,
-        "Status" as status,
-        CASE 
-          WHEN "Status" = 'A' THEN 'Activo'
-          WHEN "Status" = 'B' THEN 'Baja'
-          WHEN "Status" = 'F' THEN 'Finiquito'
-          ELSE 'N/A'
-        END as estado,
-        " TOTAL DE PERCEPCIONES " as "totalPercepciones",
-        " TOTAL DE PERCEPCIONES " as "totalCost",
-        " TOTAL DEDUCCIONES " as "totalDeducciones"
+        "Status" as status
       FROM historico_nominas_gsau 
       ${whereClause}
       ORDER BY ${sortColumn} ${sortDirection}
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
     
-    const dataResult = await client.query(dataQuery, [...params, offset, validatedPageSize]);
-    
+    const dataResult = await client.query(dataQuery, [...params, offset, parseInt(pageSize)]);
     await client.end();
+    
+    const transformedData = dataResult.rows.map(row => ({
+      rfc: row.rfc,
+      nombre: row.nombre,
+      name: row.nombre,
+      curp: row.curp,
+      sucursal: row.sucursal,
+      puesto: row.puesto,
+      sueldo: parseFloat(row.sueldo || 0),
+      status: row.status,
+      estado: row.status === 'A' ? 'Activo' : row.status === 'B' ? 'Baja' : 'N/A'
+    }));
+    
+    console.log('✅ [FALLBACK] Fallback query completed:', {
+      total,
+      dataLength: transformedData.length
+    });
     
     res.json({
       success: true,
-      data: dataResult.rows.map(row => ({
+      data: transformedData,
+      pagination: {
+        page: parseInt(page) || 1,
+        pageSize: parseInt(pageSize) || 100,
+        total: total,
+        totalPages: Math.ceil(total / (parseInt(pageSize) || 100))
+      }
+    });
+  } catch (fallbackError) {
+    console.error('❌ [FALLBACK ERROR] Fallback query also failed:', fallbackError);
+    throw fallbackError;
+  }
+}
+
+// GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
+app.get('/api/payroll', async (req, res) => {
+  // 🔍 ENTRY POINT LOGGING: Log request immediately - VERY PROMINENT
+  console.error('========================================');
+  console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
+  console.error('URL:', req.url);
+  console.error('SEARCH PARAM (q):', req.query.q);
+  console.error('SEARCH PARAM (search):', req.query.search);
+  console.error('ALL QUERY:', JSON.stringify(req.query));
+  console.error('========================================');
+  
+  console.log('========================================');
+  console.log('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
+  console.log('URL:', req.url);
+  console.log('SEARCH PARAM (q):', req.query.q);
+  console.log('SEARCH PARAM (search):', req.query.search);
+  console.log('ALL QUERY:', JSON.stringify(req.query));
+  console.log('========================================');
+  
+  try {
+    // Support both 'q' and 'search' parameters (frontend might use 'search')
+    const { q, search, sucursal, puesto, status, cveper, sortBy = 'nombre', sortDir = 'asc', page = 1, pageSize = 50, orderBy, orderDirection, fullData } = req.query;
+    
+    // Use 'search' if provided, otherwise use 'q'
+    const searchTerm = search || q;
+    
+    console.log('📥 [API REQUEST] Raw query parameters received:', {
+      searchTerm: searchTerm || 'NONE',
+      q: q || 'NONE',
+      search: search || 'NONE',
+      sucursal: sucursal || 'NONE',
+      puesto: puesto || 'NONE',
+      status: status || 'NONE',
+      cveper: cveper || 'NONE',
+      sortBy: sortBy || 'NONE',
+      sortDir: sortDir || 'NONE',
+      orderBy: orderBy || 'NONE',
+      orderDirection: orderDirection || 'NONE',
+      page: page || 'NONE',
+      pageSize: pageSize || 'NONE',
+      fullData: fullData || 'NONE'
+    });
+    
+    // ✅ FIXED: Clean and decode search parameter
+    let cleanedSearch = null;
+    if (searchTerm) {
+      try {
+        // Decode URL encoding and handle + signs
+        let decoded = decodeURIComponent(String(searchTerm));
+        decoded = decoded.replace(/\+/g, ' ');
+        cleanedSearch = decoded.trim();
+        // Only use if not empty after cleaning
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
+      } catch (e) {
+        // If decode fails, just clean the string
+        cleanedSearch = String(searchTerm).replace(/\+/g, ' ').trim();
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
+      }
+    }
+    
+    console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {
+      original: searchTerm,
+      cleaned: cleanedSearch,
+      isEmpty: !cleanedSearch || cleanedSearch.length === 0,
+      length: cleanedSearch ? cleanedSearch.length : 0
+    });
+    
+    // Use orderBy/orderDirection if provided, otherwise fallback to sortBy/sortDir
+    const finalOrderBy = orderBy || sortBy;
+    const finalOrderDirection = orderDirection || sortDir;
+    
+    // Build service options to use payrollFilterService
+    const serviceOptions = {
+      pageSize: parseInt(pageSize) || 100,
+      page: parseInt(page) || 1,
+      search: cleanedSearch, // Use cleaned search
+      puesto,
+      sucursal,
+      status,
+      cveper,
+      orderBy: finalOrderBy,
+      orderDirection: finalOrderDirection,
+      fullData: fullData === 'true' || fullData === true
+    };
+    
+    console.log('🔍 [FILTER/SORT] Active filters and sorting:', {
+      search: cleanedSearch || null,
+      originalSearch: searchTerm || null,
+      orderBy: finalOrderBy || null,
+      orderDirection: finalOrderDirection || null,
+      filters: { puesto, sucursal, status, cveper: cveper ? 'set' : null }
+    });
+    
+    console.log('🚀 [SERVICE CALL] Calling payrollFilterService.getPayrollDataWithFiltersAndSorting with options:', {
+      ...serviceOptions,
+      search: serviceOptions.search ? `${serviceOptions.search.substring(0, 50)}...` : 'NONE'
+    });
+    
+    console.log('🔵 [BEFORE SERVICE] serviceOptions.search =', serviceOptions.search);
+    console.log('🔵 [BEFORE SERVICE] Full serviceOptions =', JSON.stringify(serviceOptions, null, 2));
+    
+    // Use payrollFilterService for proper search, filtering, and sorting
+    let result;
+    try {
+      console.log('🚀 [SERVICE CALL] About to call payrollFilterService.getPayrollDataWithFiltersAndSorting...');
+      console.log('🚀 [SERVICE CALL] payrollFilterService type:', typeof payrollFilterService);
+      console.log('🚀 [SERVICE CALL] payrollFilterService methods:', payrollFilterService ? Object.keys(payrollFilterService) : 'SERVICE IS NULL');
+      console.log('🚀 [SERVICE CALL] Checking if method exists:', payrollFilterService && typeof payrollFilterService.getPayrollDataWithFiltersAndSorting === 'function' ? 'YES' : 'NO');
+      
+      if (!payrollFilterService || typeof payrollFilterService.getPayrollDataWithFiltersAndSorting !== 'function') {
+        throw new Error('payrollFilterService.getPayrollDataWithFiltersAndSorting is not a function');
+      }
+      
+      // Add timeout to prevent hanging
+      const servicePromise = payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Service call timed out after 30 seconds')), 30000)
+      );
+      
+      result = await Promise.race([servicePromise, timeoutPromise]);
+      console.log('✅ [SERVICE CALL] Service call completed successfully');
+    } catch (serviceError) {
+      console.error('❌ [SERVICE ERROR] Error calling payrollFilterService:', serviceError);
+      console.error('❌ [SERVICE ERROR] Error stack:', serviceError.stack);
+      console.error('❌ [SERVICE ERROR] Error message:', serviceError.message);
+      
+      // FALLBACK: Use simple query if service fails
+      console.log('⚠️ [FALLBACK] Service failed, using fallback simple query...');
+      return await fallbackSimpleQuery(req, res, serviceOptions);
+    }
+    
+    console.log('🟢 [AFTER SERVICE] Service returned - result.success =', result?.success);
+    console.log('🟢 [AFTER SERVICE] Service returned - result.data.length =', result?.data?.length || 0);
+    console.log('🟢 [AFTER SERVICE] Service returned - result.total =', result?.total || 0);
+    console.log('🟢 [AFTER SERVICE] Full result keys:', result ? Object.keys(result) : 'RESULT IS NULL/UNDEFINED');
+    
+    // Validate result
+    if (!result) {
+      throw new Error('Service returned null or undefined result');
+    }
+    
+    if (!result.success) {
+      console.warn('⚠️ [SERVICE WARNING] Service returned success: false');
+    }
+    
+    if (!result.data) {
+      console.warn('⚠️ [SERVICE WARNING] Service returned no data array');
+      result.data = [];
+    }
+    
+    // Transform data to match expected format
+    const transformedData = result.data.map(row => ({
         rfc: row.rfc,
         nombre: row.nombre,
-        name: row.name,
+      name: row.name || row.nombre,
         curp: row.curp,
         sucursal: row.sucursal,
-        department: row.department,
+      department: row.sucursal,
         puesto: row.puesto,
-        position: row.position,
-        periodo: row.periodo, // Fecha de cveper en formato YYYY-MM-DD
-        fecha: row.fecha,
+      position: row.puesto,
+      periodo: row.periodo || row.mes,
+      fecha: row.fecha || row.cveper,
         mes: row.mes || 'Enero 2024',
-        sueldo: parseFloat(row.sueldo || 0),
-        salary: parseFloat(row.salary || 0),
+      sueldo: parseFloat(row.sueldo || row.salary || 0),
+      salary: parseFloat(row.salary || row.sueldo || 0),
         comisiones: parseFloat(row.comisiones || 0),
-        commissions: parseFloat(row.commissions || 0),
-        totalPercepciones: parseFloat(row.totalpercepciones || row.sueldo || 0),
-        totalCost: parseFloat(row.totalcost || row.sueldo || 0),
+      commissions: parseFloat(row.comisiones || 0),
+      totalPercepciones: parseFloat(row.totalPercepciones || row.sueldo || 0),
+      totalCost: parseFloat(row.totalPercepciones || row.sueldo || 0),
         status: row.status,
-        // Additional fields for compatibility
-        estado: row.estado,
+      estado: row.estado || row.status,
         perfilUrl: null
-      })),
-      pagination: {
-        page: validatedPage,
-        pageSize: validatedPageSize,
-        total: total,
-        totalPages: Math.ceil(total / validatedPageSize)
+    }));
+    
+    console.log('✅ [RESPONSE] Sending response:', {
+      success: result.success,
+      dataLength: transformedData.length,
+      total: result.pagination?.total || result.total || 0,
+      pagination: result.pagination
+    });
+    
+    res.json({
+      success: result.success,
+      data: transformedData,
+      pagination: result.pagination || {
+        page: parseInt(page) || 1,
+        pageSize: parseInt(pageSize) || 100,
+        total: result.total || 0,
+        totalPages: Math.ceil((result.total || 0) / (parseInt(pageSize) || 100))
       }
     });
     
   } catch (error) {
-    console.error('Error in /api/payroll:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ [ERROR] Error in /api/payroll:', error);
+    console.error('❌ [ERROR] Error stack:', error.stack);
+    console.error('❌ [ERROR] Error message:', error.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 

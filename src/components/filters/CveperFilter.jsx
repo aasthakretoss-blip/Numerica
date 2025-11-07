@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { FaChevronDown, FaCheck } from 'react-icons/fa';
+import { buildApiUrl } from '../../config/apiConfig';
 
 const FilterContainer = styled.div`
   background: ${props => props.theme?.surfaces?.glass?.medium || 'rgba(255, 255, 255, 0.15)'};
@@ -138,7 +139,7 @@ const CveperFilter = ({ selectedCveper, onCveperChange, curp }) => {
           page: '1'
         });
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
         if (!response.ok) throw new Error('Error fetching data');
         
         const result = await response.json();

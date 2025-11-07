@@ -197,7 +197,7 @@ const PerfilHistorico = ({ rfc }) => {
           page: '1'
         });
         
-        const response = await fetch(`http://localhost:3001/api/percepciones?${params.toString()}`);
+        const response = await fetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener datos de nómina');

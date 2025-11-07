@@ -32,12 +32,14 @@ const PayrollDataViewer = ({ curp, selectedPeriod }) => {
       console.log('🔍 CURP solicitada:', curpValue);
       console.log('📅 Período solicitado:', periodValue);
       
-      // Use /api/payroll endpoint with same format as AWS
-      // Format: GET /api/payroll?curp=AEMB930330MDFBGR07&pageSize=1000&page=1&cveper=2025-06-30T00:00:00.000Z
+      // ✅ FIXED: Use search parameter to filter by CURP and request fullData to get all fields
+      // Format: GET /api/payroll?search=CURP&pageSize=1000&page=1&fullData=true&cveper=2025-06-30T00:00:00.000Z
       const params = new URLSearchParams({
-        curp: curpValue,
+        search: curpValue, // Use search instead of curp for better filtering
         pageSize: '1000',
-        page: '1'
+        page: '1',
+        fullData: 'true', // Request all fields from database
+        includeAllFields: 'true' // Additional flag to ensure all fields are returned
       });
       
       if (periodValue) {

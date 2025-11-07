@@ -40,7 +40,7 @@ const PayrollDataViewer = ({ curp, selectedPeriod }) => {
       }
       
       // USAR EL MISMO ENDPOINT QUE DatosEmpleado
-      const response = await fetch(`http://localhost:3001/api/percepciones?${params.toString()}`);
+      const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error('Error al cargar datos del empleado');

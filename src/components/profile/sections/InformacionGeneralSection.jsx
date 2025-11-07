@@ -143,46 +143,62 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     return '';
   };
 
-  // ✅ MAPEO CORREGIDO: Usar nombres EXACTOS del backend (similar a BusquedaEmpleados)
+  // ✅ FIXED: Helper function to get field value trying multiple possible field names
+  const getFieldValue = (data, fieldNames) => {
+    if (!data) return null;
+    for (const fieldName of fieldNames) {
+      const value = data[fieldName];
+      if (value !== null && value !== undefined && value !== '') {
+        return value;
+      }
+    }
+    return null;
+  };
+
+  // ✅ FIXED: Use exact database column names with spaces and try multiple variations
   const fields = [
-    // Campos principales coincidentes con la transformación de BusquedaEmpleados
-    { key: 'curp', label: 'CURP', dbField: 'curp', highlight: true },
-    { key: 'nombre', label: 'Nombre completo', dbField: 'nombre', highlight: true },
-    { key: 'puesto', label: 'Puesto', dbField: 'puesto' },
-    { key: 'sucursal', label: 'Sucursal', dbField: 'sucursal' },
-    { key: 'rfc', label: 'RFC', dbField: 'rfc' },
-    { key: 'status', label: 'Status', dbField: 'estado' },
+    // Campos principales - try multiple field name variations
+    { key: 'curp', label: 'CURP', dbFields: ['curp', 'CURP', 'Curp'], highlight: true },
+    { key: 'nombre', label: 'Nombre completo', dbFields: ['nombre', 'Nombre completo', 'name'], highlight: true },
+    { key: 'puesto', label: 'Puesto', dbFields: ['puesto', 'Puesto', 'position'] },
+    { key: 'sucursal', label: 'Sucursal', dbFields: ['sucursal', 'Sucursal', 'Compañía', 'Compania', 'department'] },
+    { key: 'rfc', label: 'RFC', dbFields: ['rfc', 'RFC'] },
+    { key: 'status', label: 'Status', dbFields: ['estado', 'Estado', 'Status', 'status'] },
     // Campos adicionales usando nombres de la BD cuando estén disponibles
-    { key: 'compania', label: 'Compañía', dbField: 'Compañía' },
-    { key: 'periodicidad', label: 'Periodicidad', dbField: 'Periodicidad' },
-    { key: 'claveTrabajador', label: 'Clave trabajador', dbField: 'Clave trabajador' },
-    { key: 'numeroIMSS', label: 'Número IMSS', dbField: 'Número IMSS', isIMSS: true },
-    { key: 'fechaAntiguedad', label: 'Fecha de antigüedad', dbField: 'Fecha antigüedad', isDate: true },
-    { key: 'antiguedadFPL', label: 'Antigüedad en FPL', dbField: 'Antigüedad en FPL', isDate: true },
-    { key: 'localidad', label: 'Localidad', dbField: 'Localidad' },
-    { key: 'sexo', label: 'Sexo', dbField: 'Sexo' },
-    { key: 'mes', label: 'Mes', dbField: 'Mes', isClean: true },
-    { key: 'periodo', label: 'Período', dbField: 'cveper', isClean: true }
+    { key: 'compania', label: 'Compañía', dbFields: ['Compañía', 'Compania', 'compania', 'sucursal'] },
+    { key: 'periodicidad', label: 'Periodicidad', dbFields: ['Periodicidad', 'periodicidad'] },
+    { key: 'claveTrabajador', label: 'Clave trabajador', dbFields: ['Clave trabajador', 'claveTrabajador', 'clave trabajador'] },
+    { key: 'numeroIMSS', label: 'Número IMSS', dbFields: ['Número IMSS', 'numeroIMSS', 'Número IMSS', 'numero IMSS'], isIMSS: true },
+    { key: 'fechaAntiguedad', label: 'Fecha de antigüedad', dbFields: ['Fecha antigüedad', 'fechaAntiguedad', 'Fecha antiguedad', 'fechaAntiguedadFPL'], isDate: true },
+    { key: 'antiguedadFPL', label: 'Antigüedad en FPL', dbFields: ['Antigüedad en FPL', 'antiguedadFPL', 'Antiguedad en FPL'], isDate: true },
+    { key: 'localidad', label: 'Localidad', dbFields: ['Localidad', 'localidad'] },
+    { key: 'sexo', label: 'Sexo', dbFields: ['Sexo', 'sexo'] },
+    { key: 'mes', label: 'Mes', dbFields: ['Mes', 'mes', 'cveper'], isClean: true },
+    { key: 'periodo', label: 'Período', dbFields: ['cveper', 'periodo', 'mes'], isClean: true }
   ];
 
   return (
     <SectionContainer>
       <SectionTitle>Información General</SectionTitle>
       <FieldsGrid>
-        {fields.map(({ key, label, dbField, highlight, isDate, isStatus, isIMSS, isClean }) => {
+        {fields.map(({ key, label, dbFields, highlight, isDate, isStatus, isIMSS, isClean }) => {
           let value;
           
           // 🎯 CORRECCIÓN: Para el campo período, usar selectedPeriod si está disponible
-          if (key === 'cveper' && selectedPeriod) {
+          if (key === 'periodo' && selectedPeriod) {
             value = formatCleanValue(selectedPeriod);
-          } else if (isDate) {
-            value = formatDate(data?.[dbField]);
-          } else if (isIMSS) {
-            value = formatNumberIMSS(data?.[dbField]);
-          } else if (isClean) {
-            value = formatCleanValue(data?.[dbField]);
           } else {
-            value = formatValue(data?.[dbField]);
+            // ✅ FIXED: Try multiple field name variations
+            const fieldValue = getFieldValue(data, dbFields);
+            if (isDate) {
+              value = formatDate(fieldValue);
+            } else if (isIMSS) {
+              value = formatNumberIMSS(fieldValue);
+            } else if (isClean) {
+              value = formatCleanValue(fieldValue);
+            } else {
+              value = formatValue(fieldValue);
+            }
           }
 
           return (

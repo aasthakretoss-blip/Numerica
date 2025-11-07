@@ -117,32 +117,62 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
     return cleanValue;
   };
 
-  // ✅ MAPEO CORREGIDO: Usar nombres EXACTOS del backend (igual que BusquedaEmpleados)
+  // ✅ FIXED: Helper function to get field value trying multiple possible field names
+  const getFieldValue = (data, fieldNames) => {
+    if (!data) return null;
+    for (const fieldName of fieldNames) {
+      const value = data[fieldName];
+      if (value !== null && value !== undefined && value !== '') {
+        return value;
+      }
+    }
+    return null;
+  };
+
+  // ✅ FIXED: Use exact database column names with spaces (like BusquedaEmpleados does)
   const fields = [
-    { key: 'mes', label: 'Mes', dbField: 'Mes', isClean: true },
-    { key: 'fechaPeriodo', label: 'Fecha del período', dbField: 'cveper', isClean: true },
-    // CORREGIDO: Usar los mismos campos que BusquedaEmpleados
-    { key: 'salario', label: 'Salario', dbField: 'salario', isCurrency: true },
-    { key: 'comisiones', label: 'Comisiones', dbField: 'comisiones', isCurrency: true },
-    { key: 'totalPercepciones', label: 'Total percepciones', dbField: 'totalpercepciones', isCurrency: true }
+    { key: 'mes', label: 'Mes', dbFields: ['Mes', 'mes', 'cveper'], isClean: true },
+    { key: 'fechaPeriodo', label: 'Fecha del período', dbFields: ['cveper', 'periodo', 'mes'], isClean: true },
+    { 
+      key: 'salario', 
+      label: 'Salario', 
+      dbFields: ['salario', 'salary', 'sueldo', ' SUELDO CLIENTE ', 'SUELDO CLIENTE', ' SUELDO ', 'SUELDO'], 
+      isCurrency: true 
+    },
+    { 
+      key: 'comisiones', 
+      label: 'Comisiones', 
+      dbFields: ['comisiones', 'commissions', ' COMISIONES CLIENTE ', 'COMISIONES CLIENTE', ' COMISIONES FACTURADAS ', 'COMISIONES FACTURADAS'], 
+      isCurrency: true 
+    },
+    { 
+      key: 'totalPercepciones', 
+      label: 'Total percepciones', 
+      dbFields: [' TOTAL DE PERCEPCIONES ', 'TOTAL DE PERCEPCIONES', 'totalPercepciones', 'totalpercepciones', ' PERCEPCIONES TOTALES '], 
+      isCurrency: true 
+    }
   ];
 
   return (
     <SectionContainer>
       <SectionTitle>Información Salarial Básica</SectionTitle>
       <FieldsGrid>
-        {fields.map(({ key, label, dbField, isCurrency, isClean, isDate }) => {
+        {fields.map(({ key, label, dbFields, isCurrency, isClean, isDate }) => {
           let value;
           
           // 🎯 CORRECCIÓN: Para el campo fechaPeriodo, usar selectedPeriod si está disponible
           if (key === 'fechaPeriodo' && selectedPeriod) {
             value = formatCleanValue(selectedPeriod);
-          } else if (isCurrency) {
-            value = formatCurrency(data?.[dbField]);
-          } else if (isClean) {
-            value = formatCleanValue(data?.[dbField]);
           } else {
-            value = formatValue(data?.[dbField]);
+            // ✅ FIXED: Try multiple field name variations
+            const fieldValue = getFieldValue(data, dbFields);
+            if (isCurrency) {
+              value = formatCurrency(fieldValue);
+            } else if (isClean) {
+              value = formatCleanValue(fieldValue);
+            } else {
+              value = formatValue(fieldValue);
+            }
           }
 
           return (

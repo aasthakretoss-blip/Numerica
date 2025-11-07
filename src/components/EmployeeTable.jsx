@@ -14,6 +14,7 @@ import {
 import { parseMoney, formatCurrency, formatPeriod } from "../utils/data.js";
 import { formatCveperForTable } from "../utils/periodUtils.ts";
 import { useServerPagination } from "../hooks/useServerPagination.js";
+import { buildApiUrl } from "../config/apiConfig.js";
 import { surfaces, textColors, effects, brandColors, semanticColors } from "../styles/ColorTokens";
 
 // Styled Components
@@ -238,7 +239,7 @@ export default function EmployeeTable({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('https://numerica-2.onrender.com/api/payroll/stats')
+        const response = await fetch(buildApiUrl('/api/payroll/stats'))
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
@@ -254,26 +255,34 @@ export default function EmployeeTable({
 
   // Todas las columnas usan server-side sorting
 
-  // Mapeo de campos frontend -> backend (DEBE estar ANTES de toggleSort)
-  // NOTA: Los nombres de columnas de la base de datos tienen espacios AL PRINCIPIO Y AL FINAL
-  const fieldMapping = {
-    nombre: "nombre",
-    curp: "curp",
-    puesto: "puesto",
-    sucursal: "sucursal",
-    periodo: "cveper",
-    salario: " SUELDO CLIENTE ",
-    comisiones: " COMISIONES CLIENTE ", // Backend debe sumar COMISIONES CLIENTE + COMISIONES FACTURADAS
-    percepcionesTotales: " TOTAL DE PERCEPCIONES ",
-    estado: "estado",
+  // ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
+  // IMPORTANT: These are the field names the BACKEND expects in the orderBy parameter
+  const FRONTEND_TO_BACKEND_FIELD_MAP = {
+    'nombre': 'nombre',
+    'curp': 'curp',
+    'puesto': 'puesto',
+    'sucursal': 'sucursal',
+    'periodo': 'periodo',        // Backend expects 'periodo' (maps to cveper internally)
+    'mes': 'periodo',             // Frontend uses 'mes', backend expects 'periodo'
+    'salario': 'salario',         // Backend expects 'salario' (maps to SUELDO CLIENTE internally)
+    'sueldo': 'salario',          // Frontend uses 'sueldo', backend expects 'salario'
+    'comisiones': 'comisiones',    // Backend expects 'comisiones' (sums both commission types)
+    'percepcionesTotales': 'percepcionestotales',  // Backend expects 'percepcionestotales'
+    'totalPercepciones': 'totalpercepciones',      // Backend expects 'totalpercepciones'
+    'estado': 'estado'
   };
 
   const getMappedFieldName = (frontendFieldName) => {
-    return fieldMapping[frontendFieldName] || frontendFieldName;
+    return FRONTEND_TO_BACKEND_FIELD_MAP[frontendFieldName] || frontendFieldName;
   };
 
   const getSortIcon = (key) => {
-    if (sortBy !== key) return <FaSort />;
+    // ✅ Map frontend key to backend field name for comparison
+    const backendFieldName = getMappedFieldName(key);
+    // Compare with sortBy (which now contains backend field name)
+    const isActive = sortBy === backendFieldName || sortBy === key;
+    
+    if (!isActive) return <FaSort />;
     return sortDir === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
 
@@ -283,14 +292,28 @@ export default function EmployeeTable({
       return;
     }
 
+    // ✅ MAP frontend column key to backend field name
+    const backendFieldName = getMappedFieldName(key);
+    console.log('🔵 EmployeeTable.jsx: Field mapping:', { frontendKey: key, backendField: backendFieldName });
+
+    // ✅ Check if this column is currently sorted (compare backend field names)
     let newDirection;
-    if (key === sortBy) {
+    if (sortBy === backendFieldName || sortBy === key) {
+      // Same column clicked - toggle direction
       newDirection = sortDir === "asc" ? "desc" : "asc";
     } else {
+      // Different column clicked - start with ascending
       newDirection = "asc";
     }
 
-    onSortChange(key, newDirection);
+    console.log('📤 EmployeeTable.jsx: Sending sort change to backend:', { 
+      frontendKey: key, 
+      backendField: backendFieldName,
+      direction: newDirection 
+    });
+
+    // ✅ IMPORTANT: Send backend field name, not frontend key
+    onSortChange(backendFieldName, newDirection);
   };
 
   const columns = [

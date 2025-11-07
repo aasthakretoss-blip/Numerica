@@ -31,9 +31,9 @@ const PeriodDropdownCurpBased = ({
     try {
       console.log(`📅 Fetching periods for CURP: ${curpValue}`);
       
-      // USAR PayrollDataViewer STRATEGY: obtener datos del empleado directamente y extraer períodos
-      const url = `${buildApiUrl('/api/payroll')}?curp=${encodeURIComponent(curpValue)}&pageSize=1000&page=1`;
-      console.log('🌐 Calling URL (datos directos del empleado):', url);
+      // ✅ FIXED: Use search parameter to filter by CURP (more reliable than curp parameter)
+      const url = `${buildApiUrl('/api/payroll')}?search=${encodeURIComponent(curpValue)}&pageSize=1000&page=1&fullData=true`;
+      console.log('🌐 Calling URL (datos directos del empleado filtrados por CURP):', url);
       
       const response = await authenticatedFetch(url);
       console.log('🔄 Response status:', response.status);

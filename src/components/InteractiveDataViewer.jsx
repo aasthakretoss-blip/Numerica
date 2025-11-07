@@ -10,6 +10,7 @@ import {
 import { useChartEvents, SELECTION_TYPES } from '../hooks/useChartEvents';
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi';
 import { formatCveperForTable } from '../utils/periodUtils.ts';
+import { buildApiUrl } from '../config/apiConfig';
 
 // Styled Components para diseño horizontal y ancho completo
 const ViewerContainer = styled.div`
@@ -458,7 +459,7 @@ export default function InteractiveDataViewer() {
         params: params.toString()
       });
 
-      const response = await fetch(`https://numerica-2.onrender.com/api/payroll/demographic?${params}`);
+      const response = await fetch(`${buildApiUrl('/api/payroll/demographic')}?${params}`);
       
       if (response.ok) {
         const result = await response.json();

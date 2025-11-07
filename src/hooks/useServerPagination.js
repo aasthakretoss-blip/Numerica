@@ -4,8 +4,8 @@ import { buildApiUrl, isProduction } from '../config/apiConfig'
 export function useServerPagination(
   endpoint = '/api/payroll',
   initialPageSize = 25,
-  initialSortBy = 'cveper', // Default: latest payroll period
-  initialSortDir = 'desc' // Default: descending (most recent first)
+  initialSortBy = 'periodo', // ✅ Default: periodo (mapped to cveper in backend) - ASC as requested
+  initialSortDir = 'asc' // ✅ Default: ascending as requested by user
 ) {
   const [data, setData] = useState([])
   const [pagination, setPagination] = useState({
@@ -24,9 +24,17 @@ export function useServerPagination(
     setError(null)
     
     try {
-      // Map sortBy/sortDir to orderBy/orderDirection for API compatibility
-      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${sortByParam}&orderDirection=${sortDirParam}`)
-      console.log('📡 useServerPagination: Fetching with sorting:', { sortBy: sortByParam, sortDir: sortDirParam, url, isProduction })
+      // ✅ FIXED: Use sortField and sortOrder as primary parameters (with backward compatibility)
+      // ✅ CRITICAL: sortByParam should be the backend field name (e.g., 'salario', 'comisiones', 'periodo')
+      const url = buildApiUrl(`${endpoint}?page=${page}&limit=${pageSize}&sortField=${encodeURIComponent(sortByParam)}&sortOrder=${sortDirParam}`)
+      console.log('📡 useServerPagination: Fetching with sorting:', { 
+        sortBy: sortByParam, 
+        sortDir: sortDirParam, 
+        sortField: sortByParam,
+        sortOrder: sortDirParam,
+        url, 
+        isProduction
+      })
       
       // LOG ESPECIAL PARA PERCEPCIONES TOTALES
       if (sortByParam === 'percepcionesTotales' || sortByParam === 'totalPercepciones') {

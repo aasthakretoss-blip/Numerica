@@ -1,24 +1,30 @@
-// URL de API - FORZAR uso de Render (numerica-2.onrender.com)
-// NO usar AWS endpoints antiguos
+// ✅ UPDATED: Render backend URL for production
 const RENDER_API_URL = 'https://numerica-2.onrender.com';
 
+// ✅ OPTION: Use localhost for development (set REACT_APP_USE_LOCAL=true in .env)
+// By default, both development and production use Render backend
+
 // CONFIGURACIÓN PARA DESARROLLO Y PRODUCCIÓN
+// ✅ UPDATED: Both development and production now use Render backend by default
+// To use localhost, set REACT_APP_USE_LOCAL=true in .env
+const USE_LOCAL = process.env.REACT_APP_USE_LOCAL === 'true';
+
 const API_CONFIG = {
   development: {
-    // Usar api-server local en desarrollo, sino Render
-    BASE_URL: process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL,
-    PAYROLL_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/payroll',
-    EMPLOYEES_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/employees',
-    DEMOGRAPHICS_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/demographics',
-    PROFILE_API: (process.env.REACT_APP_USE_LOCAL === 'true' ? 'http://localhost:3001' : RENDER_API_URL) + '/api/profile',
+    // ✅ UPDATED: Use Render URL by default (can override with REACT_APP_USE_LOCAL=true)
+    BASE_URL: USE_LOCAL ? 'http://localhost:3001' : RENDER_API_URL,
+    PAYROLL_API: USE_LOCAL ? 'http://localhost:3001/api/payroll' : `${RENDER_API_URL}/api/payroll`,
+    EMPLOYEES_API: USE_LOCAL ? 'http://localhost:3001/api/employees' : `${RENDER_API_URL}/api/employees`,
+    DEMOGRAPHICS_API: USE_LOCAL ? 'http://localhost:3001/api/demographics' : `${RENDER_API_URL}/api/demographics`,
+    PROFILE_API: USE_LOCAL ? 'http://localhost:3001/api/profile' : `${RENDER_API_URL}/api/profile`,
   },
   production: {
-    // SIEMPRE usar Render en producción
+    // ✅ UPDATED: Use Render backend URL for production
     BASE_URL: RENDER_API_URL,
-    PAYROLL_API: RENDER_API_URL + '/api/payroll',
-    EMPLOYEES_API: RENDER_API_URL + '/api/employees',
-    DEMOGRAPHICS_API: RENDER_API_URL + '/api/demographics',
-    PROFILE_API: RENDER_API_URL + '/api/profile',
+    PAYROLL_API: `${RENDER_API_URL}/api/payroll`,
+    EMPLOYEES_API: `${RENDER_API_URL}/api/employees`,
+    DEMOGRAPHICS_API: `${RENDER_API_URL}/api/demographics`,
+    PROFILE_API: `${RENDER_API_URL}/api/profile`,
   }
 };
 
@@ -40,36 +46,57 @@ const getCurrentEnv = () => {
   // Priority 3: Hostname check (only if window is available)
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
     // Check for localhost first (most common in development)
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+    // Only use development mode if explicitly using local backend
+    if ((hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') && USE_LOCAL) {
       return 'development';
     }
-    // Production domains
-    if (hostname.includes('cloudfront.net') || 
+    
+    // Production domains - check for known production hosts
+    if (hostname.includes('vercel.app') ||
+        hostname.includes('cloudfront.net') || 
         hostname.includes('amazonaws.com') ||
         hostname.includes('onrender.com') ||
         hostname.includes('numerica.global') ||
-        (hostname !== 'localhost' && window.location.protocol === 'https:')) {
+        hostname.includes('netlify.app') ||
+        hostname.includes('github.io') ||
+        // If using HTTPS and not localhost, assume production
+        (protocol === 'https:' && hostname !== 'localhost')) {
       return 'production';
     }
   }
   
-  // Default to development for safety
-  return 'development';
+  // Default to production if NODE_ENV is production (for build-time)
+  // Otherwise default to development (but development config also uses Render by default)
+  return process.env.NODE_ENV === 'production' ? 'production' : 'development';
 };
 
 // Obtener la configuración actual
 const getApiConfig = () => {
   const env = getCurrentEnv();
+  
+  // ✅ DEBUG: Log environment detection (only in browser)
+  if (typeof window !== 'undefined') {
+    console.log('🔍 [API Config] Environment Detection:', {
+      detectedEnv: env,
+      hostname: window.location.hostname,
+      protocol: window.location.protocol,
+      nodeEnv: process.env.NODE_ENV,
+      reactAppEnv: process.env.REACT_APP_ENV,
+      baseUrl: API_CONFIG[env].BASE_URL
+    });
+  }
+  
   return API_CONFIG[env];
 };
 
 export const apiConfig = getApiConfig();
 export const isProduction = getCurrentEnv() === 'production';
 
-// API URL will be:
-// - http://localhost:3001 if REACT_APP_USE_LOCAL=true in development
-// - https://numerica-2.onrender.com in production or if REACT_APP_USE_LOCAL is not set
+// ✅ UPDATED: Production uses Render backend (https://numerica-2.onrender.com)
+// Development uses localhost:3001 for local testing
 
 // URLs específicas para compatibilidad con el código existente
 export const API_BASE_URL = apiConfig.BASE_URL;
@@ -91,13 +118,30 @@ export const buildApiUrl = (endpoint) => {
     return endpoint;
   }
   
-  // Si el endpoint comienza con /api, usar la base URL
+  // Construir la URL completa
+  let fullUrl;
   if (endpoint.startsWith('/api')) {
-    return apiConfig.BASE_URL + endpoint;
+    fullUrl = apiConfig.BASE_URL + endpoint;
+  } else {
+    // Para otros casos, asumir que necesita /api como prefijo
+    fullUrl = apiConfig.BASE_URL + '/api/' + endpoint.replace(/^\//, '');
   }
   
-  // Para otros casos, asumir que necesita /api como prefijo
-  return apiConfig.BASE_URL + '/api/' + endpoint.replace(/^\//, '');
+  // ✅ DEBUG: Log URL construction (only in development or if explicitly enabled)
+  if (typeof window !== 'undefined' && (
+    process.env.NODE_ENV === 'development' || 
+    window.location.hostname.includes('localhost') ||
+    localStorage.getItem('DEBUG_API_URLS') === 'true'
+  )) {
+    console.log('🔗 [buildApiUrl] URL Construction:', {
+      endpoint,
+      baseUrl: apiConfig.BASE_URL,
+      fullUrl,
+      environment: getCurrentEnv()
+    });
+  }
+  
+  return fullUrl;
 };
 
 export default apiConfig;

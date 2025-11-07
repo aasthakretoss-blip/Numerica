@@ -400,6 +400,19 @@ class PayrollFilterService {
     try {
       const client = await nominasPool.connect();
       
+      // ✅ FIXED: Set UTF-8 encoding and ensure unaccent extension is available
+      try {
+        await client.query("SET client_encoding TO 'UTF8'");
+        // Try to create unaccent extension if it doesn't exist (may fail if no permissions, that's OK)
+        await client.query("CREATE EXTENSION IF NOT EXISTS unaccent").catch(() => {
+          // Extension might already exist or user might not have permission - that's OK
+          console.log('ℹ️ unaccent extension check completed (may already exist)');
+        });
+      } catch (encodingError) {
+        console.warn('⚠️ Could not set encoding or create unaccent extension:', encodingError.message);
+        // Continue anyway - unaccent might not be available but ILIKE will still work
+      }
+      
       // Validar y limitar parámetros de paginación
       const pageSize = Math.min(Math.max(parseInt(options.pageSize) || 100, 1), 1000); // Entre 1 y 1000
       const page = Math.max(parseInt(options.page) || 1, 1);
@@ -489,7 +502,9 @@ class PayrollFilterService {
 
       // Aplicar filtros (igual que en nominasService pero consolidado)
       // CRITICAL: Only apply search filter if search term is provided and not empty
-      // ✅ FIXED: Aplicar filtro de búsqueda (following the fixed pattern)
+      // ✅ FIXED: Aplicar filtro de búsqueda global con unaccent para búsqueda sin acentos
+      // CRITICAL: Only apply search filter if search term is provided and not empty
+      // Search applies to ENTIRE dataset before pagination
       if (options.search) {
         // Clean search term (should already be cleaned in server.js, but double-check)
         let cleanedSearch = String(options.search).trim();
@@ -497,17 +512,25 @@ class PayrollFilterService {
         // Only apply if search term is not empty
         if (cleanedSearch && cleanedSearch.length > 0) {
           const searchPattern = `%${cleanedSearch}%`;
-          // Search in nombre completo, CURP, and RFC (using ILIKE for case-insensitive search)
-          const searchCondition = ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
+          
+          // ✅ FIXED: Use unaccent() for accent-insensitive search on nombre and CURP
+          // Note: unaccent extension should be installed for best results
+          const searchCondition = ` AND (
+            unaccent(LOWER("Nombre completo")) ILIKE unaccent(LOWER($${paramIndex})) 
+            OR unaccent(LOWER("CURP")) ILIKE unaccent(LOWER($${paramIndex}))
+            OR "RFC" ILIKE $${paramIndex}
+          )`;
+          
           query += searchCondition;
           countQuery += searchCondition;
           queryParams.push(searchPattern);
           
-          console.log('✅ PayrollFilterService: Aplicando filtro de búsqueda:', {
+          console.log('✅ PayrollFilterService: Aplicando filtro de búsqueda global (con unaccent):', {
             searchTerm: cleanedSearch,
             searchPattern: searchPattern,
             paramIndex: paramIndex,
-            condition: searchCondition
+            condition: searchCondition,
+            note: 'Search applies to ENTIRE dataset before pagination'
           });
           
           paramIndex++;
@@ -613,9 +636,10 @@ class PayrollFilterService {
           'mes': 'DATE(cveper)',
           'cveper': 'cveper',
           'periodo': 'cveper',
-          'salario': '(" SUELDO CLIENTE "::DECIMAL)',
-          'sueldo': '(" SUELDO CLIENTE "::DECIMAL)',
-          'comisiones': '((COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0))::DECIMAL)',
+          'salario': '(" SUELDO CLIENTE "::NUMERIC)',
+          'sueldo': '(" SUELDO CLIENTE "::NUMERIC)',
+          // ✅ FIXED: Comisiones sorting uses sum of both commission fields with proper casting
+          'comisiones': '((COALESCE(" COMISIONES CLIENTE ", 0)::NUMERIC + COALESCE(" COMISIONES FACTURADAS ", 0)::NUMERIC))',
           'totalPercepciones': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
           'percepcionesTotales': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
           'estado': '"Status"'
@@ -624,17 +648,21 @@ class PayrollFilterService {
         const dbField = fieldMapping[options.orderBy];
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
-          orderClause = ` ORDER BY ${dbField} ${direction}`;
+          // ✅ FIXED: Secondary sort by cveper DESC to ensure consistent ordering across pages
+          orderClause = ` ORDER BY ${dbField} ${direction}, cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
           console.log('✅ PayrollFilterService: Clausula ORDER BY generada:', orderClause);
         } else {
-          orderClause = ` ORDER BY "Nombre completo" ASC`; // Fallback por defecto
+          // ✅ FIXED: Default ordering by latest cveper (descending) when field not recognized
+          orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
           console.log('⚠️ PayrollFilterService: Campo no reconocido, usando orden por defecto:', orderClause);
         }
       } else {
-        // Default sorting: latest payroll period (cveper) descending, then by name
-        orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC`;
+        // ✅ FIXED: Default sorting: latest payroll period (cveper) descending, then by name
+        orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
       }
       
+      // ✅ CRITICAL: Ordering is applied BEFORE pagination (LIMIT/OFFSET)
+      // This ensures sorting works across ALL pages, not just current page
       query += orderClause;
       
       // Paginación
@@ -673,8 +701,8 @@ class PayrollFilterService {
       console.log('📋 Count Query Parámetros:', queryParams);
       console.log('🔍 Total parámetros:', finalParams.length);
       
-      // CRITICAL: Verify search filter is in the query
-      const searchInQuery = query.includes('Nombre completo" ILIKE') || query.includes('CURP" ILIKE') || query.includes('RFC" ILIKE');
+      // CRITICAL: Verify search filter is in the query (check for unaccent or ILIKE)
+      const searchInQuery = query.includes('unaccent') || query.includes('Nombre completo" ILIKE') || query.includes('CURP" ILIKE') || query.includes('RFC" ILIKE');
       if (options.search) {
         console.log('✅ Filtro de búsqueda ACTIVO:', options.search);
         if (!searchInQuery) {
@@ -687,11 +715,48 @@ class PayrollFilterService {
         console.log('⚠️ Filtro de búsqueda NO ACTIVO');
       }
       
-      // Ejecutar consultas
-      const [dataResult, countResult] = await Promise.all([
-        client.query(query, finalParams),
-        client.query(countQuery, queryParams)
-      ]);
+      // ✅ FIXED: Execute queries with fallback if unaccent extension is not available
+      let dataResult, countResult;
+      try {
+        [dataResult, countResult] = await Promise.all([
+          client.query(query, finalParams),
+          client.query(countQuery, queryParams)
+        ]);
+      } catch (queryError) {
+        // If error is due to unaccent not being available, retry with fallback query
+        if (queryError.message && queryError.message.includes('unaccent')) {
+          console.warn('⚠️ unaccent extension not available, using fallback search without unaccent');
+          
+          // Replace unaccent() calls with LOWER() for fallback
+          const fallbackQuery = query.replace(/unaccent\(LOWER\([^)]+\)\)/g, (match) => {
+            // Extract the column name from unaccent(LOWER("Column"))
+            const columnMatch = match.match(/"([^"]+)"/);
+            if (columnMatch) {
+              return `LOWER("${columnMatch[1]}")`;
+            }
+            return match.replace(/unaccent\(/g, '').replace(/\)/g, '');
+          });
+          
+          const fallbackCountQuery = countQuery.replace(/unaccent\(LOWER\([^)]+\)\)/g, (match) => {
+            const columnMatch = match.match(/"([^"]+)"/);
+            if (columnMatch) {
+              return `LOWER("${columnMatch[1]}")`;
+            }
+            return match.replace(/unaccent\(/g, '').replace(/\)/g, '');
+          });
+          
+          [dataResult, countResult] = await Promise.all([
+            client.query(fallbackQuery, finalParams),
+            client.query(fallbackCountQuery, queryParams)
+          ]);
+        } else {
+          // Other errors - log and rethrow
+          console.error('❌ SQL Query Error:', queryError.message);
+          console.error('❌ Query:', query);
+          console.error('❌ Params:', finalParams);
+          throw queryError;
+        }
+      }
       
       console.log('📊 PayrollFilterService: Resultados de la consulta:', {
         recordsReturned: dataResult.rows.length,

@@ -612,8 +612,9 @@ const BusquedaEmpleados = () => {
   const [localSortBy, setLocalSortBy] = useState("nombre");
   const [localSortDir, setLocalSortDir] = useState("asc");
   
-  // Campos que usan server-side sorting (campos de texto)
-  const serverSortFields = ['nombre', 'curp', 'puesto', 'sucursal', 'periodo', 'estado'];
+  // ✅ FIXED: Campos que usan server-side sorting - incluye todos los campos sortables
+  // IMPORTANT: Todos los campos deben usar server-side sorting para aplicar a todo el dataset
+  const serverSortFields = ['nombre', 'curp', 'puesto', 'sucursal', 'periodo', 'estado', 'salario', 'comisiones', 'percepcionestotales', 'totalpercepciones'];
   
   // Mapeo inverso: backend -> frontend (para sincronizar con EmployeeTable)
   const backendToFrontendFieldMapping = {
@@ -1451,20 +1452,25 @@ const BusquedaEmpleados = () => {
     }
   };
 
-  // Handler para cambios de sorting - HYBRID: server-side para texto, local para numéricos (como TablaDemografico)
+  // ✅ FIXED: Handler para cambios de sorting - TODOS los campos usan server-side sorting
+  // IMPORTANT: Server-side sorting asegura que el ordenamiento se aplique a TODO el dataset, no solo a la página actual
   const handleSortChange = useCallback((newSortBy, newSortDir) => {
+    // ✅ Todos los campos sortables ahora usan server-side sorting
     if (serverSortFields.includes(newSortBy)) {
-      // Server-side sorting para campos de texto
+      // Server-side sorting - aplica a todo el dataset
       if (newSortBy === sortBy) {
+        // Misma columna clickeada - alternar dirección
         setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
       } else {
-      setSortBy(newSortBy);
+        // Nueva columna clickeada - empezar con ascendente
+        setSortBy(newSortBy);
         setSortDir('asc');
       }
       // Resetear a página 1 cuando cambia el sorting
       setPagination(prev => ({ ...prev, page: 1 }));
-          } else {
-      // Local sorting para campos numéricos (salario, comisiones, percepcionesTotales)
+    } else {
+      // ⚠️ Campo no reconocido - usar local sorting como fallback
+      console.warn('⚠️ Campo de sorting no reconocido, usando local sorting:', newSortBy);
       if (newSortBy === localSortBy) {
         setLocalSortDir(localSortDir === 'asc' ? 'desc' : 'asc');
       } else {

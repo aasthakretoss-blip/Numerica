@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DropDownMenu from './DropDownMenu';
+import { buildApiUrl } from '../config/apiConfig';
 
 /**
  * DropDownMenu especializado para el perfil de empleado.
@@ -164,7 +165,7 @@ const EmployeeProfileDropDown = ({
         page: '1'
       });
       
-      const url = `${process.env.REACT_APP_API_BASE_URL || 'https://numerica-2.onrender.com'}/api/percepciones?${params.toString()}`;
+      const url = `${buildApiUrl('/api/percepciones')}?${params.toString()}`;
       
       const response = await fetch(url);
       

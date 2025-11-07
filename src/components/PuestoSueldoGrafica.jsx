@@ -4,6 +4,7 @@ import { FaSpinner, FaBriefcase, FaChevronUp, FaChevronDown, FaFilter } from 're
 import { applyPuestoFilters } from '../utils/puestoMapping'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
 import { useChartEvents, createSelection } from '../hooks/useChartEvents'
+import { buildApiUrl } from '../config/apiConfig'
 
 // Styled Components
 const ChartContainer = styled.div`
@@ -324,7 +325,7 @@ export default function PuestoSueldoGrafica({
       
       console.log('🔍 PuestoSueldoGrafica - Consultando servidor para conteos únicos:', filterParams);
 
-      const url = `https://numerica-2.onrender.com/api/payroll/demographic/unique-count?${params}`;
+      const url = `${buildApiUrl('/api/payroll/demographic/unique-count')}?${params}`;
       console.log('🔍 PuestoSueldoGrafica - URL del servidor:', url);
       
       const response = await fetch(url);

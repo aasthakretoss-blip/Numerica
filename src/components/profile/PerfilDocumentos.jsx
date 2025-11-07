@@ -348,7 +348,7 @@ const PerfilDocumentos = ({ rfc }) => {
       console.log('🔍 Buscando documentos para empleado:', nombreData.nombreCompleto);
       
       const response = await fetch(
-        `https://numerica-2.onrender.com/api/documents/search-by-name?employeeName=${encodeURIComponent(nombreData.nombreCompleto)}`
+        `${buildApiUrl('/api/documents/search-by-name')}?employeeName=${encodeURIComponent(nombreData.nombreCompleto)}`
       );
       
       if (!response.ok) {
@@ -385,7 +385,7 @@ const PerfilDocumentos = ({ rfc }) => {
       setSelectedDocument({ ...document, loading: true });
       
       const response = await fetch(
-        `https://numerica-2.onrender.com/api/documents/download/${document.id}`
+        `${buildApiUrl('/api/documents/download')}/${document.id}`
       );
       
       if (!response.ok) {
@@ -421,7 +421,7 @@ const PerfilDocumentos = ({ rfc }) => {
       setDownloadingDocument(documentFile.id);
       
       const response = await fetch(
-        `https://numerica-2.onrender.com/api/documents/download/${documentFile.id}`
+        `${buildApiUrl('/api/documents/download')}/${documentFile.id}`
       );
       
       if (!response.ok) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaMoneyBillWave, FaSpinner, FaCalculator, FaClock, FaCoffee, FaGift } from 'react-icons/fa';
+import { buildApiUrl } from '../../config/apiConfig';
 
 const PercepcionesContainer = styled.div`
   width: 100%;
@@ -263,7 +264,7 @@ const Percepciones = ({ curp, selectedCveper }) => {
           params.append('cveper', selectedCveper); // Usar 'cveper' que es lo que espera el backend
         }
 
-        const response = await fetch(`https://numerica-2.onrender.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar percepciones del empleado');

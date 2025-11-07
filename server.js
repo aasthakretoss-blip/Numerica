@@ -31,6 +31,18 @@ const upload = multer({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 🔴 STARTUP LOG - Confirm this file is being used
+console.error('========================================');
+console.error('SERVER.JS FILE LOADED - ' + new Date().toISOString());
+console.error('PORT:', PORT);
+console.error('NODE_ENV:', process.env.NODE_ENV);
+console.error('========================================');
+console.log('========================================');
+console.log('SERVER.JS FILE LOADED - ' + new Date().toISOString());
+console.log('PORT:', PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('========================================');
+
 // Middleware global
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -565,29 +577,30 @@ app.get('/api/payroll/rfc-from-curp', async (req, res) => {
     const client = await nominasPool.connect();
     
     try {
-      // Buscar RFC correspondiente al CURP específico
+      // ✅ FIXED: Buscar RFC correspondiente al CURP específico (case-insensitive)
       const query = `
         SELECT DISTINCT "RFC"
         FROM historico_nominas_gsau
-        WHERE "CURP" = $1
+        WHERE UPPER(TRIM("CURP")) = UPPER(TRIM($1))
         AND "RFC" IS NOT NULL
         AND "RFC" != ''
         LIMIT 1
       `;
       
-      console.log(`🔍 Ejecutando query para buscar RFC de CURP: ${curp}`);
-      const result = await client.query(query, [curp]);
+      const cleanedCurp = String(curp).trim();
+      console.log(`🔍 Ejecutando query para buscar RFC de CURP: ${cleanedCurp}`);
+      const result = await client.query(query, [cleanedCurp]);
       
       if (result.rows.length === 0) {
-        console.log(`⚠️ No se encontró RFC para CURP: ${curp}`);
+        console.log(`⚠️ No se encontró RFC para CURP: ${cleanedCurp}`);
+        // Return success with null RFC instead of 404 to prevent frontend errors
         return res.json({
           success: true,
           data: {
-            curp: curp,
+            curp: cleanedCurp,
             rfc: null
           },
-          curp: curp,
-          message: `No se encontró RFC para el CURP: ${curp}`
+          message: `No se encontró RFC para el CURP: ${cleanedCurp}`
         });
       }
       
@@ -2018,8 +2031,52 @@ app.get('/api/payroll/data', async (req, res) => {
 
 // Obtener datos de empleados con filtros (sin autenticación para desarrollo)
 app.get('/api/payroll', async (req, res) => {
+  // 🔍 ENTRY POINT LOGGING: Log request immediately - VERY PROMINENT
+  // SIMPLE LOG FIRST - This will definitely show up
+  console.error('========================================');
+  console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
+  console.error('URL:', req.url);
+  console.error('SEARCH PARAM:', req.query.search);
+  console.error('ALL QUERY:', JSON.stringify(req.query));
+  console.error('========================================');
+  
+  // Also log to console.log
+  console.log('========================================');
+  console.log('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
+  console.log('URL:', req.url);
+  console.log('SEARCH PARAM:', req.query.search);
+  console.log('ALL QUERY:', JSON.stringify(req.query));
+  console.log('========================================');
+  
+  process.stdout.write('\n\n\n');
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('🚀🚀🚀 [API ENTRY] /api/payroll endpoint called 🚀🚀🚀');
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
+  console.log('Query Params:', JSON.stringify(req.query, null, 2));
+  console.log('Has Auth:', !!req.headers.authorization);
+  console.log('═══════════════════════════════════════════════════════════════');
+  process.stdout.write('\n');
+  
   try {
-    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
+    const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection, fullData } = req.query;
+    
+    console.log('📥 [API REQUEST] Raw query parameters received:', {
+      pageSize,
+      page,
+      search: search ? `${search.substring(0, 50)}...` : 'NONE',
+      puesto: puesto || 'NONE',
+      compania: compania || 'NONE',
+      sucursal: sucursal || 'NONE',
+      status: status || 'NONE',
+      puestoCategorizado: puestoCategorizado || 'NONE',
+      cveper: cveper || 'NONE',
+      orderBy: orderBy || 'NONE',
+      orderDirection: orderDirection || 'NONE',
+      fullData: fullData || 'NONE'
+    });
     
     // ✅ FIXED: Clean and decode search parameter (following the fixed pattern)
     let cleanedSearch = null;
@@ -2044,16 +2101,17 @@ app.get('/api/payroll', async (req, res) => {
     
     // Log search processing for debugging
     if (search) {
-      console.log('🔍 /api/payroll: Procesando search parameter:', {
+      console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {
         original: search,
         cleaned: cleanedSearch,
-        isEmpty: !cleanedSearch || cleanedSearch.length === 0
+        isEmpty: !cleanedSearch || cleanedSearch.length === 0,
+        length: cleanedSearch ? cleanedSearch.length : 0
       });
     }
     
     // DEBUGGING ESPECIAL para cveper
     if (cveper) {
-      console.log('🗓️ DEBUGGING CVEPER:', {
+      console.log('🗓️ [CVEPER DEBUG] cveper parameter:', {
         cveper,
         tipoCveper: typeof cveper,
         esArray: Array.isArray(cveper),
@@ -2063,9 +2121,8 @@ app.get('/api/payroll', async (req, res) => {
       });
     }
     
-    // NUEVO: Usar payrollFilterService para un sorting más preciso
-    // IMPORTANT: Use cleanedSearch instead of raw search
-    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+    // Build service options
+    const serviceOptions = {
       pageSize: parseInt(pageSize) || 100,
       page: parseInt(page) || 1,
       search: cleanedSearch, // Use cleaned search parameter
@@ -2076,8 +2133,33 @@ app.get('/api/payroll', async (req, res) => {
       puestoCategorizado,
       cveper,
       orderBy, // Campo por el cual ordenar
-      orderDirection // Dirección del ordenamiento (asc/desc)
+      orderDirection, // Dirección del ordenamiento (asc/desc)
+      fullData: fullData === 'true' || fullData === true
+    };
+    
+    console.log('🔍 [FILTER/SORT] Active filters and sorting:', {
+      search: cleanedSearch || null,
+      originalSearch: search || null,
+      orderBy: orderBy || null,
+      orderDirection: orderDirection || null,
+      filters: { puesto, sucursal, status, puestoCategorizado, cveper: cveper ? 'set' : null }
     });
+    
+    console.log('🚀 [SERVICE CALL] Calling payrollFilterService.getPayrollDataWithFiltersAndSorting with options:', {
+      ...serviceOptions,
+      search: serviceOptions.search ? `${serviceOptions.search.substring(0, 50)}...` : 'NONE'
+    });
+    
+    console.log('🔵 [BEFORE SERVICE] serviceOptions.search =', serviceOptions.search);
+    console.log('🔵 [BEFORE SERVICE] Full serviceOptions =', JSON.stringify(serviceOptions, null, 2));
+    
+    // NUEVO: Usar payrollFilterService para un sorting más preciso
+    // IMPORTANT: Use cleanedSearch instead of raw search
+    const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
+    
+    console.log('🟢 [AFTER SERVICE] Service returned - result.success =', result.success);
+    console.log('🟢 [AFTER SERVICE] Service returned - result.data.length =', result.data?.length || 0);
+    console.log('🟢 [AFTER SERVICE] Service returned - result.total =', result.total || 0);
     
     console.log('✅ /api/payroll: Datos obtenidos exitosamente:', {
       records: result.data?.length || 0,

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import styled from 'styled-components'
 import { FaSpinner, FaBuilding, FaChevronUp, FaChevronDown, FaFilter } from 'react-icons/fa'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
+import { buildApiUrl } from '../config/apiConfig'
 
 // Color oficial del sitio (alineado con otros componentes)
 const OFFICIAL_BLUE = '#3b82f6'
@@ -360,7 +361,7 @@ export default function AntiguedadPorSucursal({
   // Cargar último período disponible
   const loadLatestPeriod = async () => {
     try {
-      const response = await fetch('https://numerica-2.onrender.com/api/payroll/periodos');
+      const response = await fetch(buildApiUrl('/api/payroll/periodos'));
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && result.data.length > 0) {
@@ -393,7 +394,7 @@ export default function AntiguedadPorSucursal({
       
       console.log('🔍 DistribuciónPorSucursal: Contando CURPs únicos con filtros:', filterParams);
 
-      const url = `https://numerica-2.onrender.com/api/payroll/demographic/unique-count?${params}`;
+      const url = `${buildApiUrl('/api/payroll/demographic/unique-count')}?${params}`;
       console.log('🔍 DEBUG: Llamando endpoint para conteo CURPs:', url);
       
       const response = await fetch(url);
@@ -424,7 +425,7 @@ export default function AntiguedadPorSucursal({
       
       console.log('📊 DistribuciónPorSucursal: Aplicando filtros demográficos:', {
         filterParams,
-        finalUrl: `https://numerica-2.onrender.com/api/payroll/demographic`
+        finalUrl: buildApiUrl('/api/payroll/demographic')
       });
 
       // Cargar TODAS las páginas como hacen los otros componentes
@@ -445,7 +446,7 @@ export default function AntiguedadPorSucursal({
         
         console.log(`📄 DistribuciónPorSucursal: Cargando página ${currentPage}/${totalPages}...`);
         
-        const response = await fetch(`https://numerica-2.onrender.com/api/payroll/demographic?${params}`);
+        const response = await fetch(`${buildApiUrl('/api/payroll/demographic')}?${params}`);
         
         if (response.ok) {
           const result = await response.json();
