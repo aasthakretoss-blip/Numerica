@@ -408,7 +408,11 @@ class PayrollFilterService {
       console.log('🎯 PayrollFilterService: Obteniendo datos con filtros y sorting:', {
         page, pageSize, offset,
         orderBy: options.orderBy,
-        orderDirection: options.orderDirection
+        orderDirection: options.orderDirection,
+        search: options.search || 'NO SEARCH',
+        puesto: options.puesto || 'NO PUESTO',
+        sucursal: options.sucursal || 'NO SUCURSAL',
+        status: options.status || 'NO STATUS'
       });
       
       // Query base para obtener datos de la tabla historico_nominas_gsau
@@ -417,6 +421,7 @@ class PayrollFilterService {
         SELECT 
           "CURP" as curp,
           "Nombre completo" as nombre,
+          "RFC" as rfc,
           "Puesto" as puesto,
           "Compañía" as sucursal,
           DATE(cveper)::text as mes,
@@ -483,12 +488,32 @@ class PayrollFilterService {
       }
 
       // Aplicar filtros (igual que en nominasService pero consolidado)
+      // CRITICAL: Only apply search filter if search term is provided and not empty
+      // ✅ FIXED: Aplicar filtro de búsqueda (following the fixed pattern)
       if (options.search) {
-        const searchPattern = `%${options.search}%`;
-        query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        queryParams.push(searchPattern);
-        paramIndex++;
+        // Clean search term (should already be cleaned in server.js, but double-check)
+        let cleanedSearch = String(options.search).trim();
+        
+        // Only apply if search term is not empty
+        if (cleanedSearch && cleanedSearch.length > 0) {
+          const searchPattern = `%${cleanedSearch}%`;
+          // Search in nombre completo, CURP, and RFC (using ILIKE for case-insensitive search)
+          const searchCondition = ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
+          query += searchCondition;
+          countQuery += searchCondition;
+          queryParams.push(searchPattern);
+          
+          console.log('✅ PayrollFilterService: Aplicando filtro de búsqueda:', {
+            searchTerm: cleanedSearch,
+            searchPattern: searchPattern,
+            paramIndex: paramIndex,
+            condition: searchCondition
+          });
+          
+          paramIndex++;
+        } else {
+          console.warn('⚠️ PayrollFilterService: Search term está vacío, NO aplicando filtro');
+        }
       }
       
       if (options.puesto) {
@@ -586,9 +611,13 @@ class PayrollFilterService {
           'puesto': '"Puesto"',
           'sucursal': '"Compañía"',
           'mes': 'DATE(cveper)',
+          'cveper': 'cveper',
+          'periodo': 'cveper',
           'salario': '(" SUELDO CLIENTE "::DECIMAL)',
+          'sueldo': '(" SUELDO CLIENTE "::DECIMAL)',
           'comisiones': '((COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0))::DECIMAL)',
           'totalPercepciones': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
+          'percepcionesTotales': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
           'estado': '"Status"'
         };
         
@@ -602,7 +631,8 @@ class PayrollFilterService {
           console.log('⚠️ PayrollFilterService: Campo no reconocido, usando orden por defecto:', orderClause);
         }
       } else {
-        orderClause = ` ORDER BY "Nombre completo" ASC`; // Orden por defecto
+        // Default sorting: latest payroll period (cveper) descending, then by name
+        orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC`;
       }
       
       query += orderClause;
@@ -611,14 +641,82 @@ class PayrollFilterService {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       const finalParams = [...queryParams, pageSize, offset];
       
-      console.log('🚀 PayrollFilterService: Ejecutando consulta SQL:', query);
+      // CRITICAL DEBUG: Verify search parameter is in finalParams if search was applied
+      if (options.search) {
+        const searchTerm = String(options.search).trim();
+        if (searchTerm && searchTerm.length > 0) {
+          const searchPattern = `%${searchTerm}%`;
+          const searchParamIndex = queryParams.findIndex(p => p === searchPattern);
+          console.log('🔍 DEBUG CRÍTICO - Verificación de parámetro de búsqueda:', {
+            searchTerm: searchTerm,
+            searchPattern: searchPattern,
+            searchParamInQueryParams: searchParamIndex >= 0 ? `YES (index ${searchParamIndex})` : 'NO FOUND!',
+            queryParamsLength: queryParams.length,
+            finalParamsLength: finalParams.length,
+            queryParams: queryParams.slice(0, 5),
+            searchConditionInQuery: query.includes('Nombre completo" ILIKE') ? 'YES' : 'NO'
+          });
+          
+          if (searchParamIndex < 0) {
+            console.error('❌ ERROR CRÍTICO: Search pattern NO encontrado en queryParams!');
+          }
+          if (!query.includes('Nombre completo" ILIKE')) {
+            console.error('❌ ERROR CRÍTICO: Search condition NO encontrado en query SQL!');
+          }
+        }
+      }
+      
+      console.log('🚀 PayrollFilterService: Ejecutando consulta SQL completa:');
+      console.log('📝 Query:', query);
+      console.log('📝 Count Query:', countQuery);
       console.log('📋 Parámetros:', finalParams);
+      console.log('📋 Count Query Parámetros:', queryParams);
+      console.log('🔍 Total parámetros:', finalParams.length);
+      
+      // CRITICAL: Verify search filter is in the query
+      const searchInQuery = query.includes('Nombre completo" ILIKE') || query.includes('CURP" ILIKE') || query.includes('RFC" ILIKE');
+      if (options.search) {
+        console.log('✅ Filtro de búsqueda ACTIVO:', options.search);
+        if (!searchInQuery) {
+          console.error('❌ ERROR CRÍTICO: Search parameter presente pero NO en la query SQL!');
+          console.error('Query actual:', query.substring(0, 500));
+        } else {
+          console.log('✅ Verificado: Filtro de búsqueda está en la query SQL');
+        }
+      } else {
+        console.log('⚠️ Filtro de búsqueda NO ACTIVO');
+      }
       
       // Ejecutar consultas
       const [dataResult, countResult] = await Promise.all([
         client.query(query, finalParams),
         client.query(countQuery, queryParams)
       ]);
+      
+      console.log('📊 PayrollFilterService: Resultados de la consulta:', {
+        recordsReturned: dataResult.rows.length,
+        totalRecords: parseInt(countResult.rows[0].total),
+        searchApplied: options.search ? 'YES' : 'NO',
+        searchTerm: options.search || 'N/A'
+      });
+      
+      // Si hay búsqueda activa, verificar que los resultados coinciden
+      if (options.search && dataResult.rows.length > 0) {
+        const firstRecord = dataResult.rows[0];
+        const searchTerm = String(options.search).trim().toUpperCase();
+        const matchesSearch = 
+          (firstRecord.nombre && firstRecord.nombre.toUpperCase().includes(searchTerm)) ||
+          (firstRecord.curp && firstRecord.curp.toUpperCase().includes(searchTerm)) ||
+          (firstRecord.rfc && firstRecord.rfc.toUpperCase().includes(searchTerm));
+        
+        console.log('🔍 Verificación de búsqueda en primer resultado:', {
+          searchTerm: searchTerm,
+          nombre: firstRecord.nombre,
+          curp: firstRecord.curp,
+          rfc: firstRecord.rfc,
+          matchesSearch: matchesSearch
+        });
+      }
       
       client.release();
       

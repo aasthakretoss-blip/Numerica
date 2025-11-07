@@ -172,7 +172,8 @@ const PercepcionesHistoricoChart = ({ curp, onPeriodClick }) => {
           page: '1'
         });
         
-        const response = await fetch(`http://localhost:3001/api/percepciones?${params.toString()}`);
+        // Use buildApiUrl and authenticatedFetch for proper API endpoint configuration
+        const response = await authenticatedFetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener datos históricos');

@@ -245,11 +245,17 @@ const PerfilHistorico = ({ rfc }) => {
         const result = await response.json();
         
         if (result.success && result.data) {
-          console.log('✅ [Histórico] RFC obtenido:', result.data.rfc);
-          setRfcData(result.data);
+          // Handle both null RFC and valid RFC
+          if (result.data.rfc) {
+            console.log('✅ [Histórico] RFC obtenido:', result.data.rfc);
+            setRfcData(result.data);
+          } else {
+            console.log('⚠️ [Histórico] RFC es null para CURP:', curpFromURL);
+            setRfcData({ curp: curpFromURL, rfc: null });
+          }
         } else {
           console.log('⚠️ [Histórico] No se encontró RFC para CURP:', curpFromURL);
-          setRfcData(null);
+          setRfcData({ curp: curpFromURL, rfc: null });
         }
       } catch (error) {
         console.error('❌ [Histórico] Error obteniendo RFC:', error);
@@ -334,14 +340,13 @@ const PerfilHistorico = ({ rfc }) => {
             <FieldLabelBox>RFC del Empleado</FieldLabelBox>
             <TextBox
               type="text"
-              value={loadingRfc ? 'Obteniendo RFC...' : (rfcData?.rfc || 'RFC no encontrado')}
+              value={loadingRfc ? 'Obteniendo RFC...' : (rfcData?.rfc || 'RFC no disponible')}
               readOnly
               placeholder="RFC del empleado"
               title="RFC obtenido desde el CURP del empleado"
             />
           </FieldGroup>
         </TextBoxesContainer>
-        npm run dev
         
         {/* Información adicional del empleado */}
         <div>

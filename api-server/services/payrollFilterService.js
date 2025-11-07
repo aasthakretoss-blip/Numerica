@@ -527,24 +527,31 @@ class PayrollFilterService {
         }
       }
 
-      // Aplicar filtro de búsqueda
+      // ✅ FIXED: Aplicar filtro de búsqueda (following the fixed pattern)
+      // CRITICAL: Only apply search filter if search term is provided and not empty
       if (options.search) {
-        let cleanedSearch = String(options.search);
-        try {
-          cleanedSearch = decodeURIComponent(cleanedSearch);
-        } catch (e) {
-          // If already decoded or invalid, continue with original
-        }
-        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
-        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        // Clean search term (should already be cleaned in server.js, but double-check)
+        let cleanedSearch = String(options.search).trim();
         
+        // Only apply if search term is not empty
         if (cleanedSearch && cleanedSearch.length > 0) {
           const searchPattern = `%${cleanedSearch}%`;
-          // Search in nombre, name (same as nombre), curp, and rfc
-          query += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
-          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
+          // Search in nombre completo, CURP, and RFC (using ILIKE for case-insensitive search)
+          const searchCondition = ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex} OR "RFC" ILIKE $${paramIndex})`;
+          query += searchCondition;
+          countQuery += searchCondition;
           queryParams.push(searchPattern);
+          
+          console.log('✅ PayrollFilterService: Aplicando filtro de búsqueda:', {
+            searchTerm: cleanedSearch,
+            searchPattern: searchPattern,
+            paramIndex: paramIndex,
+            condition: searchCondition
+          });
+          
           paramIndex++;
+        } else {
+          console.warn('⚠️ PayrollFilterService: Search term está vacío, NO aplicando filtro');
         }
       }
       
@@ -746,8 +753,48 @@ class PayrollFilterService {
         });
       }
       
-      // Log the final SQL query for debugging (only in development)
-      if (process.env.NODE_ENV === 'development' && (options.search || options.cveper)) {
+      // CRITICAL DEBUG: Always log search-related queries
+      if (options.search) {
+        let cleanedSearch = String(options.search);
+        try {
+          cleanedSearch = decodeURIComponent(cleanedSearch);
+        } catch (e) {
+          // If already decoded or invalid, continue with original
+        }
+        cleanedSearch = cleanedSearch.replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+        const searchPattern = cleanedSearch ? `%${cleanedSearch}%` : null;
+        
+        const searchInQuery = query.includes('Nombre completo" ILIKE') || query.includes('CURP" ILIKE') || query.includes('RFC" ILIKE');
+        const searchInCountQuery = countQuery.includes('Nombre completo" ILIKE') || countQuery.includes('CURP" ILIKE') || countQuery.includes('RFC" ILIKE');
+        const searchParamInFinalParams = searchPattern ? finalParams.includes(searchPattern) : false;
+        const searchParamInQueryParams = searchPattern ? queryParams.includes(searchPattern) : false;
+        
+        console.log('🚀 PayrollFilterService (api-server): Ejecutando consulta con búsqueda:');
+        console.log('📝 Query (first 800 chars):', query.substring(0, 800));
+        console.log('📝 Count Query (first 800 chars):', countQuery.substring(0, 800));
+        console.log('📋 Final Query Params (length):', finalParams.length, 'Values:', finalParams);
+        console.log('📋 Count Query Params (length):', queryParams.length, 'Values:', queryParams);
+        console.log('✅ Search condition in main query:', searchInQuery ? 'YES' : 'NO');
+        console.log('✅ Search condition in count query:', searchInCountQuery ? 'YES' : 'NO');
+        console.log('✅ Search pattern in finalParams:', searchParamInFinalParams ? 'YES' : 'NO');
+        console.log('✅ Search pattern in queryParams:', searchParamInQueryParams ? 'YES' : 'NO');
+        console.log('🔍 Search term details:', {
+          original: options.search,
+          cleaned: cleanedSearch,
+          pattern: searchPattern
+        });
+        
+        if (!searchInQuery || !searchInCountQuery) {
+          console.error('❌ ERROR CRÍTICO: Search parameter presente pero NO en la query SQL!');
+          console.error('   Main query has search:', searchInQuery);
+          console.error('   Count query has search:', searchInCountQuery);
+        }
+        if (!searchParamInFinalParams || !searchParamInQueryParams) {
+          console.error('❌ ERROR CRÍTICO: Search pattern NO encontrado en parámetros de query!');
+          console.error('   Pattern in finalParams:', searchParamInFinalParams);
+          console.error('   Pattern in queryParams:', searchParamInQueryParams);
+        }
+      } else if (process.env.NODE_ENV === 'development' && options.cveper) {
         console.log('🔍 Final SQL Query:', query.substring(0, 500) + '...');
         console.log('🔍 Query Params:', finalParams);
       }
@@ -771,8 +818,33 @@ class PayrollFilterService {
       if (options.search || options.orderBy || options.puesto || options.sucursal || options.status || options.puestoCategorizado || options.cveper) {
         console.log('🔍 SQL FILTER/SORT RESULTS:', {
           rows: dataResult.rows.length,
-          total: parseInt(countResult.rows[0]?.total || 0)
+          total: parseInt(countResult.rows[0]?.total || 0),
+          searchApplied: options.search ? 'YES' : 'NO',
+          searchTerm: options.search || 'N/A'
         });
+        
+        // Verify search results match the search term
+        if (options.search && dataResult.rows.length > 0) {
+          const firstRecord = dataResult.rows[0];
+          const searchTermUpper = String(options.search).trim().toUpperCase();
+          const matches = 
+            (firstRecord.nombre && firstRecord.nombre.toUpperCase().includes(searchTermUpper)) ||
+            (firstRecord.curp && firstRecord.curp && firstRecord.curp.toUpperCase().includes(searchTermUpper)) ||
+            (firstRecord.rfc && firstRecord.rfc && firstRecord.rfc.toUpperCase().includes(searchTermUpper));
+          
+          console.log('🔍 Verificación de búsqueda en resultados:', {
+            searchTerm: options.search,
+            firstResultName: firstRecord.nombre,
+            firstResultCurp: firstRecord.curp,
+            firstResultRfc: firstRecord.rfc,
+            matches: matches ? 'YES' : 'NO'
+          });
+          
+          if (!matches && dataResult.rows.length >= 100) {
+            console.warn('⚠️ ADVERTENCIA: Búsqueda aplicada pero resultados no coinciden. Posible problema con el filtro SQL.');
+            console.warn('⚠️ Esto sugiere que el filtro de búsqueda NO está funcionando correctamente.');
+          }
+        }
       }
       
       client.release();

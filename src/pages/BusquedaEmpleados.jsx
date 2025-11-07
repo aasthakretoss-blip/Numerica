@@ -2189,6 +2189,9 @@ const BusquedaEmpleados = () => {
             loading={loading}
             sortBy={sortBy}
             sortDir={sortDir}
+            // Pasar sorting local para sincronizar con la tabla
+            localSortBy={localSortBy}
+            localSortDir={localSortDir}
             // Pasar todos los filtros activos para mostrar en la gráfica
             selectedSucursales={selectedSucursales}
             selectedPuestos={selectedPuestos}

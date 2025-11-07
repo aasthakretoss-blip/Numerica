@@ -262,10 +262,10 @@ const Dashboard = ({ userPermissions = {}, user }) => {
       
       // Usar activeEmployees si existe (empleados del último mes con estado "A")
       // Si no, usar uniqueEmployees como fallback, y si no totalEmployees
-      const empleadosActivos = innerStats.activeEmployees || innerStats.uniqueEmployees || innerStats.totalEmployees;
+      const empleadosActivos = innerStats.activeEmployees || innerStats.uniqueEmployees;
       
       // Para "Campos en Histórico Nóminas": totalRecords es preferido, pero totalEmployees es aceptable
-      const camposNominas = innerStats.totalRecords || innerStats.totalEmployees;
+      const camposNominas = innerStats.totalRecords ;
       
       // Para fondos, buscar en múltiples posibles nombres de campo
       const camposFondos = innerStats.totalFondosRecords || 

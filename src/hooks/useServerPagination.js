@@ -4,8 +4,8 @@ import { buildApiUrl, isProduction } from '../config/apiConfig'
 export function useServerPagination(
   endpoint = '/api/payroll',
   initialPageSize = 25,
-  initialSortBy = 'nombre',
-  initialSortDir = 'asc'
+  initialSortBy = 'cveper', // Default: latest payroll period
+  initialSortDir = 'desc' // Default: descending (most recent first)
 ) {
   const [data, setData] = useState([])
   const [pagination, setPagination] = useState({
@@ -24,7 +24,8 @@ export function useServerPagination(
     setError(null)
     
     try {
-      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&sortBy=${sortByParam}&sortDir=${sortDirParam}`)
+      // Map sortBy/sortDir to orderBy/orderDirection for API compatibility
+      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${sortByParam}&orderDirection=${sortDirParam}`)
       console.log('📡 useServerPagination: Fetching with sorting:', { sortBy: sortByParam, sortDir: sortDirParam, url, isProduction })
       
       // LOG ESPECIAL PARA PERCEPCIONES TOTALES

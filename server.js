@@ -349,6 +349,96 @@ app.get('/api/payroll/stats', async (req, res) => {
   }
 });
 
+// NUEVO: Endpoint de búsqueda de empleados por término (Nombre, CURP, RFC)
+app.get('/api/payroll/search', async (req, res) => {
+  try {
+    const { term } = req.query;
+    
+    // Validar que el término de búsqueda esté presente
+    if (!term || term.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Search term is required.'
+      });
+    }
+    
+    console.log('🔍 /api/payroll/search: Búsqueda con término:', term);
+    
+    // Usar el servicio existente para obtener datos filtrados
+    const searchResult = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
+      pageSize: 1000, // Obtener más resultados para la búsqueda
+      page: 1,
+      search: term.trim(), // Buscar en Nombre completo y CURP
+      orderBy: 'nombre',
+      orderDirection: 'asc'
+    });
+    
+    // Obtener estadísticas del dataset completo (sin filtros)
+    const statsResult = await nominasService.getDatasetStats();
+    const datasetStats = statsResult.stats || {};
+    
+    // Transformar los datos al formato normalizado solicitado
+    const normalizedData = searchResult.data.map(employee => ({
+      name: employee.nombre || employee['Nombre completo'] || 'N/A',
+      curp: employee.curp || employee.CURP || '',
+      rfc: employee.rfc || employee.RFC || '',
+      salario: parseFloat(employee.sueldo || employee[' SUELDO CLIENTE '] || 0),
+      puesto: employee.puesto || employee.Puesto || '',
+      sucursal: employee.sucursal || employee['Compañía'] || '',
+      periodo: employee.mes || employee.cveper || '',
+      estado: employee.estado || employee.Status || ''
+    }));
+    
+    // Preparar estadísticas en el formato solicitado
+    const stats = {
+      totalRecords: normalizedData.length,
+      totalEmployees: datasetStats.uniqueEmployees || 0,
+      earliestPeriod: datasetStats.earliestPeriod || null,
+      latestPeriod: datasetStats.latestPeriod || null
+    };
+    
+    // Si no tenemos latestPeriod en stats, obtenerlo directamente
+    if (!stats.latestPeriod) {
+      try {
+        const { nominasPool } = require('./config/database');
+        const client = await nominasPool.connect();
+        try {
+          const latestPeriodQuery = `
+            SELECT MAX(cveper) as latest_period
+            FROM historico_nominas_gsau 
+            WHERE cveper IS NOT NULL
+          `;
+          const latestResult = await client.query(latestPeriodQuery);
+          stats.latestPeriod = latestResult.rows[0]?.latest_period || null;
+        } finally {
+          client.release();
+        }
+      } catch (error) {
+        console.warn('⚠️ Error obteniendo latestPeriod:', error.message);
+      }
+    }
+    
+    console.log('✅ /api/payroll/search: Búsqueda completada:', {
+      term,
+      resultsFound: normalizedData.length,
+      totalEmployees: stats.totalEmployees
+    });
+    
+    res.json({
+      success: true,
+      data: normalizedData,
+      stats: stats
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en /api/payroll/search:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error'
+    });
+  }
+});
+
 // Obtener periodos únicos (cveper) desde payroll_data
 app.get('/api/payroll/periodos', async (req, res) => {
   try {
@@ -492,7 +582,10 @@ app.get('/api/payroll/rfc-from-curp', async (req, res) => {
         console.log(`⚠️ No se encontró RFC para CURP: ${curp}`);
         return res.json({
           success: true,
-          data: null,
+          data: {
+            curp: curp,
+            rfc: null
+          },
           curp: curp,
           message: `No se encontró RFC para el CURP: ${curp}`
         });
@@ -1928,11 +2021,35 @@ app.get('/api/payroll', async (req, res) => {
   try {
     const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection } = req.query;
     
-    console.log('🔍 /api/payroll: Parámetros recibidos (RAW):', req.query);
-    console.log('🔍 /api/payroll: Parámetros destructurados:', { 
-      pageSize, page, search, puesto, compania, sucursal, status, 
-      puestoCategorizado, cveper, orderBy, orderDirection 
-    });
+    // ✅ FIXED: Clean and decode search parameter (following the fixed pattern)
+    let cleanedSearch = null;
+    if (search) {
+      try {
+        // Decode URL encoding and handle + signs
+        let decoded = decodeURIComponent(String(search));
+        decoded = decoded.replace(/\+/g, ' ');
+        cleanedSearch = decoded.trim();
+        // Only use if not empty after cleaning
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
+      } catch (e) {
+        // If decode fails, just clean the string
+        cleanedSearch = String(search).replace(/\+/g, ' ').trim();
+        if (cleanedSearch.length === 0) {
+          cleanedSearch = null;
+        }
+      }
+    }
+    
+    // Log search processing for debugging
+    if (search) {
+      console.log('🔍 /api/payroll: Procesando search parameter:', {
+        original: search,
+        cleaned: cleanedSearch,
+        isEmpty: !cleanedSearch || cleanedSearch.length === 0
+      });
+    }
     
     // DEBUGGING ESPECIAL para cveper
     if (cveper) {
@@ -1947,10 +2064,11 @@ app.get('/api/payroll', async (req, res) => {
     }
     
     // NUEVO: Usar payrollFilterService para un sorting más preciso
+    // IMPORTANT: Use cleanedSearch instead of raw search
     const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting({
       pageSize: parseInt(pageSize) || 100,
       page: parseInt(page) || 1,
-      search,
+      search: cleanedSearch, // Use cleaned search parameter
       puesto,
       compania, // Para compatibilidad hacia atrás
       sucursal, // Para nuevo sistema de filtros
@@ -1963,8 +2081,32 @@ app.get('/api/payroll', async (req, res) => {
     
     console.log('✅ /api/payroll: Datos obtenidos exitosamente:', {
       records: result.data?.length || 0,
-      total: result.pagination?.total || 0
+      total: result.pagination?.total || 0,
+      searchApplied: cleanedSearch ? 'YES' : 'NO',
+      searchTerm: cleanedSearch || 'N/A'
     });
+    
+    // DEBUG: Verify search results if search was applied
+    if (cleanedSearch && result.data && result.data.length > 0) {
+      const firstResult = result.data[0];
+      const searchTermUpper = cleanedSearch.toUpperCase();
+      const matches = 
+        (firstResult.nombre && firstResult.nombre.toUpperCase().includes(searchTermUpper)) ||
+        (firstResult.curp && firstResult.curp.toUpperCase().includes(searchTermUpper)) ||
+        (firstResult.rfc && firstResult.rfc && firstResult.rfc.toUpperCase().includes(searchTermUpper));
+      
+      console.log('🔍 Verificación de búsqueda en resultados:', {
+        searchTerm: cleanedSearch,
+        firstResultName: firstResult.nombre,
+        firstResultCurp: firstResult.curp,
+        firstResultRfc: firstResult.rfc,
+        matches: matches ? 'YES' : 'NO'
+      });
+      
+      if (!matches && result.data.length >= 100) {
+        console.warn('⚠️ ADVERTENCIA: Búsqueda aplicada pero resultados no coinciden. Posible problema con el filtro SQL.');
+      }
+    }
     
     res.json(result);
   } catch (error) {

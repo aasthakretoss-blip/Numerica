@@ -205,6 +205,8 @@ const EmployeeCompareGraph = ({
       totalEmployees: employees.length,
       sortBy,
       sortDir,
+      localSortBy,
+      localSortDir,
       primeros5: employees.slice(0, 5).map(emp => ({
         name: emp.name,
         curp: emp.curp,
@@ -318,8 +320,22 @@ const EmployeeCompareGraph = ({
       limitedTo40: limitedData.length,
       sortedBy: sortBy,
       sortDirection: sortDir,
-      firstEmployee: limitedData[0],
-      lastEmployee: limitedData[limitedData.length - 1],
+      localSortBy: localSortBy,
+      localSortDir: localSortDir,
+      firstEmployee: limitedData[0] ? {
+        name: limitedData[0].name,
+        periodo: limitedData[0].periodo,
+        salary: limitedData[0].salary,
+        commissions: limitedData[0].commissions,
+        total: limitedData[0].total
+      } : null,
+      lastEmployee: limitedData[limitedData.length - 1] ? {
+        name: limitedData[limitedData.length - 1].name,
+        periodo: limitedData[limitedData.length - 1].periodo,
+        salary: limitedData[limitedData.length - 1].salary,
+        commissions: limitedData[limitedData.length - 1].commissions,
+        total: limitedData[limitedData.length - 1].total
+      } : null,
       employeeMonthPairs: limitedData.slice(0, 10).map(emp => emp.displayName),
       duplicatesFound: employees.length - processedArray.length
     });

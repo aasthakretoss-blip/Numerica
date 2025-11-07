@@ -2200,23 +2200,34 @@ app.get('/api/payroll', async (req, res) => {
   try {
     const { pageSize, page, search, puesto, compania, sucursal, status, puestoCategorizado, cveper, orderBy, orderDirection, fullData } = req.query;
     
-    // Clean and decode search parameter
+    // ✅ FIXED: Clean and decode search parameter (following the fixed pattern)
     let cleanedSearch = null;
-    if (search && String(search).trim().length > 0) {
+    if (search) {
       try {
-        cleanedSearch = decodeURIComponent(String(search));
-        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
-        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        // Decode URL encoding and handle + signs
+        let decoded = decodeURIComponent(String(search));
+        decoded = decoded.replace(/\+/g, ' ');
+        cleanedSearch = decoded.trim();
         // Only use if not empty after cleaning
         if (cleanedSearch.length === 0) {
           cleanedSearch = null;
         }
       } catch (e) {
-        cleanedSearch = String(search).replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+        // If decode fails, just clean the string
+        cleanedSearch = String(search).replace(/\+/g, ' ').trim();
         if (cleanedSearch.length === 0) {
           cleanedSearch = null;
         }
       }
+    }
+    
+    // Log search processing for debugging
+    if (search) {
+      console.log('🔍 /api/payroll: Procesando search parameter:', {
+        original: search,
+        cleaned: cleanedSearch,
+        isEmpty: !cleanedSearch || cleanedSearch.length === 0
+      });
     }
     
     // Build options object with only defined values
@@ -2246,13 +2257,41 @@ app.get('/api/payroll', async (req, res) => {
     if (cleanedSearch || orderBy || puesto || sucursal || status || puestoCategorizado || cveper) {
       console.log('🔍 FILTER/SORT:', {
         search: cleanedSearch || null,
+        originalSearch: search || null,
         orderBy: orderBy || null,
         orderDirection: orderDirection || null,
         filters: { puesto, sucursal, status, puestoCategorizado, cveper: cveper ? 'set' : null }
       });
     }
     
+    // DEBUG: Verify search is being passed to service
+    if (cleanedSearch) {
+      console.log('✅ /api/payroll (api-server): Pasando search a service:', {
+        original: search,
+        cleaned: cleanedSearch,
+        inServiceOptions: serviceOptions.search || 'NOT SET!',
+        serviceOptionsKeys: Object.keys(serviceOptions),
+        fullServiceOptions: JSON.stringify(serviceOptions)
+      });
+    } else if (search) {
+      console.warn('⚠️ /api/payroll (api-server): Search parameter recibido pero cleanedSearch es null:', {
+        original: search,
+        cleaned: cleanedSearch,
+        reason: 'Search term may be empty after cleaning'
+      });
+    }
+    
     const result = await payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
+    
+    // DEBUG: Verify search results
+    if (cleanedSearch && result.data && result.data.length > 0) {
+      console.log('🔍 /api/payroll (api-server): Verificación de resultados de búsqueda:', {
+        searchTerm: cleanedSearch,
+        resultsReturned: result.data.length,
+        totalRecords: result.pagination?.total || 0,
+        firstResultName: result.data[0]?.nombre || 'N/A'
+      });
+    }
     
     res.json(result);
   } catch (error) {
