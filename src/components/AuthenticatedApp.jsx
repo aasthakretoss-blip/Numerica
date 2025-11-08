@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Authenticator, useAuthenticator, translations } from '@aws-amplify/ui-react';
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { I18n } from 'aws-amplify/utils';
 import styled from 'styled-components';

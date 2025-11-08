@@ -231,7 +231,7 @@ export const initializeDefaultVariables = () => {
 };
 
 // Export por defecto
-export default {
+const cssVariables = {
   generateCSSVariables,
   applyCSSDVariables,
   removeCSSVariables,
@@ -239,3 +239,5 @@ export default {
   useCSSVariables,
   initializeDefaultVariables,
 };
+
+export default cssVariables;

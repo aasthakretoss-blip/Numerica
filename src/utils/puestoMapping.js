@@ -207,7 +207,7 @@ export const applyPuestoFilters = (employees, filters) => {
   return filteredEmployees;
 };
 
-export default {
+const puestoMapping = {
   getPuestoCategoria,
   getAllCategorias,
   groupPuestosByCategoria,
@@ -217,3 +217,5 @@ export default {
   applyPuestoFilters,
   PUESTO_CATEGORIA_MAPPING
 };
+
+export default puestoMapping;

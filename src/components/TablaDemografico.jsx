@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import { 
   FaSpinner, FaTable, FaChevronUp, FaChevronDown,
@@ -270,7 +269,6 @@ export default function TablaDemografico({
   title = "Datos Demográficos",
   filters = {} // Nuevos filtros desde el sistema de filtros demográficos
 }) {
-  const navigate = useNavigate()
   // Estado del componente
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -291,7 +289,6 @@ export default function TablaDemografico({
   const [localSortDir, setLocalSortDir] = useState('asc');
   
   // Estado para el filtro del último mes
-  const [latestPeriod, setLatestPeriod] = useState(null);
   const [periodFilter, setPeriodFilter] = useState(null);
   
   // Estado para el conteo de CURPs únicos
@@ -316,7 +313,6 @@ export default function TablaDemografico({
             // Usar período por defecto para octubre 2024
             const defaultPeriod = '2025-06';
             console.log('📅 Usando período por defecto:', defaultPeriod);
-            setLatestPeriod({ value: '2025-06-30', label: 'Junio 2025' });
             setPeriodFilter(defaultPeriod);
             return;
           }
@@ -328,14 +324,12 @@ export default function TablaDemografico({
           
           console.log('📅 Último período encontrado:', latest.value, 'Filtro aplicado:', monthFilter);
           
-          setLatestPeriod(latest);
           setPeriodFilter(monthFilter);
         } else {
           console.warn('⚠️ No se encontraron períodos válidos en la respuesta');
           // Usar período por defecto
           const defaultPeriod = '2024-10';
           console.log('📅 Usando período por defecto:', defaultPeriod);
-          setLatestPeriod({ value: '2024-10-01', label: 'Octubre 2024' });
           setPeriodFilter(defaultPeriod);
         }
       } else {
@@ -343,7 +337,6 @@ export default function TablaDemografico({
         // Usar período por defecto
         const defaultPeriod = '2024-10';
         console.log('📅 Usando período por defecto tras error HTTP:', defaultPeriod);
-        setLatestPeriod({ value: '2024-10-01', label: 'Octubre 2024' });
         setPeriodFilter(defaultPeriod);
       }
     } catch (error) {
@@ -351,43 +344,10 @@ export default function TablaDemografico({
       // Usar período por defecto en caso de error
       const defaultPeriod = '2024-10';
       console.log('📅 Usando período por defecto tras error:', defaultPeriod);
-      setLatestPeriod({ value: '2024-10-01', label: 'Octubre 2024' });
       setPeriodFilter(defaultPeriod);
     }
   };
 
-  // Cargar conteo de CURPs únicos desde el servidor
-  const loadUniqueCurpCount = async () => {
-    try {
-      // Usar el servicio de filtros demográficos para construir parámetros
-      const filterParams = {
-        ...filters,
-        periodFilter: periodFilter || filters.periodFilter
-      };
-      
-      const params = buildDemographicFilterParams(filterParams);
-      
-      console.log('🔍 TablaDemografico: Contando CURPs únicos con filtros:', filterParams);
-
-      const url = buildApiUrl(`/api/payroll/demographic/unique-count?${params}`);
-      console.log('🔍 DEBUG: Llamando endpoint para conteo CURPs:', url);
-      
-      const response = await fetch(url);
-      if (response.ok) {
-        const result = await response.json();
-        console.log('🔍 DEBUG: Respuesta del servidor:', result);
-        if (result.success) {
-          console.log('🔍 DEBUG: Actualizando uniqueCurpCount de', uniqueCurpCount, 'a', result.uniqueCurpCount);
-          setUniqueCurpCount(result.uniqueCurpCount || 0);
-          console.log('🔢 CURPs únicos cargados:', result.uniqueCurpCount);
-        }
-      } else {
-        console.error('❌ Error en respuesta del servidor:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('❌ Error loading unique CURP count:', error);
-    }
-  };
 
   // Cargar datos desde el servidor
   const loadData = async () => {
@@ -480,6 +440,7 @@ export default function TablaDemografico({
       });
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, pagination.pageSize, sortBy, sortDir, periodFilter, filters]);
 
   // Campos que usan server-side sorting (ningún campo numérico)
@@ -667,6 +628,7 @@ export default function TablaDemografico({
         }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, localSortBy, localSortDir]);
 
   return (

@@ -1,5 +1,5 @@
 // Importes removidos - ahora usamos endpoint público sin autenticación
-import { buildApiUrl, isProduction, API_BASE_URL } from '../config/apiConfig';
+import { API_BASE_URL } from '../config/apiConfig';
 
 // Tipos para la API
 export interface UniqueValueResponse {

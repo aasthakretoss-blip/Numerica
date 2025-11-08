@@ -260,10 +260,12 @@ export const formatearRFCConIndicador = (rfc) => {
   return rfc;
 };
 
-export default {
+const curpToRfcUtils = {
   generarRFCDesdeCURP,
   obtenerRFCDelEmpleado,
   validarRFCEnFondos,
   esRFCGenerado,
   formatearRFCConIndicador
 };
+
+export default curpToRfcUtils;

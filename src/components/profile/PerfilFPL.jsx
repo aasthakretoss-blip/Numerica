@@ -3,9 +3,9 @@ import styled from 'styled-components';
 import { useTheme } from '../../contexts/ThemeContext';
 import { buildApiUrl } from '../../config/apiConfig';
 import { authenticatedFetch } from '../../services/authenticatedFetch';
-import { procesarRFC, buscarRFCEnObjeto } from '../../utils/rfcUtils';
+import { procesarRFC } from '../../utils/rfcUtils';
 import { calcularFechaFPLReciente, calcularEstadisticasFechasFPL } from '../../utils/fplUtils';
-import { obtenerRFCDelEmpleado, esRFCGenerado, formatearRFCConIndicador } from '../../utils/curpToRfcUtils';
+import { obtenerRFCDelEmpleado, esRFCGenerado } from '../../utils/curpToRfcUtils';
 import MenuPerfil from '../MenuPerfil';
 import FechaFPLDropdownRFC from './FechaFPLDropdownRFC';
 import FPLDataViewer from './FPLDataViewer';
@@ -190,16 +190,9 @@ const PerfilFPL = ({ rfc }) => {
   const [loading, setLoading] = useState(false);
   const [payrollData, setPayrollData] = useState([]);
   const [fechaFPLCalculada, setFechaFPLCalculada] = useState(null);
-  const theme = useTheme();
 
   // El parámetro rfc es en realidad el CURP
   const curpFromURL = rfc;
-
-  // Procesar RFC con validación
-  const rfcProcesado = useMemo(() => {
-    if (!rfcData?.rfc) return null;
-    return procesarRFC(rfcData.rfc);
-  }, [rfcData?.rfc]);
 
   // Calcular estadísticas de fechas FPL
   const estadisticasFPL = useMemo(() => {

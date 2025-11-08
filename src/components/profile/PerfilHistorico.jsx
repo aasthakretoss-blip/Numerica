@@ -37,15 +37,6 @@ const ContentContainer = styled.div`
   }
 `;
 
-const SectionTitle = styled.h3`
-  color: var(--brand-primary);
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
 const FieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -176,7 +167,6 @@ const PerfilHistorico = ({ rfc }) => {
   const [rfcData, setRfcData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingRfc, setLoadingRfc] = useState(false);
-  const theme = useTheme();
   const navigate = useNavigate();
 
   // El parámetro rfc es en realidad el CURP

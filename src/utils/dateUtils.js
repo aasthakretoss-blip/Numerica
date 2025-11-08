@@ -107,9 +107,11 @@ export const fechaActualSinHora = (locale = 'es-MX') => {
   });
 };
 
-export default {
+const dateUtils = {
   formatearFechaSoloFecha,
   formatearFechaCorta,
   formatearFechaDiaMes,
   fechaActualSinHora
 };
+
+export default dateUtils;

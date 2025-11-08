@@ -169,7 +169,7 @@ export const procesarRFC = (rfc) => {
   return resultado;
 };
 
-export default {
+const rfcUtils = {
   validarFormatoRFC,
   limpiarRFC,
   extraerFechaNacimientoRFC,
@@ -178,3 +178,5 @@ export default {
   buscarRFCEnObjeto,
   procesarRFC
 };
+
+export default rfcUtils;

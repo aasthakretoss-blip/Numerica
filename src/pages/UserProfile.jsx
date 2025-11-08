@@ -60,106 +60,6 @@ const ProfileAvatar = styled.div`
   box-shadow: ${props => props.theme?.effects?.shadows?.strong || '0 8px 24px rgba(0, 0, 0, 0.15)'};
 `;
 
-const ProfileForm = styled.form`
-  display: grid;
-  gap: 2rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const FormLabel = styled.label`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${props => props.theme?.textColors?.primary || '#2c3e50'};
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const FormInput = styled.input`
-  padding: 1rem 1.5rem;
-  border: 2px solid ${props => props.theme?.surfaces?.borders?.light || 'rgba(0, 0, 0, 0.1)'};
-  border-radius: 12px;
-  font-size: 1rem;
-  background: ${props => props.theme?.surfaces?.glass?.light || 'rgba(255, 255, 255, 0.8)'};
-  backdrop-filter: blur(10px);
-  color: ${props => props.theme?.textColors?.primary || '#1d365ff'};
-  transition: all 0.3s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: ${props => props.theme?.brand?.primary || '#e1e5f7ff'};
-    box-shadow: 0 0 0 3px ${props => props.theme?.brand?.primary || '#a8b4e9ff'}33;
-    transform: translateY(-2px);
-  }
-  
-  &:disabled {
-    background: ${props => props.theme?.surfaces?.disabled || 'rgba(0, 0, 0, 0.05)'};
-    color: ${props => props.theme?.textColors?.disabled || '#9ca3af'};
-    cursor: not-allowed;
-  }
-`;
-
-const FormRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 2rem;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const Button = styled.button`
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  border: none;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 140px;
-  
-  ${props => props.$variant === 'primary' ? `
-    background: ${props.theme?.gradients?.buttons?.primary || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
-    color: white;
-    
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-    }
-  ` : `
-    background: ${props.theme?.surfaces?.glass?.medium || 'rgba(255, 255, 255, 0.6)'};
-    color: ${props.theme?.textColors?.primary || '#2c3e50'};
-    border: 2px solid ${props.theme?.surfaces?.borders?.medium || 'rgba(0, 0, 0, 0.1)'};
-    
-    &:hover:not(:disabled) {
-      background: ${props.theme?.surfaces?.glass?.strong || 'rgba(255, 255, 255, 0.8)'};
-      transform: translateY(-1px);
-    }
-  `}
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-  }
-`;
-
 const StatusBadge = styled.div`
   display: inline-flex;
   align-items: center;
@@ -235,45 +135,15 @@ const LoadingSpinner = styled.div`
   }
 `;
 
-const SuccessMessage = styled.div`
-  background: ${props => props.theme?.semanticColors?.successLight || '#d1fae5'};
-  color: ${props => props.theme?.semanticColors?.success || '#059669'};
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
-  font-weight: 500;
-  text-align: center;
-  border: 1px solid ${props => props.theme?.semanticColors?.success || '#059669'};
-`;
-
-const ErrorMessage = styled.div`
-  background: ${props => props.theme?.semanticColors?.errorLight || '#fee2e2'};
-  color: ${props => props.theme?.semanticColors?.error || '#dc2626'};
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
-  font-weight: 500;
-  text-align: center;
-  border: 1px solid ${props => props.theme?.semanticColors?.error || '#dc2626'};
-`;
-
 const UserProfile = () => {
-  const { theme } = useTheme();
   const { user } = useAuthenticator();
   const [profileData, setProfileData] = useState(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
-  });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
 
   // Load profile data
   useEffect(() => {
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadProfile = async () => {
@@ -314,48 +184,6 @@ const UserProfile = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      setSaving(true);
-      setMessage(null);
-      setError(null);
-      
-      // Debug logs
-      const userEmail = user?.username || user?.attributes?.email;
-      console.log('🔄 Debug - Enviando PUT con email:', userEmail);
-      
-      const response = await authenticatedFetch(buildApiUrl('/api/user/profile'), {
-        method: 'PUT',
-        headers: {
-          'x-user-email': userEmail
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage('Perfil actualizado exitosamente');
-        setProfileData(prev => ({ ...prev, ...data.user }));
-      } else {
-        throw new Error(data.error || 'Error al actualizar el perfil');
-      }
-    } catch (err) {
-      setError(err.message || 'Error al actualizar el perfil');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const getUserInitials = (email) => {
     if (!email) return 'U';
