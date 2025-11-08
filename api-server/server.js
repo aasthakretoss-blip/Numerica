@@ -42,7 +42,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   : [
       'http://localhost:5173',
       'http://localhost:3000',
-      'http://localhost:3001', 
+      'https://numerica-2.onrender.com', 
       'http://localhost:3002',
       'http://localhost:3003',
       'https://numerica-imsa.vercel.app'  // Vercel frontend
@@ -594,9 +594,28 @@ app.get('/api/payroll/puesto-categoria/:puesto', async (req, res) => {
 app.get('/api/payroll/stats', async (req, res) => {
   try {
     const result = await nominasService.getDatasetStats();
-    // result ya tiene { success, stats, timestamp }
-    // No envolver nuevamente, simplemente devolver el resultado
-    res.json(result);
+    
+    // Convertir formato nuevo (stats) a formato antiguo (data) para compatibilidad con frontend
+    if (result.success && result.stats) {
+      res.json({
+        success: true,
+        data: {
+          totalRecords: result.stats.totalRecords,
+          uniqueEmployees: result.stats.uniqueEmployees || result.stats.activeEmployees,
+          earliestPeriod: result.stats.earliestPeriod,
+          latestPeriod: result.stats.latestPeriod,
+          totalFondosRecords: result.stats.totalFondosRecords || 0,
+          uniquePeriods: result.stats.uniquePeriods || 0,
+          averageRecordsPerEmployee: result.stats.averageRecordsPerEmployee || 0
+        }
+      });
+    } else if (result.success && result.data) {
+      // Si ya viene en formato antiguo, devolver directamente
+      res.json(result);
+    } else {
+      // Formato desconocido o error
+      res.json(result);
+    }
   } catch (error) {
     console.error('❌ Error obteniendo estadísticas de payroll:', error);
     res.status(500).json({
@@ -1371,8 +1390,14 @@ app.get('/api/payroll/filters', async (req, res) => {
     console.log('✅ DEBUG: Filtros obtenidos exitosamente:', {
       sucursales: result.data?.sucursales?.length || 0,
       puestos: result.data?.puestos?.length || 0,
-      estados: result.data?.estados?.length || 0
+      estados: result.data?.estados?.length || 0,
+      puestosCategorias: result.data?.puestosCategorias?.length || 0
     });
+    
+    // ✅ DEBUG: Log categorías de puestos para verificar
+    if (result.data?.puestosCategorias) {
+      console.log('✅ [Puesto Categorizado] Categorías en respuesta:', result.data.puestosCategorias.map(c => `${c.value} (${c.count})`).join(', '));
+    }
     
     res.json(result);
   } catch (error) {

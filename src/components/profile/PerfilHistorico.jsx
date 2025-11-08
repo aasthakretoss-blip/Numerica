@@ -238,8 +238,17 @@ const PerfilHistorico = ({ rfc }) => {
         
         const response = await authenticatedFetch(buildApiUrl(`/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpFromURL)}`));
         
+        // ✅ FIXED: Handle 404 gracefully - RFC not found is not an error, just means it doesn't exist
+        if (response.status === 404) {
+          console.log('ℹ️ [Histórico] RFC no encontrado en base de datos para CURP:', curpFromURL);
+          setRfcData({ curp: curpFromURL, rfc: null });
+          setLoadingRfc(false);
+          return;
+        }
+        
         if (!response.ok) {
-          throw new Error('Error al obtener RFC');
+          // Only throw error for non-404 status codes
+          throw new Error(`Error al obtener RFC: HTTP ${response.status}`);
         }
         
         const result = await response.json();
@@ -259,7 +268,8 @@ const PerfilHistorico = ({ rfc }) => {
         }
       } catch (error) {
         console.error('❌ [Histórico] Error obteniendo RFC:', error);
-        setRfcData(null);
+        // Set RFC as null instead of null data to show "RFC no disponible" message
+        setRfcData({ curp: curpFromURL, rfc: null });
       } finally {
         setLoadingRfc(false);
       }

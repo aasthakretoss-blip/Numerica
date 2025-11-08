@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { FaCoins, FaCheck, FaChartBar, FaUsers } from 'react-icons/fa';
 import { buildApiUrl } from '../config/apiConfig';
 import { authenticatedFetch } from '../services/authenticatedFetch';
+import { normalizePayrollStats } from '../utils/payrollStatsNormalizer';
 
 const DashboardContainer = styled.div`
   padding: 2rem;
@@ -217,19 +218,21 @@ const Dashboard = ({ userPermissions = {}, user }) => {
       
       const result = await response.json();
       
+      // Normalize the response to old format (pass API URL for logging)
+      const normalizedResult = normalizePayrollStats(result, apiUrl);
+      
       // DEBUG: Ver la estructura exacta de la respuesta
       console.log('🔍 [Dashboard DEBUG] Estructura completa de result:', JSON.stringify(result, null, 2));
-      console.log('🔍 [Dashboard DEBUG] result.stats:', result.stats);
-      console.log('🔍 [Dashboard DEBUG] result.stats?.stats:', result.stats?.stats);
+      console.log('🔍 [Dashboard DEBUG] Normalized result:', JSON.stringify(normalizedResult, null, 2));
       
       // Validar estructura de respuesta
-      if (!result.success) {
+      if (!normalizedResult.success) {
         throw new Error('Response.success === false');
       }
       
-      // Soportar múltiples formatos de respuesta
-      const innerStats = result.stats?.stats || result.stats || result.data || {};
-      console.log('🔍 [Dashboard DEBUG] innerStats seleccionado:', innerStats);
+      // Use normalized data (always in old format)
+      const innerStats = normalizedResult.data || {};
+      console.log('🔍 [Dashboard DEBUG] innerStats (normalized):', innerStats);
       
       // Validar que existan los campos requeridos
       const requiredFields = ['totalRecords', 'uniqueEmployees', 'latestPeriod'];

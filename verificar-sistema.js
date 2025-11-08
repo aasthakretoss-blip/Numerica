@@ -3,7 +3,7 @@
 
 const fetch = require('node-fetch');
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'https://numerica-2.onrender.com';
 
 async function verificarSistema() {
   console.log('\n🔍 VERIFICACIÓN DEL SISTEMA COMPLETO');
@@ -123,7 +123,7 @@ async function verificarSistema() {
     console.log('✅ Filtros funcionando correctamente');
     console.log('✅ Datos reales (500 registros) disponibles');
     console.log('\n📱 Frontend disponible en: http://localhost:3000');
-    console.log('🔧 API disponible en: http://localhost:3001');
+    console.log('🔧 API disponible en: https://numerica-2.onrender.com');
     
   } catch (error) {
     console.log(`❌ ERROR en verificación: ${error.message}`);

@@ -18,6 +18,30 @@ try {
   }
 }
 
+// ✅ FIX: Load nominasService to get puesto categorizado mapping
+let nominasService;
+try {
+  nominasService = require('./services/nominasService');
+  console.log('✅ Loaded nominasService from ./services/nominasService');
+} catch (e1) {
+  try {
+    nominasService = require('./api-server/services/nominasService');
+    console.log('✅ Loaded nominasService from ./api-server/services/nominasService');
+  } catch (e2) {
+    console.error('❌ Could not load nominasService from either path:', e1.message, e2.message);
+  }
+}
+
+// ✅ FIX: Initialize puesto categorizado mapping on startup
+if (nominasService) {
+  nominasService.loadPuestoCategorizado().then(() => {
+    const categorias = nominasService.getPuestosCategorias();
+    console.log(`✅ Cargadas ${categorias.length} categorías de puestos:`, categorias.join(', '));
+  }).catch(err => {
+    console.error('⚠️ Error cargando categorías de puestos:', err.message);
+  });
+}
+
 const app = express();
 const PORT = 3001;
 
@@ -591,31 +615,58 @@ app.get('/api/payroll/stats', async (req, res) => {
   try {
     const client = await getHistoricClient();
     
-    // Get basic statistics
-    const result = await client.query(`
-      SELECT 
-        COUNT(*) as total_employees,
-        COUNT(DISTINCT "Compañía") as total_companies,
-        COUNT(DISTINCT "Puesto") as total_positions,
-        AVG(COALESCE(" SUELDO CLIENTE ", 0)) as avg_salary,
-        MIN("cveper") as earliest_period,
-        MAX("cveper") as latest_period
-      FROM historico_nominas_gsau
+    // Get statistics in old format (data property)
+    // 1. Total records
+    const totalResult = await client.query(`SELECT COUNT(*) as total FROM historico_nominas_gsau`);
+    const totalRecords = parseInt(totalResult.rows[0].total);
+    
+    // 2. Unique employees (CURPs únicas)
+    const uniqueCurpResult = await client.query(`
+      SELECT COUNT(DISTINCT "CURP") as unique_curps 
+      FROM historico_nominas_gsau 
+      WHERE "CURP" IS NOT NULL AND "CURP" != ''
     `);
+    const uniqueEmployees = parseInt(uniqueCurpResult.rows[0].unique_curps);
+    
+    // 3. Earliest and latest periods
+    const periodResult = await client.query(`
+      SELECT 
+        MIN(cveper) as earliest_period,
+        MAX(cveper) as latest_period
+      FROM historico_nominas_gsau 
+      WHERE cveper IS NOT NULL
+    `);
+    const earliestPeriod = periodResult.rows[0]?.earliest_period || null;
+    const latestPeriod = periodResult.rows[0]?.latest_period || null;
+    
+    // 4. Total fondos records
+    let totalFondosRecords = 0;
+    try {
+      const fondosResult = await client.query(`SELECT COUNT(*) as total FROM historico_fondos_gsau`);
+      totalFondosRecords = parseInt(fondosResult.rows[0].total);
+    } catch (error) {
+      console.warn('⚠️ Tabla historico_fondos_gsau no encontrada:', error.message);
+      totalFondosRecords = 0;
+    }
     
     await client.end();
     
-    const stats = result.rows[0];
+    // Calculate average records per employee
+    const averageRecordsPerEmployee = uniqueEmployees > 0 
+      ? Math.round(totalRecords / uniqueEmployees) 
+      : 0;
     
+    // Return in old format (data property) for frontend compatibility
     res.json({
       success: true,
-      stats: {
-        totalEmployees: parseInt(stats.total_employees),
-        totalCompanies: parseInt(stats.total_companies),
-        totalPositions: parseInt(stats.total_positions),
-        avgSalary: parseFloat(stats.avg_salary || 0),
-        earliestPeriod: stats.earliest_period,
-        latestPeriod: stats.latest_period
+      data: {
+        totalRecords,
+        uniqueEmployees,
+        earliestPeriod,
+        latestPeriod,
+        totalFondosRecords,
+        uniquePeriods: 0,
+        averageRecordsPerEmployee
       }
     });
     
@@ -739,9 +790,75 @@ app.get('/api/payroll/filters', async (req, res) => {
       `, params)
     ]);
     
-    await client.end();
+    // ✅ FIX: Calculate puestosCategorias using nominasService
+    let puestosCategorias = [];
+    if (nominasService) {
+      try {
+        // Get all unique puestos with counts
+        // ✅ FIX: Handle WHERE clause properly - use WHERE if empty, AND if not empty
+        const puestoWhereClause = whereClause 
+          ? `${whereClause} AND "Puesto" IS NOT NULL`
+          : `WHERE "Puesto" IS NOT NULL`;
+        
+        const puestosQuery = `
+          SELECT "Puesto" as puesto, COUNT(*) as count
+          FROM historico_nominas_gsau
+          ${puestoWhereClause}
+          GROUP BY "Puesto"
+        `;
+        const puestosForCategorias = await client.query(puestosQuery, params);
+        
+        // Map puestos to categories and calculate counts
+        const categoriaConteos = new Map();
+        
+        // Initialize all available categories with count 0
+        const categoriasDisponibles = nominasService.getPuestosCategorias();
+        categoriasDisponibles.forEach(categoria => {
+          categoriaConteos.set(categoria, 0);
+        });
+        
+        // Sum counts by category
+        puestosForCategorias.rows.forEach(row => {
+          let categoria = nominasService.getPuestoCategorizado(row.puesto);
+          // ✅ FIX: Normalize "Categorizar" to "Sin Categorizar"
+          if (categoria === 'Categorizar') {
+            categoria = 'Sin Categorizar';
+          }
+          const currentCount = categoriaConteos.get(categoria) || 0;
+          categoriaConteos.set(categoria, currentCount + parseInt(row.count));
+        });
+        
+        // ✅ FIX: Ensure "Sin Categorizar" exists
+        if (!categoriaConteos.has('Sin Categorizar')) {
+          categoriaConteos.set('Sin Categorizar', 0);
+        }
+        
+        // Convert to array format - SHOW ALL categories (even with count 0)
+        puestosCategorias = Array.from(categoriaConteos.entries())
+          .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
+          .sort((a, b) => a.value.localeCompare(b.value));
+        
+        console.log('✅ [Puesto Categorizado] Categorías calculadas:', puestosCategorias.length);
+        console.log('✅ [Puesto Categorizado] Categorías:', puestosCategorias.map(c => `${c.value} (${c.count})`).join(', '));
+        console.log('✅ [Puesto Categorizado] Full array:', JSON.stringify(puestosCategorias, null, 2));
+      } catch (catError) {
+        console.error('❌ Error calculando categorías de puestos:', catError);
+        console.error('❌ Error stack:', catError.stack);
+        // Fallback: return empty array if error
+        puestosCategorias = [];
+      }
+    } else {
+      console.warn('⚠️ nominasService no disponible, puestosCategorias será vacío');
+    }
     
-    res.json({
+    // ✅ FIX: Ensure client is closed even if there was an error in puestosCategorias calculation
+    try {
+      await client.end();
+    } catch (closeError) {
+      console.error('⚠️ Error closing database connection:', closeError);
+    }
+    
+    const responseData = {
       success: true,
       data: {
         puestos: puestosResult.rows.map(row => ({
@@ -764,9 +881,18 @@ app.get('/api/payroll/filters', async (req, res) => {
           label: row.value,
           count: parseInt(row.count)
         })),
-        puestosCategorias: [] // Empty for now, can be implemented later if needed
+        puestosCategorias: puestosCategorias // ✅ FIXED: Now returns actual categories
       }
-    });
+    };
+    
+    console.log('✅ [API Response] puestosCategorias count:', responseData.data.puestosCategorias.length);
+    if (responseData.data.puestosCategorias.length > 0) {
+      console.log('✅ [API Response] puestosCategorias sample:', JSON.stringify(responseData.data.puestosCategorias.slice(0, Math.min(3, responseData.data.puestosCategorias.length)), null, 2));
+    } else {
+      console.log('⚠️ [API Response] puestosCategorias is empty');
+    }
+    
+    res.json(responseData);
     
   } catch (error) {
     console.error('Error in /api/payroll/filters:', error);
@@ -888,7 +1014,59 @@ app.get('/api/payroll/filter-options', async (req, res) => {
       `, params)
     ]);
     
-    await client.end();
+    // ✅ FIX: Calculate puestosCategorias using nominasService (same logic as /api/payroll/filters)
+    let puestosCategorias = [];
+    if (nominasService) {
+      try {
+        // ✅ FIX: Handle WHERE clause properly - use WHERE if empty, AND if not empty
+        const puestoWhereClause = whereClause 
+          ? `${whereClause} AND "Puesto" IS NOT NULL`
+          : `WHERE "Puesto" IS NOT NULL`;
+        
+        const puestosQuery = `
+          SELECT "Puesto" as puesto, COUNT(*) as count
+          FROM historico_nominas_gsau
+          ${puestoWhereClause}
+          GROUP BY "Puesto"
+        `;
+        const puestosForCategorias = await client.query(puestosQuery, params);
+        
+        const categoriaConteos = new Map();
+        const categoriasDisponibles = nominasService.getPuestosCategorias();
+        categoriasDisponibles.forEach(categoria => {
+          categoriaConteos.set(categoria, 0);
+        });
+        
+        puestosForCategorias.rows.forEach(row => {
+          let categoria = nominasService.getPuestoCategorizado(row.puesto);
+          if (categoria === 'Categorizar') {
+            categoria = 'Sin Categorizar';
+          }
+          const currentCount = categoriaConteos.get(categoria) || 0;
+          categoriaConteos.set(categoria, currentCount + parseInt(row.count));
+        });
+        
+        if (!categoriaConteos.has('Sin Categorizar')) {
+          categoriaConteos.set('Sin Categorizar', 0);
+        }
+        
+        puestosCategorias = Array.from(categoriaConteos.entries())
+          .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
+          .sort((a, b) => a.value.localeCompare(b.value));
+        
+        console.log('✅ [filter-options] Puesto Categorizado - Categorías:', puestosCategorias.length);
+      } catch (catError) {
+        console.error('❌ Error calculando categorías en filter-options:', catError);
+        puestosCategorias = [];
+      }
+    }
+    
+    // ✅ FIX: Ensure client is closed even if there was an error in puestosCategorias calculation
+    try {
+      await client.end();
+    } catch (closeError) {
+      console.error('⚠️ Error closing database connection:', closeError);
+    }
     
     res.json({
       success: true,
@@ -913,7 +1091,7 @@ app.get('/api/payroll/filter-options', async (req, res) => {
           label: row.value,
           count: parseInt(row.count)
         })),
-        puestosCategorias: [] // Empty for now, can be implemented later if needed
+        puestosCategorias: puestosCategorias // ✅ FIXED: Now returns actual categories
       }
     });
     

@@ -24,14 +24,15 @@ export function useServerPagination(
     setError(null)
     
     try {
-      // ✅ FIXED: Use sortField and sortOrder as primary parameters (with backward compatibility)
-      // ✅ CRITICAL: sortByParam should be the backend field name (e.g., 'salario', 'comisiones', 'periodo')
-      const url = buildApiUrl(`${endpoint}?page=${page}&limit=${pageSize}&sortField=${encodeURIComponent(sortByParam)}&sortOrder=${sortDirParam}`)
+      // ✅ FIXED: Use orderBy and orderDirection as API parameters (matching backend expectations)
+      // ✅ CRITICAL: sortByParam should be the backend field name (e.g., 'salario', 'comisiones', 'periodo', 'percepcionestotales')
+      // Backend expects: orderBy and orderDirection (not sortField/sortOrder)
+      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${encodeURIComponent(sortByParam)}&orderDirection=${sortDirParam}`)
       console.log('📡 useServerPagination: Fetching with sorting:', { 
         sortBy: sortByParam, 
         sortDir: sortDirParam, 
-        sortField: sortByParam,
-        sortOrder: sortDirParam,
+        orderBy: sortByParam,
+        orderDirection: sortDirParam,
         url, 
         isProduction
       })
@@ -61,6 +62,34 @@ export function useServerPagination(
       
       // Transform the response to match the expected structure
       const items = result.data || []
+      
+      // ✅ FRONTEND LOGGING: Log data BEFORE any transformation
+      console.log('\n🟢🟢🟢 [FRONTEND DATA DEBUG] 🟢🟢🟢');
+      console.log('🟢 API Response received - success:', result.success);
+      console.log('🟢 Total items in response:', items.length);
+      console.log('🟢 Current sortBy:', sortByParam);
+      console.log('🟢 Current sortDir:', sortDirParam);
+      
+      if (items.length > 0) {
+        console.log('🟢 First 10 items from API (BEFORE any frontend processing):');
+        items.slice(0, 10).forEach((item, idx) => {
+          const totalPercepciones = item.totalPercepciones || item[" TOTAL DE PERCEPCIONES "] || item["totalPercepciones"];
+          const sueldo = item.sueldo || item[" SUELDO CLIENTE "];
+          const comisiones = item.comisiones;
+          
+          console.log(`  [${idx + 1}] nombre: ${item.nombre || 'N/A'}`);
+          console.log(`      totalPercepciones: ${totalPercepciones} (type: ${typeof totalPercepciones}, isZero: ${totalPercepciones === 0 || totalPercepciones === '0'})`);
+          console.log(`      sueldo: ${sueldo} (type: ${typeof sueldo})`);
+          console.log(`      comisiones: ${comisiones} (type: ${typeof comisiones})`);
+          console.log(`      All keys: ${Object.keys(item).join(', ')}`);
+          console.log(`      Has 'totalPercepciones': ${'totalPercepciones' in item}`);
+          console.log(`      Has ' TOTAL DE PERCEPCIONES ': ${' TOTAL DE PERCEPCIONES ' in item}`);
+        });
+      } else {
+        console.log('⚠️ No items in API response!');
+      }
+      console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n');
+      
       const paginationInfo = {
         total: result.pagination?.total || 0,
         page: result.pagination?.page || page,

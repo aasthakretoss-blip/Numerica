@@ -894,6 +894,11 @@ const BusquedaEmpleados = () => {
         const puestos = result.data.puestos || [];
         const puestosCategorias = result.data.puestosCategorias || [];
         
+        // ✅ DEBUG: Log puestosCategorias received from API
+        console.log('🟢 [Frontend] puestosCategorias received from API:', puestosCategorias.length);
+        console.log('🟢 [Frontend] puestosCategorias data:', JSON.stringify(puestosCategorias, null, 2));
+        console.log('🟢 [Frontend] Full API response data keys:', Object.keys(result.data || {}));
+        
         setStaticFilterOptions({
           puestos: puestos,
           status: result.data.estados || [],
@@ -901,6 +906,8 @@ const BusquedaEmpleados = () => {
           puestosCategorias: puestosCategorias,
           periodos: periodOptionsForDropdown,
         });
+        
+        console.log('🟢 [Frontend] staticFilterOptions.puestosCategorias set to:', puestosCategorias.length, 'items');
       } else {
         throw new Error("La API devolvió una respuesta no exitosa");
       }

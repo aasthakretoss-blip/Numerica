@@ -31,9 +31,10 @@ const PeriodDropdownCurpBased = ({
     try {
       console.log(`📅 Fetching periods for CURP: ${curpValue}`);
       
-      // ✅ FIXED: Use search parameter to filter by CURP (more reliable than curp parameter)
-      const url = `${buildApiUrl('/api/payroll')}?search=${encodeURIComponent(curpValue)}&pageSize=1000&page=1&fullData=true`;
-      console.log('🌐 Calling URL (datos directos del empleado filtrados por CURP):', url);
+      // ✅ FIXED: Use dedicated endpoint that queries distinct cveper values for this specific CURP
+      // This is more efficient than fetching all records and filtering client-side
+      const url = `${buildApiUrl('/api/payroll/periodos-from-curp')}?curp=${encodeURIComponent(curpValue)}`;
+      console.log('🌐 Calling URL (períodos únicos para CURP específico):', url);
       
       const response = await authenticatedFetch(url);
       console.log('🔄 Response status:', response.status);
@@ -46,63 +47,39 @@ const PeriodDropdownCurpBased = ({
       console.log('📊 Raw API Response:', data);
       
       if (data.success && data.data && Array.isArray(data.data)) {
-        console.log('📋 EXTRAER PERÍODOS DIRECTAMENTE DE REGISTROS DEL EMPLEADO');
-        console.log('📄 Total registros del empleado:', data.data.length);
+        console.log('📋 PERÍODOS OBTENIDOS DIRECTAMENTE DEL ENDPOINT ESPECIALIZADO');
+        console.log('📄 Total períodos únicos para este CURP:', data.data.length);
         
-        // Extraer períodos únicos de los registros del empleado
-        const uniquePeriods = new Map();
-        
-        data.data.forEach(record => {
-          // Buscar el campo de período - usar cveper (formato YYYY-MM-DD)
-          let periodValue = record.cveper || record.periodo || record.mes;
+        // The endpoint already returns formatted periods with value, label, and count
+        // Format them for the dropdown component
+        const formattedPeriods = data.data.map(period => {
+          let periodValue = period.value || period.cveper || period;
           
+          // Ensure proper date format (YYYY-MM-DD)
           if (periodValue) {
-            let cleanValue = periodValue;
-            
-            // Convertir a formato YYYY-MM-DD si es timestamp o otro formato
             try {
-              if (cleanValue.includes && cleanValue.includes('T')) {
-                // Si tiene timestamp, extraer solo la fecha
-                const date = new Date(cleanValue);
+              if (typeof periodValue === 'string' && periodValue.includes('T')) {
+                const date = new Date(periodValue);
                 if (!isNaN(date.getTime())) {
-                  cleanValue = date.toISOString().split('T')[0];
-                }
-              } else if (typeof cleanValue === 'string' && !cleanValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                // Si no está en formato YYYY-MM-DD, intentar convertir
-                const date = new Date(cleanValue);
-                if (!isNaN(date.getTime())) {
-                  cleanValue = date.toISOString().split('T')[0];
+                  periodValue = date.toISOString().split('T')[0];
                 }
               }
             } catch (error) {
-              console.warn('⚠️ Error procesando fecha:', cleanValue, error);
-            }
-            
-            // Solo agregar si está en formato YYYY-MM-DD válido
-            if (cleanValue && cleanValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-              // Agregar al mapa de períodos únicos
-              if (!uniquePeriods.has(cleanValue)) {
-                uniquePeriods.set(cleanValue, {
-                  value: cleanValue,
-                  count: 1
-                });
-              } else if (uniquePeriods.has(cleanValue)) {
-                // Incrementar contador si ya existe
-                const existing = uniquePeriods.get(cleanValue);
-                existing.count += 1;
-              }
+              console.warn('⚠️ Error procesando fecha:', periodValue, error);
             }
           }
-        });
-        
-        // Convertir el mapa a array y ordenar
-        const formattedPeriods = Array.from(uniquePeriods.values())
-        .sort((a, b) => {
+          
+          return {
+            value: periodValue,
+            label: periodValue,
+            count: period.count || 1
+          };
+        }).sort((a, b) => {
           // Ordenar del más reciente al más antiguo
           return b.value.localeCompare(a.value);
         });
         
-        console.log('✅ Períodos extraídos de registros reales:', formattedPeriods.length);
+        console.log('✅ Períodos obtenidos del endpoint especializado:', formattedPeriods.length);
         console.log('📅 Primeros períodos:', formattedPeriods.slice(0, 5));
         setPeriods(formattedPeriods);
         

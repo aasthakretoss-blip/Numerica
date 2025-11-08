@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { formatCurrency } from '../utils/data.js'
 import { buildApiUrl, isProduction } from '../config/apiConfig'
+import { normalizePayrollStats } from '../utils/payrollStatsNormalizer'
 
 export default function StatisticsPanel() {
   const [stats, setStats] = useState(null)
@@ -19,8 +20,10 @@ export default function StatisticsPanel() {
         const response = await fetch(apiUrl)
         if (response.ok) {
           const result = await response.json()
-          if (result.success) {
-            setStats(result.stats)
+          // Normalize the response to old format
+          const normalizedResult = normalizePayrollStats(result)
+          if (normalizedResult.success) {
+            setStats(normalizedResult.data)
           } else {
             setError('Error al cargar estadísticas')
           }

@@ -376,16 +376,28 @@ class PayrollFilterService {
       
       // Sumar conteos por categoría
       puestosResult.rows.forEach(row => {
-        const categoria = nominasService.getPuestoCategorizado(row.puesto);
+        let categoria = nominasService.getPuestoCategorizado(row.puesto);
+        // ✅ FIX: Normalizar "Categorizar" a "Sin Categorizar" si viene del CSV
+        if (categoria === 'Categorizar') {
+          categoria = 'Sin Categorizar';
+        }
         const currentCount = categoriaConteos.get(categoria) || 0;
         categoriaConteos.set(categoria, currentCount + parseInt(row.count));
       });
       
-      // Convertir a formato de array, solo mostrar categorías con empleados
+      // ✅ FIX: Asegurar que "Sin Categorizar" esté en el mapa si no existe
+      if (!categoriaConteos.has('Sin Categorizar')) {
+        categoriaConteos.set('Sin Categorizar', 0);
+      }
+      
+      // ✅ FIXED: Convertir a formato de array, MOSTRAR TODAS las categorías (incluso con count 0)
+      // Esto asegura que el dropdown siempre muestre todas las opciones disponibles
       const result = Array.from(categoriaConteos.entries())
-        .filter(([categoria, count]) => count > 0)
-        .map(([categoria, count]) => ({ value: categoria, count }))
+        .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
         .sort((a, b) => a.value.localeCompare(b.value));
+      
+      console.log('✅ [Puesto Categorizado] Categorías encontradas:', result.length);
+      console.log('✅ [Puesto Categorizado] Categorías:', result.map(c => `${c.value} (${c.count})`).join(', '));
       
       return result;
       
@@ -625,37 +637,71 @@ class PayrollFilterService {
       // CORREGIDO: Ordenamiento dinámico con conversión numérica adecuada
       let orderClause = '';
       if (options.orderBy) {
-        console.log('🎯 PayrollFilterService: Configurando ordenamiento:', { orderBy: options.orderBy, orderDirection: options.orderDirection });
+        // ✅ BACKEND LOGGING: Log incoming sort parameters
+        console.log('\n🔵🔵🔵 [BACKEND SORTING DEBUG] 🔵🔵🔵');
+        console.log('🔵 Incoming orderBy parameter:', JSON.stringify(options.orderBy));
+        console.log('🔵 Incoming orderDirection parameter:', JSON.stringify(options.orderDirection));
+        console.log('🔵 Type of orderBy:', typeof options.orderBy);
+        console.log('🔵 orderBy length:', String(options.orderBy || '').length);
         
         // Mapear campos del frontend a expresiones SQL correctas
+        // ✅ FIXED: Normalize orderBy to handle case variations (frontend sends lowercase)
+        const normalizedOrderBy = String(options.orderBy || '').trim().toLowerCase().replace(/\s+/g, '').replace(/_/g, '');
+        console.log('🔵 Normalized orderBy:', normalizedOrderBy);
+        
         const fieldMapping = {
           'nombre': '"Nombre completo"',
+          'name': '"Nombre completo"',
           'curp': '"CURP"',
+          'rfc': '"RFC"',
           'puesto': '"Puesto"',
           'sucursal': '"Compañía"',
+          'compania': '"Compañía"',
           'mes': 'DATE(cveper)',
           'cveper': 'cveper',
           'periodo': 'cveper',
-          'salario': '(" SUELDO CLIENTE "::NUMERIC)',
-          'sueldo': '(" SUELDO CLIENTE "::NUMERIC)',
+          'salario': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          'salary': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          'sueldo': 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
           // ✅ FIXED: Comisiones sorting uses sum of both commission fields with proper casting
-          'comisiones': '((COALESCE(" COMISIONES CLIENTE ", 0)::NUMERIC + COALESCE(" COMISIONES FACTURADAS ", 0)::NUMERIC))',
-          'totalPercepciones': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
-          'percepcionesTotales': '(" TOTAL DE PERCEPCIONES "::DECIMAL)',
-          'estado': '"Status"'
+          'comisiones': '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
+          'commissions': '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
+          // ✅ CRITICAL FIX: Add all variations (case-insensitive)
+          'totalpercepciones': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
+          'percepcionestotales': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
+          'totalpercepcion': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
+          'percepcion': 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
+          'estado': '"Status"',
+          'status': '"Status"'
         };
         
-        const dbField = fieldMapping[options.orderBy];
+        console.log('🔵 Available field mappings:', Object.keys(fieldMapping).join(', '));
+        
+        // Try direct match first
+        let dbField = fieldMapping[normalizedOrderBy];
+        console.log('🔵 Direct match result:', dbField || 'NOT FOUND');
+        
+        // ✅ CRITICAL FIX: If not found, try fallback for percepciones
+        if (!dbField && (normalizedOrderBy.includes('percepcion') || normalizedOrderBy.includes('total'))) {
+          dbField = 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)';
+          console.log('🔵 ✅ FORCED MATCH for percepciones field');
+        }
+        
         if (dbField) {
           const direction = options.orderDirection === 'desc' ? 'DESC' : 'ASC';
           // ✅ FIXED: Secondary sort by cveper DESC to ensure consistent ordering across pages
           orderClause = ` ORDER BY ${dbField} ${direction}, cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
           console.log('✅ PayrollFilterService: Clausula ORDER BY generada:', orderClause);
+          console.log('✅ SQL Expression for sorting:', dbField);
+          console.log('✅ Sort direction:', direction);
         } else {
           // ✅ FIXED: Default ordering by latest cveper (descending) when field not recognized
           orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
           console.log('⚠️ PayrollFilterService: Campo no reconocido, usando orden por defecto:', orderClause);
+          console.log('⚠️ Tried normalized orderBy:', normalizedOrderBy);
+          console.log('⚠️ Available mappings:', Object.keys(fieldMapping).join(', '));
         }
+        console.log('🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵\n');
       } else {
         // ✅ FIXED: Default sorting: latest payroll period (cveper) descending, then by name
         orderClause = ` ORDER BY cveper DESC, "Nombre completo" ASC, "CURP" ASC`;
@@ -764,6 +810,37 @@ class PayrollFilterService {
         searchApplied: options.search ? 'YES' : 'NO',
         searchTerm: options.search || 'N/A'
       });
+      
+      // ✅ BACKEND LOGGING: Log SQL query being executed
+      console.log('\n🔵🔵🔵 [BACKEND SQL QUERY DEBUG] 🔵🔵🔵');
+      console.log('🔵 Full SQL Query (last 500 chars):', query.substring(Math.max(0, query.length - 500)));
+      console.log('🔵 Query Parameters:', finalParams);
+      console.log('🔵 Has ORDER BY:', query.includes('ORDER BY') ? 'YES' : 'NO');
+      if (query.includes('ORDER BY')) {
+        const orderByIndex = query.indexOf('ORDER BY');
+        console.log('🔵 ORDER BY clause:', query.substring(orderByIndex, Math.min(orderByIndex + 200, query.length)));
+      }
+      
+      // ✅ BACKEND LOGGING: Log first 10 rows of DB response BEFORE sending to frontend
+      console.log('\n🔵🔵🔵 [BACKEND DB RESPONSE DEBUG] 🔵🔵🔵');
+      console.log('🔵 Total rows from PostgreSQL:', dataResult.rows.length);
+      if (dataResult.rows.length > 0) {
+        console.log('🔵 First 10 rows from PostgreSQL (BEFORE any transformation):');
+        dataResult.rows.slice(0, 10).forEach((row, idx) => {
+          const totalPercepciones = row.totalPercepciones || row[" TOTAL DE PERCEPCIONES "] || row["totalPercepciones"] || 'NOT FOUND';
+          const sueldo = row.sueldo || row[" SUELDO CLIENTE "] || 'NOT FOUND';
+          const comisiones = row.comisiones || 'NOT FOUND';
+          console.log(`  [${idx + 1}] nombre: ${row.nombre || 'N/A'}, totalPercepciones: ${totalPercepciones} (type: ${typeof totalPercepciones}), sueldo: ${sueldo}, comisiones: ${comisiones}`);
+          console.log(`      All keys in row: ${Object.keys(row).join(', ')}`);
+          // Check if field exists
+          const hasTotalPercepciones = 'totalPercepciones' in row;
+          const hasTotalDePercepciones = ' TOTAL DE PERCEPCIONES ' in row;
+          console.log(`      Has 'totalPercepciones' key: ${hasTotalPercepciones}, Has ' TOTAL DE PERCEPCIONES ' key: ${hasTotalDePercepciones}`);
+        });
+      } else {
+        console.log('⚠️ No rows returned from PostgreSQL!');
+      }
+      console.log('🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵\n');
       
       // Si hay búsqueda activa, verificar que los resultados coinciden
       if (options.search && dataResult.rows.length > 0) {

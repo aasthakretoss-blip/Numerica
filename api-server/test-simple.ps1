@@ -1,5 +1,5 @@
 # Test simple de la API
-$baseUrl = "http://localhost:3001"
+$baseUrl = "https://numerica-2.onrender.com"
 
 Write-Host "=== PRUEBAS API NUMERICA ===" -ForegroundColor Green
 

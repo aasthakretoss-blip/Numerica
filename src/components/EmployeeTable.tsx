@@ -3,6 +3,7 @@ import type { PayrollData } from '../types'
 import { parseMoney, formatCurrency, formatPeriod } from '../utils/data'
 import { useServerPagination } from '../hooks/useServerPagination'
 import { buildApiUrl } from '../config/apiConfig'
+import { normalizePayrollStats } from '../utils/payrollStatsNormalizer'
 
 // ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
 const FRONTEND_TO_BACKEND_FIELD_MAP: Record<string, string> = {
@@ -130,8 +131,10 @@ export default function EmployeeTable() {
         const response = await fetch(buildApiUrl('/api/payroll/stats'))
         if (response.ok) {
           const result = await response.json()
-          if (result.success) {
-            setStats(result.stats)
+          // Normalize the response to old format
+          const normalizedResult = normalizePayrollStats(result)
+          if (normalizedResult.success) {
+            setStats(normalizedResult.data)
           }
         }
       } catch (error) {
@@ -253,7 +256,26 @@ export default function EmployeeTable() {
                 </td>
               </tr>
             ) : (
-              data.map((r, i) => (
+              data.map((r, i) => {
+                // ✅ FRONTEND LOGGING: Log values before display (only for first 5 rows and when sorting by percepciones)
+                if (i < 5 && (sortBy === 'percepcionestotales' || sortBy === 'totalpercepciones')) {
+                  const rawValue = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "];
+                  const parsedValue = parseMoney(rawValue);
+                  const formattedValue = formatCurrency(parsedValue);
+                  
+                  console.log(`🟡 [FRONTEND DISPLAY DEBUG] Row ${i + 1}:`, {
+                    nombre: r.nombre,
+                    rawTotalPercepciones: rawValue,
+                    rawType: typeof rawValue,
+                    parsedValue: parsedValue,
+                    formattedValue: formattedValue,
+                    hasTotalPercepciones: 'totalPercepciones' in r,
+                    hasTotalDePercepciones: ' TOTAL DE PERCEPCIONES ' in r,
+                    allKeys: Object.keys(r).filter(k => k.toLowerCase().includes('percepcion') || k.toLowerCase().includes('total'))
+                  });
+                }
+                
+                return (
                 <tr key={`${r.rfc}-${r.mes}-${i}`} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-2">{r.nombre}</td>
                   <td className="px-4 py-2 font-mono text-xs">{r.rfc}</td>
@@ -267,10 +289,10 @@ export default function EmployeeTable() {
                     {formatCurrency(parseMoney(r.comisiones))}
                   </td>
                   <td className="px-4 py-2 text-right font-medium">
-                    {formatCurrency(parseMoney(r.totalPercepciones))}
+                    {formatCurrency(parseMoney(r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || 0))}
                   </td>
                   <td className="px-4 py-2 text-right font-medium">
-                    {formatCurrency(parseMoney(r.totalPercepciones))}
+                    {formatCurrency(parseMoney(r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || 0))}
                   </td>
                   <td className="px-4 py-2">
                     {r.estado === 'Activo' ? (
@@ -283,21 +305,12 @@ export default function EmployeeTable() {
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        N/A
+                        {r.estado || 'N/A'}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2">
-                    {r.perfilUrl ? (
-                      <a href={r.perfilUrl} target="_blank" className="text-blue-800 hover:underline text-sm" rel="noreferrer">
-                        Perfil
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
-                  </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>

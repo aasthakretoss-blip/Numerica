@@ -12,10 +12,27 @@ class NominasService {
   // Cargar la tabla de categorización de puestos desde CSV
   async loadPuestoCategorizado() {
     try {
-      const csvPath = path.join(__dirname, '../data/Puesto_Index.csv');
+      // ✅ FIX: Try multiple possible paths for CSV file
+      const possiblePaths = [
+        path.join(__dirname, '../data/Puesto_Index.csv'),
+        path.join(__dirname, '../../data/Puesto_Index.csv'),
+        path.join(__dirname, '../api-server/data/Puesto_Index.csv'),
+        path.join(process.cwd(), 'data/Puesto_Index.csv'),
+        path.join(process.cwd(), 'api-server/data/Puesto_Index.csv')
+      ];
       
-      if (!fs.existsSync(csvPath)) {
-        console.warn('⚠️ Archivo Puesto_Index.csv no encontrado, creando mapa por defecto');
+      let csvPath = null;
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          csvPath = testPath;
+          console.log(`✅ [Puesto Categorizado] CSV encontrado en: ${csvPath}`);
+          break;
+        }
+      }
+      
+      if (!csvPath) {
+        console.warn('⚠️ Archivo Puesto_Index.csv no encontrado en ninguna ubicación:', possiblePaths);
+        console.warn('⚠️ Creando mapa por defecto (solo "Sin Categorizar")');
         this.puestoCategorizadoMap = new Map();
         return;
       }
@@ -33,7 +50,9 @@ class NominasService {
             }
           })
           .on('end', () => {
+            const categorias = this.getPuestosCategorias();
             console.log(`✅ Cargadas ${this.puestoCategorizadoMap.size} categorizaciones de puestos`);
+            console.log(`✅ Categorías disponibles (${categorias.length}):`, categorias.join(', '));
             resolve();
           })
           .on('error', (error) => {

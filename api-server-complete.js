@@ -737,30 +737,58 @@ app.get('/api/payroll/stats', async (req, res) => {
   try {
     const client = await getHistoricClient();
     
-    const result = await client.query(`
-      SELECT 
-        COUNT(*) as total_employees,
-        COUNT(DISTINCT "Compañía") as total_companies,
-        COUNT(DISTINCT "Puesto") as total_positions,
-        AVG(COALESCE(" SUELDO CLIENTE ", 0)) as avg_salary,
-        MIN("cveper") as earliest_period,
-        MAX("cveper") as latest_period
-      FROM historico_nominas_gsau
+    // Get statistics in old format (data property)
+    // 1. Total records
+    const totalResult = await client.query(`SELECT COUNT(*) as total FROM historico_nominas_gsau`);
+    const totalRecords = parseInt(totalResult.rows[0].total);
+    
+    // 2. Unique employees (CURPs únicas)
+    const uniqueCurpResult = await client.query(`
+      SELECT COUNT(DISTINCT "CURP") as unique_curps 
+      FROM historico_nominas_gsau 
+      WHERE "CURP" IS NOT NULL AND "CURP" != ''
     `);
+    const uniqueEmployees = parseInt(uniqueCurpResult.rows[0].unique_curps);
+    
+    // 3. Earliest and latest periods
+    const periodResult = await client.query(`
+      SELECT 
+        MIN(cveper) as earliest_period,
+        MAX(cveper) as latest_period
+      FROM historico_nominas_gsau 
+      WHERE cveper IS NOT NULL
+    `);
+    const earliestPeriod = periodResult.rows[0]?.earliest_period || null;
+    const latestPeriod = periodResult.rows[0]?.latest_period || null;
+    
+    // 4. Total fondos records
+    let totalFondosRecords = 0;
+    try {
+      const fondosResult = await client.query(`SELECT COUNT(*) as total FROM historico_fondos_gsau`);
+      totalFondosRecords = parseInt(fondosResult.rows[0].total);
+    } catch (error) {
+      console.warn('⚠️ Tabla historico_fondos_gsau no encontrada:', error.message);
+      totalFondosRecords = 0;
+    }
     
     await client.end();
     
-    const stats = result.rows[0];
+    // Calculate average records per employee
+    const averageRecordsPerEmployee = uniqueEmployees > 0 
+      ? Math.round(totalRecords / uniqueEmployees) 
+      : 0;
     
+    // Return in old format (data property) for frontend compatibility
     res.json({
       success: true,
-      stats: {
-        totalEmployees: parseInt(stats.total_employees),
-        totalCompanies: parseInt(stats.total_companies),
-        totalPositions: parseInt(stats.total_positions),
-        avgSalary: parseFloat(stats.avg_salary || 0),
-        earliestPeriod: stats.earliest_period,
-        latestPeriod: stats.latest_period
+      data: {
+        totalRecords,
+        uniqueEmployees,
+        earliestPeriod,
+        latestPeriod,
+        totalFondosRecords,
+        uniquePeriods: 0,
+        averageRecordsPerEmployee
       }
     });
     

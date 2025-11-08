@@ -436,16 +436,28 @@ class PayrollFilterService {
       
       // Sumar conteos por categoría
       puestosResult.rows.forEach(row => {
-        const categoria = nominasService.getPuestoCategorizado(row.puesto);
+        let categoria = nominasService.getPuestoCategorizado(row.puesto);
+        // ✅ FIX: Normalizar "Categorizar" a "Sin Categorizar" si viene del CSV
+        if (categoria === 'Categorizar') {
+          categoria = 'Sin Categorizar';
+        }
         const currentCount = categoriaConteos.get(categoria) || 0;
         categoriaConteos.set(categoria, currentCount + parseInt(row.count));
       });
       
-      // Convertir a formato de array, solo mostrar categorías con empleados
+      // ✅ FIX: Asegurar que "Sin Categorizar" esté en el mapa si no existe
+      if (!categoriaConteos.has('Sin Categorizar')) {
+        categoriaConteos.set('Sin Categorizar', 0);
+      }
+      
+      // ✅ FIXED: Convertir a formato de array, MOSTRAR TODAS las categorías (incluso con count 0)
+      // Esto asegura que el dropdown siempre muestre todas las opciones disponibles
       const result = Array.from(categoriaConteos.entries())
-        .filter(([categoria, count]) => count > 0)
-        .map(([categoria, count]) => ({ value: categoria, count }))
+        .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
         .sort((a, b) => a.value.localeCompare(b.value));
+      
+      console.log('✅ [Puesto Categorizado] Categorías encontradas:', result.length);
+      console.log('✅ [Puesto Categorizado] Categorías:', result.map(c => `${c.value} (${c.count})`).join(', '));
       
       return result;
       
@@ -525,9 +537,9 @@ class PayrollFilterService {
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as sueldo,
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as " SUELDO CLIENTE ",
           COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)::NUMERIC as salary,
-          COALESCE(" COMISIONES CLIENTE ", 0) + COALESCE(" COMISIONES FACTURADAS ", 0) as comisiones,
-          COALESCE(" TOTAL DE PERCEPCIONES ", 0) as "totalPercepciones",
-          COALESCE(" TOTAL DE PERCEPCIONES ", 0) as " TOTAL DE PERCEPCIONES ",
+          (COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))::NUMERIC as comisiones,
+          COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)::NUMERIC as "totalPercepciones",
+          COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)::NUMERIC as " TOTAL DE PERCEPCIONES ",
           "Status" as status,
           CASE 
             WHEN "Status" = 'A' THEN 'Activo'

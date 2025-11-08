@@ -4,7 +4,7 @@ async function testPayrollAPI() {
   console.log('🧪 Probando el endpoint /api/payroll...');
   console.log('='.repeat(50));
 
-  const baseUrl = 'http://localhost:3001';
+  const baseUrl = 'https://numerica-2.onrender.com';
   
   try {
     // Probar el endpoint principal
