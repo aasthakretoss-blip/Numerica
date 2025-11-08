@@ -14,7 +14,7 @@ import {
   FaCompressArrowsAlt,
   FaExpandArrowsAlt,
 } from "react-icons/fa";
-import nominasApi from "../services/nominasApi.ts";
+import nominasApi from "../services/nominasApi";
 import { buildApiUrl } from "../config/apiConfig";
 import { authenticatedFetch } from "../services/authenticatedFetch";
 import EmployeeTable from "../components/EmployeeTable";
@@ -27,7 +27,7 @@ import {
   convertMonthSelectionsToCveper, 
   formatCveperForTable,
   PeriodOption,
-} from "../utils/periodUtils.ts";
+} from "../utils/periodUtils";
 
 const PageContainer = styled.div`
   padding: 2rem 2rem 2rem 2rem;

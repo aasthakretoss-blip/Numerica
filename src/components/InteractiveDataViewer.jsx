@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fa';
 import { useChartEvents, SELECTION_TYPES } from '../hooks/useChartEvents';
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi';
-import { formatCveperForTable } from '../utils/periodUtils.ts';
+import { formatCveperForTable } from '../utils/periodUtils';
 import { buildApiUrl } from '../config/apiConfig';
 
 // Styled Components para diseño horizontal y ancho completo

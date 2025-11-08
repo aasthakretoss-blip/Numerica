@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import EmployeeTable from './EmployeeTable.jsx'
-import StatisticsPanel from './StatisticsPanel.jsx'
+import EmployeeTable from './EmployeeTable'
+import StatisticsPanel from './StatisticsPanel'
 
 export default function PayrollDashboard() {
   const [activeTab, setActiveTab] = useState('table')

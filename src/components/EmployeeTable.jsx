@@ -12,7 +12,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { parseMoney, formatCurrency, formatPeriod } from "../utils/data.js";
-import { formatCveperForTable } from "../utils/periodUtils.ts";
+import { formatCveperForTable } from "../utils/periodUtils";
 import { useServerPagination } from "../hooks/useServerPagination.js";
 import { buildApiUrl } from "../config/apiConfig.js";
 import { surfaces, textColors, effects, brandColors, semanticColors } from "../styles/ColorTokens";

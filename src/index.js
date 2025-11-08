@@ -9,7 +9,7 @@ import GlobalStyles from './styles/GlobalStyles';
 import { initializeDefaultVariables } from './styles/CSSVariables';
 import reportWebVitals from './reportWebVitals';
 import { Amplify } from 'aws-amplify';
-import awsConfig from './aws-exports.ts';
+import awsConfig from './aws-exports';
 
 // Configurar Amplify
 Amplify.configure(awsConfig);

@@ -8,7 +8,7 @@ import {
   FaChevronLeft, FaChevronRight
 } from 'react-icons/fa'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
-import { formatCveperForTable } from '../utils/periodUtils.ts'
+import { formatCveperForTable } from '../utils/periodUtils'
 import { buildApiUrl } from '../config/apiConfig'
 // Styled Components
 const TableContainer = styled.div`

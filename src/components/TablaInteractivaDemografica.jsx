@@ -8,7 +8,7 @@ import {
   FaChevronLeft, FaChevronRight, FaMousePointer
 } from 'react-icons/fa'
 import { buildDemographicFilterParams } from '../services/demographicFiltersApi'
-import { formatCveperForTable } from '../utils/periodUtils.ts'
+import { formatCveperForTable } from '../utils/periodUtils'
 import { buildApiUrl } from '../config/apiConfig'
 
 // Styled Components (reutilizando los mismos estilos de TablaDemografico)

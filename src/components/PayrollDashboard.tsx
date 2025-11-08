@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import EmployeeTable from './EmployeeTable.tsx'
+import EmployeeTable from './EmployeeTable'
 import StatisticsPanel from './StatisticsPanel'
 
 type ActiveTab = 'table' | 'stats'
