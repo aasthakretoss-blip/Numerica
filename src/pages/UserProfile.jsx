@@ -136,9 +136,11 @@ const LoadingSpinner = styled.div`
 `;
 
 const UserProfile = () => {
+  const { theme } = useTheme();
   const { user } = useAuthenticator();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Load profile data
   useEffect(() => {
@@ -168,11 +170,6 @@ const UserProfile = () => {
       if (response.ok) {
         const data = await response.json();
         setProfileData(data.user);
-        setFormData({
-          firstName: data.user.firstName || '',
-          lastName: data.user.lastName || '',
-          phoneNumber: data.user.phoneNumber || ''
-        });
       } else {
         throw new Error('Error al cargar el perfil');
       }
