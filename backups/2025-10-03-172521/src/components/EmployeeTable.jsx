@@ -230,7 +230,7 @@ export default function EmployeeTable({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/payroll/stats')
+        const response = await fetch('https://numerica-2.onrender.com/api/payroll/stats')
         if (response.ok) {
           const result = await response.json()
           if (result.success) {

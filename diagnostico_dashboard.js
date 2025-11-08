@@ -5,7 +5,7 @@
 
 // Configuración de la API (similar a la del proyecto)
 const API_CONFIG = {
-  BASE_URL: 'http://localhost:3001'
+  BASE_URL: 'https://numerica-2.onrender.com'
 };
 
 const buildApiUrl = (endpoint) => {

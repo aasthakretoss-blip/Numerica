@@ -194,7 +194,7 @@ async function fetchTotalFondosRecords(statsApiUrl, fetchFn = fetch) {
  * @returns {Promise<Object>} Normalized response in old format
  */
 export async function fetchPayrollStats(apiUrl, fetchFn = fetch) {
-  const url = apiUrl || "https://n4xman7i5l.execute-api.us-east-1.amazonaws.com/prod/api/payroll/stats";
+  const url = apiUrl || "https://numerica-2.onrender.com/api/payroll/stats";
   
   console.log(`[PAYROLL STATS NORMALIZER] ==========================================`);
   console.log(`[PAYROLL STATS NORMALIZER] Fetching payroll stats from API`);

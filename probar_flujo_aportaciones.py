@@ -25,7 +25,7 @@ def test_endpoint_busqueda_empleados():
             'sortDir': 'desc'
         }
         
-        response = requests.get('http://localhost:3001/busqueda-empleados', params=params)
+        response = requests.get('https://numerica-2.onrender.com/busqueda-empleados', params=params)
         
         if response.status_code == 200:
             data = response.json()
@@ -132,7 +132,7 @@ def test_server_status():
     print("=" * 40)
     
     try:
-        response = requests.get('http://localhost:3001/', timeout=5)
+        response = requests.get('https://numerica-2.onrender.com/', timeout=5)
         print("✅ Servidor API corriendo correctamente")
         return True
     except requests.exceptions.ConnectionError:

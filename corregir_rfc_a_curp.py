@@ -220,7 +220,7 @@ import json
 
 def test_api_with_curp():
     """Probar API con CURP conocido"""
-    base_url = "http://localhost:3001"
+    base_url = "https://numerica-2.onrender.com"
     
     # CURP de prueba que sabemos que tiene datos
     test_curp = "AAAA860220HDFLRN05"  # Antonio de Jesus Alvarez
@@ -285,7 +285,7 @@ def test_api_with_curp():
 
 if __name__ == "__main__":
     print("🎯 INICIANDO PRUEBAS POST-CORRECCIÓN")
-    print("Asegúrate de que el servidor esté corriendo en localhost:3001\\n")
+    print("Asegúrate de que el servidor esté corriendo en https://numerica-2.onrender.com\\n")
     
     test_api_with_curp()
     

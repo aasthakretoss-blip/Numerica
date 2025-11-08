@@ -5,7 +5,7 @@ async function testFrontendMonthSelection() {
   console.log('🧪 === SIMULANDO SELECCIÓN DE MES EN EL FRONTEND ===');
   
   try {
-    const baseURL = 'http://localhost:3001';
+    const baseURL = 'https://numerica-2.onrender.com';
     
     // Paso 1: Obtener los períodos disponibles (lo que hace el frontend al cargar)
     console.log('\n📋 === PASO 1: Obtener opciones de períodos ===');

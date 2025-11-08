@@ -108,7 +108,7 @@ const PerfilFPL = ({ rfc }) => {
       try {
         console.log('🔍 Buscando RFC para CURP:', curpFromURL);
         
-        const response = await fetch(`http://localhost:3001/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
+        const response = await fetch(`https://numerica-2.onrender.com/api/payroll/rfc-from-curp?curp=${encodeURIComponent(curpFromURL)}`);
         
         if (!response.ok) {
           throw new Error('Error al obtener RFC');

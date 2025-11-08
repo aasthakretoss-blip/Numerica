@@ -23,7 +23,7 @@ const DebugCampos = ({ rfc, selectedCveper }) => {
           sortDir: 'desc'
         });
         
-        const response = await fetch(`http://localhost:3001/busqueda-empleados?${params.toString()}`);
+        const response = await fetch(`https://numerica-2.onrender.com/busqueda-empleados?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar datos');
