@@ -1,7 +1,7 @@
 {
     "version":  2,
     "name":  "numerica",
-    "buildCommand":  "npm install --legacy-peer-deps && npm run vercel-build",
+    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run vercel-build",
     "outputDirectory":  "build",
     "rewrites":  [
                      {

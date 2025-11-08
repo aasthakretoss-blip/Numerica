@@ -188,13 +188,13 @@ class NominasApiService {
       
       switch (filterType) {
         case 'puestos':
-          values = [...new Set(data.map((item: any) => item.puesto).filter(Boolean))];
+          values = [...new Set(data.map((item: any) => item.puesto).filter(Boolean) as string[])];
           break;
         case 'status':
-          values = [...new Set(data.map((item: any) => item.estado).filter(Boolean))];
+          values = [...new Set(data.map((item: any) => item.estado).filter(Boolean) as string[])];
           break;
         case 'categorias':
-          values = [...new Set(data.map((item: any) => item.sucursal).filter(Boolean))];
+          values = [...new Set(data.map((item: any) => item.sucursal).filter(Boolean) as string[])];
           break;
         default:
           values = [];
