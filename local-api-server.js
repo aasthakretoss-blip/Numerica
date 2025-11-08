@@ -25,6 +25,15 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+// Debug middleware to log all incoming requests (for troubleshooting)
+app.use((req, res, next) => {
+  // Only log payroll-related routes for debugging
+  if (req.path.startsWith('/api/payroll/')) {
+    console.log(`[ROUTE DEBUG] ${req.method} ${req.path} - Query:`, req.query);
+  }
+  next();
+});
+
 // Database config for main DB (postgres)
 const dbConfig = {
   host: process.env.DB_HOST,
@@ -45,6 +54,16 @@ const gsauDbConfig = {
   ssl: { rejectUnauthorized: false }, // Always use SSL for AWS RDS
 };
 
+// Database config for Fondos
+const fondosDbConfig = {
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_FONDOS || 'Fondos',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  ssl: { rejectUnauthorized: false }, // Always use SSL for AWS RDS
+};
+
 // Helper function to get database client
 async function getClient() {
   const client = new Client(dbConfig);
@@ -55,6 +74,13 @@ async function getClient() {
 // Helper function to get Historic client
 async function getHistoricClient() {
   const client = new Client(gsauDbConfig);
+  await client.connect();
+  return client;
+}
+
+// Helper function to get Fondos client
+async function getFondosClient() {
+  const client = new Client(fondosDbConfig);
   await client.connect();
   return client;
 }
@@ -399,22 +425,14 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
 
 // GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
 app.get('/api/payroll', async (req, res) => {
-  // 🔍 ENTRY POINT LOGGING: Log request immediately - VERY PROMINENT
-  console.error('========================================');
-  console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
-  console.error('URL:', req.url);
-  console.error('SEARCH PARAM (q):', req.query.q);
-  console.error('SEARCH PARAM (search):', req.query.search);
-  console.error('ALL QUERY:', JSON.stringify(req.query));
-  console.error('========================================');
-  
-  console.log('========================================');
-  console.log('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
-  console.log('URL:', req.url);
-  console.log('SEARCH PARAM (q):', req.query.q);
-  console.log('SEARCH PARAM (search):', req.query.search);
-  console.log('ALL QUERY:', JSON.stringify(req.query));
-  console.log('========================================');
+  // COMMENTED OUT: Verbose logging - keeping only FPL/fondos logs active
+  // console.error('========================================');
+  // console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
+  // console.error('URL:', req.url);
+  // console.error('SEARCH PARAM (q):', req.query.q);
+  // console.error('SEARCH PARAM (search):', req.query.search);
+  // console.error('ALL QUERY:', JSON.stringify(req.query));
+  // console.error('========================================');
   
   try {
     // Support both 'q' and 'search' parameters (frontend might use 'search')
@@ -423,22 +441,8 @@ app.get('/api/payroll', async (req, res) => {
     // Use 'search' if provided, otherwise use 'q'
     const searchTerm = search || q;
     
-    console.log('📥 [API REQUEST] Raw query parameters received:', {
-      searchTerm: searchTerm || 'NONE',
-      q: q || 'NONE',
-      search: search || 'NONE',
-      sucursal: sucursal || 'NONE',
-      puesto: puesto || 'NONE',
-      status: status || 'NONE',
-      cveper: cveper || 'NONE',
-      sortBy: sortBy || 'NONE',
-      sortDir: sortDir || 'NONE',
-      orderBy: orderBy || 'NONE',
-      orderDirection: orderDirection || 'NONE',
-      page: page || 'NONE',
-      pageSize: pageSize || 'NONE',
-      fullData: fullData || 'NONE'
-    });
+    // COMMENTED OUT: Verbose logging
+    // console.log('📥 [API REQUEST] Raw query parameters received:', {...});
     
     // ✅ FIXED: Clean and decode search parameter
     let cleanedSearch = null;
@@ -461,12 +465,8 @@ app.get('/api/payroll', async (req, res) => {
       }
     }
     
-    console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {
-      original: searchTerm,
-      cleaned: cleanedSearch,
-      isEmpty: !cleanedSearch || cleanedSearch.length === 0,
-      length: cleanedSearch ? cleanedSearch.length : 0
-    });
+    // COMMENTED OUT: Verbose logging
+    // console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {...});
     
     // Use orderBy/orderDirection if provided, otherwise fallback to sortBy/sortDir
     const finalOrderBy = orderBy || sortBy;
@@ -486,29 +486,15 @@ app.get('/api/payroll', async (req, res) => {
       fullData: fullData === 'true' || fullData === true
     };
     
-    console.log('🔍 [FILTER/SORT] Active filters and sorting:', {
-      search: cleanedSearch || null,
-      originalSearch: searchTerm || null,
-      orderBy: finalOrderBy || null,
-      orderDirection: finalOrderDirection || null,
-      filters: { puesto, sucursal, status, cveper: cveper ? 'set' : null }
-    });
-    
-    console.log('🚀 [SERVICE CALL] Calling payrollFilterService.getPayrollDataWithFiltersAndSorting with options:', {
-      ...serviceOptions,
-      search: serviceOptions.search ? `${serviceOptions.search.substring(0, 50)}...` : 'NONE'
-    });
-    
-    console.log('🔵 [BEFORE SERVICE] serviceOptions.search =', serviceOptions.search);
-    console.log('🔵 [BEFORE SERVICE] Full serviceOptions =', JSON.stringify(serviceOptions, null, 2));
+    // COMMENTED OUT: Verbose logging
+    // console.log('🔍 [FILTER/SORT] Active filters and sorting:', {...});
+    // console.log('🚀 [SERVICE CALL] Calling payrollFilterService...', {...});
     
     // Use payrollFilterService for proper search, filtering, and sorting
     let result;
     try {
-      console.log('🚀 [SERVICE CALL] About to call payrollFilterService.getPayrollDataWithFiltersAndSorting...');
-      console.log('🚀 [SERVICE CALL] payrollFilterService type:', typeof payrollFilterService);
-      console.log('🚀 [SERVICE CALL] payrollFilterService methods:', payrollFilterService ? Object.keys(payrollFilterService) : 'SERVICE IS NULL');
-      console.log('🚀 [SERVICE CALL] Checking if method exists:', payrollFilterService && typeof payrollFilterService.getPayrollDataWithFiltersAndSorting === 'function' ? 'YES' : 'NO');
+      // COMMENTED OUT: Verbose logging
+      // console.log('🚀 [SERVICE CALL] About to call payrollFilterService...');
       
       if (!payrollFilterService || typeof payrollFilterService.getPayrollDataWithFiltersAndSorting !== 'function') {
         throw new Error('payrollFilterService.getPayrollDataWithFiltersAndSorting is not a function');
@@ -521,21 +507,17 @@ app.get('/api/payroll', async (req, res) => {
       );
       
       result = await Promise.race([servicePromise, timeoutPromise]);
-      console.log('✅ [SERVICE CALL] Service call completed successfully');
+      // COMMENTED OUT: Verbose logging
+      // console.log('✅ [SERVICE CALL] Service call completed successfully');
     } catch (serviceError) {
-      console.error('❌ [SERVICE ERROR] Error calling payrollFilterService:', serviceError);
-      console.error('❌ [SERVICE ERROR] Error stack:', serviceError.stack);
-      console.error('❌ [SERVICE ERROR] Error message:', serviceError.message);
+      console.error('❌ [PAYROLL ERROR] Error calling payrollFilterService:', serviceError.message);
       
       // FALLBACK: Use simple query if service fails
-      console.log('⚠️ [FALLBACK] Service failed, using fallback simple query...');
       return await fallbackSimpleQuery(req, res, serviceOptions);
     }
     
-    console.log('🟢 [AFTER SERVICE] Service returned - result.success =', result?.success);
-    console.log('🟢 [AFTER SERVICE] Service returned - result.data.length =', result?.data?.length || 0);
-    console.log('🟢 [AFTER SERVICE] Service returned - result.total =', result?.total || 0);
-    console.log('🟢 [AFTER SERVICE] Full result keys:', result ? Object.keys(result) : 'RESULT IS NULL/UNDEFINED');
+    // COMMENTED OUT: Verbose logging
+    // console.log('🟢 [AFTER SERVICE] Service returned...', {...});
     
     // Validate result
     if (!result) {
@@ -543,11 +525,13 @@ app.get('/api/payroll', async (req, res) => {
     }
     
     if (!result.success) {
-      console.warn('⚠️ [SERVICE WARNING] Service returned success: false');
+      // COMMENTED OUT: Verbose logging
+      // console.warn('⚠️ [SERVICE WARNING] Service returned success: false');
     }
     
     if (!result.data) {
-      console.warn('⚠️ [SERVICE WARNING] Service returned no data array');
+      // COMMENTED OUT: Verbose logging
+      // console.warn('⚠️ [SERVICE WARNING] Service returned no data array');
       result.data = [];
     }
     
@@ -575,12 +559,8 @@ app.get('/api/payroll', async (req, res) => {
         perfilUrl: null
     }));
     
-    console.log('✅ [RESPONSE] Sending response:', {
-      success: result.success,
-      dataLength: transformedData.length,
-      total: result.pagination?.total || result.total || 0,
-      pagination: result.pagination
-    });
+    // COMMENTED OUT: Verbose logging
+    // console.log('✅ [RESPONSE] Sending response:', {...});
     
     res.json({
       success: result.success,
@@ -1411,9 +1391,411 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Local API server running' });
 });
 
+// Debug endpoint to list all registered routes
+app.get('/api/debug/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods)
+      });
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            path: handler.route.path,
+            methods: Object.keys(handler.route.methods)
+          });
+        }
+      });
+    }
+  });
+  
+  const payrollRoutes = routes.filter(r => r.path.includes('/api/payroll'));
+  
+  res.json({
+    success: true,
+    totalRoutes: routes.length,
+    payrollRoutes: payrollRoutes,
+    allRoutes: routes
+  });
+});
+
 // Catch-all routes - These MUST come after all specific routes to avoid conflicts
 
+// ============================================================================
+// PAYROLL SPECIFIC ROUTES - MUST BE BEFORE /api/payroll/:rfc
+// These routes must come BEFORE the parameterized /api/payroll/:rfc route
+// ============================================================================
+
+// GET /api/payroll/rfc-from-curp - Get RFC from CURP
+// NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
+app.get('/api/payroll/rfc-from-curp', async (req, res) => {
+  const requestId = Date.now();
+  console.log(`\n[RFC-FROM-CURP API] [${requestId}] ==========================================`);
+  console.log(`[RFC-FROM-CURP API] [${requestId}] Endpoint: GET /api/payroll/rfc-from-curp`);
+  console.log(`[RFC-FROM-CURP API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[RFC-FROM-CURP API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`[RFC-FROM-CURP API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
+  
+  try {
+    const { curp } = req.query;
+    
+    console.log(`[RFC-FROM-CURP API] [${requestId}] Processing request - CURP: ${curp || 'MISSING'}`);
+    
+    if (!curp) {
+      console.log(`[RFC-FROM-CURP API] [${requestId}] ERROR: CURP parameter is required`);
+      return res.status(400).json({
+        success: false,
+        error: 'CURP parameter is required'
+      });
+    }
+    
+    const cleanedCurp = String(curp).trim();
+    console.log(`[RFC-FROM-CURP API] [${requestId}] Searching RFC for CURP: ${cleanedCurp}`);
+    
+    console.log(`[RFC-FROM-CURP API] [${requestId}] Connecting to Historic database...`);
+    const client = await getHistoricClient();
+    
+    try {
+      const query = `
+        SELECT DISTINCT "RFC"
+        FROM historico_nominas_gsau
+        WHERE UPPER(TRIM("CURP")) = UPPER(TRIM($1))
+        AND "RFC" IS NOT NULL
+        AND TRIM("RFC") != ''
+        LIMIT 1
+      `;
+      
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Executing query...`);
+      console.log(`[RFC-FROM-CURP API] [${requestId}] SQL Query: ${query}`);
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Query Parameters: [${cleanedCurp}]`);
+      
+      const result = await client.query(query, [cleanedCurp]);
+      
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Query executed successfully`);
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Records found: ${result.rows.length}`);
+      
+      if (result.rows.length === 0) {
+        console.log(`[RFC-FROM-CURP API] [${requestId}] No RFC found for CURP: ${cleanedCurp}`);
+        console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
+        return res.status(404).json({
+          success: false,
+          error: `RFC not found for CURP: ${cleanedCurp}`
+        });
+      }
+      
+      const rfc = result.rows[0].RFC;
+      console.log(`[RFC-FROM-CURP API] [${requestId}] RFC found for CURP ${cleanedCurp}: ${rfc}`);
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Sending response`);
+      console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
+      
+      res.json({
+        success: true,
+        data: {
+          curp: cleanedCurp,
+          rfc: rfc
+        }
+      });
+    } catch (dbError) {
+      console.error(`[RFC-FROM-CURP API] [${requestId}] Database error:`, dbError);
+      console.error(`[RFC-FROM-CURP API] [${requestId}] Error message:`, dbError.message);
+      console.error(`[RFC-FROM-CURP API] [${requestId}] Error stack:`, dbError.stack);
+      throw dbError;
+    } finally {
+      client.end();
+      console.log(`[RFC-FROM-CURP API] [${requestId}] Database connection closed`);
+    }
+  } catch (error) {
+    console.error(`[RFC-FROM-CURP API] [${requestId}] ERROR: Failed to get RFC from CURP`);
+    console.error(`[RFC-FROM-CURP API] [${requestId}] Error message:`, error.message);
+    console.error(`[RFC-FROM-CURP API] [${requestId}] Error stack:`, error.stack);
+    console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: 'Error retrieving RFC from CURP'
+    });
+  }
+});
+
+// GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates from RFC
+// NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
+app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
+  const requestId = Date.now();
+  console.log(`\n[FECPLA API] [${requestId}] ==========================================`);
+  console.log(`[FECPLA API] [${requestId}] Endpoint: GET /api/payroll/fecpla-from-rfc`);
+  console.log(`[FECPLA API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[FECPLA API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`[FECPLA API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
+  
+  try {
+    const { rfc } = req.query;
+    
+    console.log(`[FECPLA API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}`);
+    
+    if (!rfc) {
+      console.log(`[FECPLA API] [${requestId}] ERROR: RFC parameter is required`);
+      return res.status(400).json({
+        success: false,
+        error: 'RFC parameter is required'
+      });
+    }
+    
+    console.log(`[FECPLA API] [${requestId}] Connecting to Fondos database...`);
+    const client = await getFondosClient();
+    
+    try {
+      // First, identify all columns in the table
+      console.log(`[FECPLA API] [${requestId}] Analyzing table structure...`);
+      const allColumnsQuery = `
+        SELECT column_name, data_type
+        FROM information_schema.columns 
+        WHERE table_name = 'historico_fondos_gsau'
+        ORDER BY ordinal_position
+      `;
+      
+      const allColumnsResult = await client.query(allColumnsQuery);
+      console.log(`[FECPLA API] [${requestId}] Available columns:`, allColumnsResult.rows.map(r => r.column_name).join(', '));
+      
+      // Find Antigüedad en Fondo column with multiple strategies
+      let antiguedadColumn = null;
+      
+      // Strategy 1: Search by exact name
+      const exactNames = [
+        'Antiguedad en Fondo',
+        'ANTIGUEDAD EN FONDO', 
+        'antiguedad_en_fondo',
+        'AntiguedadEnFondo',
+        'antiguedad_fondo',
+        'AntiguedadFondo',
+        'ant_fondo',
+        'Ant Fondo',
+        'ANT FONDO'
+      ];
+      
+      for (const exactName of exactNames) {
+        const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+        if (found) {
+          antiguedadColumn = found.column_name;
+          console.log(`[FECPLA API] [${requestId}] Found column by exact name: "${antiguedadColumn}"`);
+          break;
+        }
+      }
+      
+      // Strategy 2: Search by keywords
+      if (!antiguedadColumn) {
+        const keywordMatches = allColumnsResult.rows.filter(row => {
+          const colLower = row.column_name.toLowerCase();
+          return colLower.includes('antiguedad') || 
+                 colLower.includes('fondo') ||
+                 (colLower.includes('ant') && colLower.includes('fondo'));
+        });
+        
+        if (keywordMatches.length > 0) {
+          antiguedadColumn = keywordMatches[0].column_name;
+          console.log(`[FECPLA API] [${requestId}] Found column by keyword: "${antiguedadColumn}"`);
+        }
+      }
+      
+      // Strategy 3: Analyze numeric columns by content
+      if (!antiguedadColumn) {
+        console.log(`[FECPLA API] [${requestId}] Analyzing numeric columns by content...`);
+        const numericColumns = allColumnsResult.rows.filter(row => 
+          ['numeric', 'double precision', 'real', 'integer', 'smallint', 'bigint'].includes(row.data_type) &&
+          !['numrfc', 'fecpla'].includes(row.column_name.toLowerCase())
+        );
+        
+        for (const numCol of numericColumns.slice(0, 10)) {
+          try {
+            const analysisQuery = `
+              SELECT 
+                COUNT(*) FILTER (WHERE "${numCol.column_name}" > 0) as positivos,
+                MIN("${numCol.column_name}") as min_val,
+                MAX("${numCol.column_name}") as max_val,
+                AVG("${numCol.column_name}") as avg_val
+              FROM historico_fondos_gsau
+              WHERE "${numCol.column_name}" IS NOT NULL
+            `;
+            
+            const analysisResult = await client.query(analysisQuery);
+            const stats = analysisResult.rows[0];
+            
+            // If it looks like years data (range 0-50, reasonable average)
+            if (stats.positivos > 0 && stats.min_val >= 0 && stats.max_val <= 50 && stats.avg_val <= 15) {
+              antiguedadColumn = numCol.column_name;
+              console.log(`[FECPLA API] [${requestId}] Detected column by content analysis: "${antiguedadColumn}"`);
+              break;
+            }
+          } catch (e) {
+            // Continue with next column
+          }
+        }
+      }
+      
+      if (!antiguedadColumn) {
+        console.log(`[FECPLA API] [${requestId}] ERROR: Could not identify Antigüedad en Fondo column`);
+        return res.json({
+          success: false,
+          error: 'Could not find Antigüedad en Fondo column',
+          availableColumns: allColumnsResult.rows.map(r => r.column_name),
+          message: 'Please specify the column name manually'
+        });
+      }
+      
+      // Main query with FPL date calculation
+      const query = `
+        SELECT 
+          fecpla,
+          "${antiguedadColumn}" as antiguedad_anos_raw,
+          CAST("${antiguedadColumn}" AS NUMERIC) as antiguedad_anos,
+          -- Calculate base FPL date: fecpla + (antiguedad_anos * 365.25 days)
+          (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date as fecha_fpl_base,
+          -- ADJUSTMENT: If date falls on days 28-31, move to day 1 of next month
+          CASE 
+            WHEN EXTRACT(DAY FROM (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) >= 28 
+            THEN DATE_TRUNC('month', (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) + INTERVAL '1 month'
+            ELSE (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date
+          END as fecha_fpl_calculada
+        FROM historico_fondos_gsau
+        WHERE numrfc = $1
+          AND fecpla IS NOT NULL
+          AND "${antiguedadColumn}" IS NOT NULL
+          AND CAST("${antiguedadColumn}" AS NUMERIC) >= 0
+        ORDER BY CAST("${antiguedadColumn}" AS NUMERIC) ASC, fecha_fpl_calculada DESC
+      `;
+      
+      console.log(`[FECPLA API] [${requestId}] Executing query with FPL calculation for RFC: ${rfc}`);
+      console.log(`[FECPLA API] [${requestId}] Antigüedad column: ${antiguedadColumn}`);
+      console.log(`[FECPLA API] [${requestId}] SQL Query: ${query}`);
+      
+      const result = await client.query(query, [rfc]);
+      
+      console.log(`[FECPLA API] [${requestId}] Query executed successfully`);
+      console.log(`[FECPLA API] [${requestId}] Total records found: ${result.rows.length}`);
+      
+      if (result.rows.length === 0) {
+        console.log(`[FECPLA API] [${requestId}] No FPL dates found for RFC: ${rfc}`);
+        console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
+        return res.json({
+          success: true,
+          data: [],
+          total: 0,
+          rfc: rfc,
+          message: `No FPL dates calculated for RFC: ${rfc}`
+        });
+      }
+      
+      // Process and format calculated dates
+      const fecplasCalculadas = new Map();
+      const allCalculatedDates = [];
+      
+      result.rows.forEach((row, index) => {
+        const fechaBase = row.fecpla;
+        const antiguedadAnos = parseFloat(row.antiguedad_anos) || 0;
+        const fechaCalculada = row.fecha_fpl_calculada;
+        
+        console.log(`[FECPLA API] [${requestId}] Record ${index + 1}: Base: ${fechaBase}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculada}`);
+        
+        // Use calculated date as unique key
+        const fechaKey = fechaCalculada.toISOString().split('T')[0];
+        
+        if (!fecplasCalculadas.has(fechaKey)) {
+          fecplasCalculadas.set(fechaKey, {
+            fechaCalculada: fechaCalculada,
+            fechaBase: fechaBase,
+            antiguedadAnos: antiguedadAnos,
+            count: 0
+          });
+        }
+        
+        fecplasCalculadas.get(fechaKey).count++;
+        allCalculatedDates.push(fechaCalculada);
+      });
+      
+      // Convert to array and sort from most recent to oldest
+      const uniqueFecplasFPL = Array.from(fecplasCalculadas.values())
+        .sort((a, b) => new Date(b.fechaCalculada) - new Date(a.fechaCalculada));
+      
+      console.log(`[FECPLA API] [${requestId}] Unique FPL dates calculated (${uniqueFecplasFPL.length} dates):`);
+      uniqueFecplasFPL.forEach((item, index) => {
+        console.log(`[FECPLA API] [${requestId}]   ${index + 1}: ${item.fechaCalculada.toISOString().split('T')[0]} (Base: ${item.fechaBase}, +${item.antiguedadAnos} years)`);
+      });
+      
+      // Format for dropdown - WITHOUT TIMESTAMP, only dates
+      // INCLUDE METADATA FROM ORIGINAL DATAPOINT for reverse lookup
+      const formattedDates = uniqueFecplasFPL.map(item => {
+        const fechaFPL = item.fechaCalculada;
+        let displayValue = fechaFPL.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        
+        return {
+          value: displayValue, // Only date WITHOUT timestamp for backend
+          label: displayValue, // Only date for display
+          count: item.count,
+          metadata: {
+            fechaBase: item.fechaBase.toISOString().split('T')[0], // Also without timestamp
+            antiguedadAnos: item.antiguedadAnos,
+            calculoAplicado: `${item.fechaBase.toISOString().split('T')[0]} + ${item.antiguedadAnos} years = ${displayValue}`,
+            ajusteAplicado: fechaFPL.getDate() >= 28 ? 'Moved to 1st of next month' : 'Original date maintained',
+            // CRITICAL DATA for reverse lookup
+            originalFecpla: item.fechaBase.toISOString().split('T')[0], // Original fecpla date
+            originalAntiguedad: item.antiguedadAnos // Exact antigüedad used
+          }
+        };
+      });
+      
+      console.log(`[FECPLA API] [${requestId}] FPL methodology applied:`);
+      console.log(`[FECPLA API] [${requestId}]   1. Searched RFC ${rfc} in historico_fondos_gsau`);
+      console.log(`[FECPLA API] [${requestId}]   2. Extracted ${result.rows.length} records with fecpla and antigüedad`);
+      console.log(`[FECPLA API] [${requestId}]   3. Calculated FPL dates: fecpla + (antiguedad_anos * 365.25 days)`);
+      console.log(`[FECPLA API] [${requestId}]   4. Identified ${uniqueFecplasFPL.length} unique FPL dates`);
+      console.log(`[FECPLA API] [${requestId}]   5. Formatted for dropdown`);
+      console.log(`[FECPLA API] [${requestId}] Sending response with ${formattedDates.length} dates`);
+      console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
+      
+      res.json({
+        success: true,
+        data: formattedDates,
+        total: uniqueFecplasFPL.length,
+        datapoints: result.rows.length,
+        rfc: rfc,
+        antiguedadColumn: antiguedadColumn,
+        calculation: 'fecpla + (antiguedad_anos * 365.25 days)',
+        methodology: {
+          step1: `Search RFC ${rfc} in historico_fondos_gsau`,
+          step2: `${result.rows.length} records found with complete data`,
+          step3: `Applied calculation: fecpla + (${antiguedadColumn} * 365.25 days)`,
+          step4: `${uniqueFecplasFPL.length} unique FPL dates calculated`,
+          step5: 'Formatted and sorted for dropdown'
+        }
+      });
+    } catch (dbError) {
+      console.error(`[FECPLA API] [${requestId}] Database error:`, dbError);
+      console.error(`[FECPLA API] [${requestId}] Error message:`, dbError.message);
+      console.error(`[FECPLA API] [${requestId}] Error stack:`, dbError.stack);
+      throw dbError;
+    } finally {
+      client.end();
+      console.log(`[FECPLA API] [${requestId}] Database connection closed`);
+    }
+  } catch (error) {
+    console.error(`[FECPLA API] [${requestId}] ERROR: Failed to get FPL dates`);
+    console.error(`[FECPLA API] [${requestId}] Error message:`, error.message);
+    console.error(`[FECPLA API] [${requestId}] Error stack:`, error.stack);
+    console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: 'Error calculating FPL dates with Antigüedad en Fondo'
+    });
+  }
+});
+
 // GET /api/payroll/:rfc - Get specific employee from payroll
+// NOTE: This route MUST be AFTER all specific routes like /api/payroll/rfc-from-curp and /api/payroll/fecpla-from-rfc
 app.get('/api/payroll/:rfc', async (req, res) => {
   try {
     const { rfc } = req.params;
@@ -1521,14 +1903,585 @@ app.get('/api/employees/:id', async (req, res) => {
   }
 });
 
+
+// ============================================================================
+// FONDOS ENDPOINTS - Detailed logging in English
+// ============================================================================
+
+// GET /api/fondos - Get fondos data by RFC
+app.get('/api/fondos', async (req, res) => {
+  const requestId = Date.now();
+  console.log(`\n[FONDOS API] [${requestId}] ==========================================`);
+  console.log(`[FONDOS API] [${requestId}] Endpoint: GET /api/fondos`);
+  console.log(`[FONDOS API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[FONDOS API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`[FONDOS API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
+  
+  try {
+    const { rfc, pageSize = 1, page = 1 } = req.query;
+    
+    console.log(`[FONDOS API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}, pageSize: ${pageSize}, page: ${page}`);
+    
+    if (!rfc) {
+      console.log(`[FONDOS API] [${requestId}] ERROR: RFC parameter is required`);
+      return res.status(400).json({
+        success: false,
+        error: 'RFC parameter is required'
+      });
+    }
+    
+    console.log(`[FONDOS API] [${requestId}] Connecting to Fondos database...`);
+    const client = await getFondosClient();
+    
+    try {
+      const limit = parseInt(pageSize) || 1;
+      const offset = (parseInt(page) - 1) * limit;
+      
+      console.log(`[FONDOS API] [${requestId}] Query parameters - limit: ${limit}, offset: ${offset}`);
+      
+      const query = `
+        SELECT *
+        FROM historico_fondos_gsau
+        WHERE numrfc = $1
+        ORDER BY fecpla DESC
+        LIMIT $2 OFFSET $3
+      `;
+      
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM historico_fondos_gsau
+        WHERE numrfc = $1
+      `;
+      
+      console.log(`[FONDOS API] [${requestId}] Executing data query with RFC: ${rfc}`);
+      console.log(`[FONDOS API] [${requestId}] SQL Query: ${query}`);
+      console.log(`[FONDOS API] [${requestId}] Query Parameters: [${rfc}, ${limit}, ${offset}]`);
+      
+      const [result, countResult] = await Promise.all([
+        client.query(query, [rfc, limit, offset]),
+        client.query(countQuery, [rfc])
+      ]);
+      
+      const total = parseInt(countResult.rows[0].total);
+      const dataCount = result.rows.length;
+      
+      console.log(`[FONDOS API] [${requestId}] Query executed successfully`);
+      console.log(`[FONDOS API] [${requestId}] Total records found: ${total}`);
+      console.log(`[FONDOS API] [${requestId}] Records returned: ${dataCount}`);
+      
+      if (dataCount > 0) {
+        console.log(`[FONDOS API] [${requestId}] Sample record keys:`, Object.keys(result.rows[0]));
+      }
+      
+      console.log(`[FONDOS API] [${requestId}] Sending response with ${dataCount} records`);
+      console.log(`[FONDOS API] [${requestId}] ==========================================\n`);
+      
+      res.json({
+        success: true,
+        data: result.rows,
+        pagination: {
+          page: parseInt(page),
+          pageSize: limit,
+          total: total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (dbError) {
+      console.error(`[FONDOS API] [${requestId}] Database error:`, dbError);
+      console.error(`[FONDOS API] [${requestId}] Error message:`, dbError.message);
+      console.error(`[FONDOS API] [${requestId}] Error stack:`, dbError.stack);
+      throw dbError;
+    } finally {
+      client.end();
+      console.log(`[FONDOS API] [${requestId}] Database connection closed`);
+    }
+  } catch (error) {
+    console.error(`[FONDOS API] [${requestId}] ERROR: Failed to get fondos data`);
+    console.error(`[FONDOS API] [${requestId}] Error message:`, error.message);
+    console.error(`[FONDOS API] [${requestId}] Error stack:`, error.stack);
+    console.log(`[FONDOS API] [${requestId}] ==========================================\n`);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/fpl/data-from-rfc - Get FPL data by RFC and optional date
+app.get('/api/fpl/data-from-rfc', async (req, res) => {
+  const requestId = Date.now();
+  console.log(`\n[FPL API] [${requestId}] ==========================================`);
+  console.log(`[FPL API] [${requestId}] Endpoint: GET /api/fpl/data-from-rfc`);
+  console.log(`[FPL API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[FPL API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log(`[FPL API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
+  
+  try {
+    const { rfc, fechaFPL, originalFecpla, originalAntiguedad } = req.query;
+    
+    console.log(`[FPL API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}`);
+    console.log(`[FPL API] [${requestId}] fechaFPL: ${fechaFPL || 'NOT PROVIDED'}`);
+    console.log(`[FPL API] [${requestId}] originalFecpla: ${originalFecpla || 'NOT PROVIDED'}`);
+    console.log(`[FPL API] [${requestId}] originalAntiguedad: ${originalAntiguedad || 'NOT PROVIDED'}`);
+    
+    if (!rfc) {
+      console.log(`[FPL API] [${requestId}] ERROR: RFC parameter is required`);
+      return res.status(400).json({
+        success: false,
+        error: 'RFC parameter is required'
+      });
+    }
+    
+    console.log(`[FPL API] [${requestId}] Connecting to Fondos database...`);
+    const client = await getFondosClient();
+    
+    try {
+      let query, params;
+      let antiguedadColumn = null; // Declare at higher scope for use in fallback/debug
+      
+      // Check if we have original metadata for precise lookup
+      if (originalFecpla && originalAntiguedad) {
+        console.log(`[FPL API] [${requestId}] Using precise lookup with original metadata`);
+        console.log(`[FPL API] [${requestId}] originalFecpla: ${originalFecpla}, originalAntiguedad: ${originalAntiguedad}`);
+        
+        // First, find the antiguedad column name
+        const allColumnsQuery = `
+          SELECT column_name, data_type
+          FROM information_schema.columns 
+          WHERE table_name = 'historico_fondos_gsau'
+          ORDER BY ordinal_position
+        `;
+        
+        console.log(`[FPL API] [${requestId}] Querying column information...`);
+        const allColumnsResult = await client.query(allColumnsQuery);
+        const exactNames = [
+          'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
+          'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
+          'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+        ];
+        
+        for (const exactName of exactNames) {
+          const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+          if (found) {
+            antiguedadColumn = found.column_name;
+            console.log(`[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`);
+            break;
+          }
+        }
+        
+        if (!antiguedadColumn) {
+          const keywordMatches = allColumnsResult.rows.filter(row => {
+            const colLower = row.column_name.toLowerCase();
+            return colLower.includes('antiguedad') || colLower.includes('fondo');
+          });
+          
+          if (keywordMatches.length > 0) {
+            antiguedadColumn = keywordMatches[0].column_name;
+            console.log(`[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`);
+          }
+        }
+        
+        if (antiguedadColumn) {
+          const antiguedadValue = parseFloat(originalAntiguedad);
+          const tolerance = 0.0001; // Small tolerance for floating point comparison
+          
+          console.log(`[FPL API] [${requestId}] Using precise query with antiguedad column`);
+          console.log(`[FPL API] [${requestId}] Antigüedad value: ${antiguedadValue}, tolerance: ±${tolerance}`);
+          
+          // Use range-based comparison for floating point numbers to handle precision issues
+          query = `
+            SELECT *
+            FROM historico_fondos_gsau
+            WHERE numrfc = $1
+              AND DATE(fecpla) = $2
+              AND ABS(CAST("${antiguedadColumn}" AS NUMERIC) - $3) < $4
+            ORDER BY fecpla DESC
+            LIMIT 1
+          `;
+          params = [rfc, originalFecpla, antiguedadValue, tolerance];
+          
+          console.log(`[FPL API] [${requestId}] Query with range-based antigüedad comparison`);
+          console.log(`[FPL API] [${requestId}] Looking for antigüedad between ${antiguedadValue - tolerance} and ${antiguedadValue + tolerance}`);
+        } else {
+          console.log(`[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using fallback query`);
+          query = `
+            SELECT *
+            FROM historico_fondos_gsau
+            WHERE numrfc = $1
+              AND DATE(fecpla) = $2
+            ORDER BY fecpla DESC
+            LIMIT 1
+          `;
+          params = [rfc, originalFecpla];
+        }
+      } else if (fechaFPL) {
+        console.log(`[FPL API] [${requestId}] Using calculated FPL date lookup with fechaFPL: ${fechaFPL}`);
+        console.log(`[FPL API] [${requestId}] NOTE: fechaFPL is a calculated date, not fecpla. Need to find records where fecpla + antigüedad = fechaFPL`);
+        
+        // First, find the antiguedad column
+        const allColumnsQuery = `
+          SELECT column_name, data_type
+          FROM information_schema.columns 
+          WHERE table_name = 'historico_fondos_gsau'
+          ORDER BY ordinal_position
+        `;
+        
+        const allColumnsResult = await client.query(allColumnsQuery);
+        
+        const exactNames = [
+          'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
+          'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
+          'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+        ];
+        
+        for (const exactName of exactNames) {
+          const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+          if (found) {
+            antiguedadColumn = found.column_name;
+            console.log(`[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`);
+            break;
+          }
+        }
+        
+        if (!antiguedadColumn) {
+          const keywordMatches = allColumnsResult.rows.filter(row => {
+            const colLower = row.column_name.toLowerCase();
+            return colLower.includes('antiguedad') || colLower.includes('fondo');
+          });
+          if (keywordMatches.length > 0) {
+            antiguedadColumn = keywordMatches[0].column_name;
+            console.log(`[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`);
+          }
+        }
+        
+        if (antiguedadColumn) {
+          // Search by calculating FPL date: fecpla + (antigüedad * 365.25 days) = fechaFPL
+          // Also handle the adjustment: if calculated date falls on days 28-31, it's moved to day 1 of next month
+          const targetDate = new Date(fechaFPL);
+          const targetYear = targetDate.getFullYear();
+          const targetMonth = targetDate.getMonth() + 1; // JavaScript months are 0-indexed
+          const targetDay = targetDate.getDate();
+          
+          console.log(`[FPL API] [${requestId}] Searching for records where calculated FPL date matches: ${fechaFPL}`);
+          console.log(`[FPL API] [${requestId}] Target date components: year=${targetYear}, month=${targetMonth}, day=${targetDay}`);
+          
+          // Query: Find records where the calculated FPL date matches fechaFPL
+          // The calculation is: fecpla + (antigüedad * 365.25 days)
+          // With adjustment: if day >= 28, move to 1st of next month
+          query = `
+            SELECT *,
+              (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date as fecha_fpl_calculada,
+              CASE 
+                WHEN EXTRACT(DAY FROM (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) >= 28 
+                THEN DATE_TRUNC('month', (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) + INTERVAL '1 month'
+                ELSE (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date
+              END as fecha_fpl_ajustada
+            FROM historico_fondos_gsau
+            WHERE numrfc = $1
+              AND fecpla IS NOT NULL
+              AND "${antiguedadColumn}" IS NOT NULL
+              AND CAST("${antiguedadColumn}" AS NUMERIC) >= 0
+              AND (
+                -- Match exact calculated date
+                (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date = $2
+                OR
+                -- Match adjusted date (if original fell on days 28-31)
+                (CASE 
+                  WHEN EXTRACT(DAY FROM (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) >= 28 
+                  THEN DATE_TRUNC('month', (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date) + INTERVAL '1 month'
+                  ELSE (fecpla + INTERVAL '1 day' * (CAST(COALESCE("${antiguedadColumn}", 0) AS NUMERIC) * 365.25))::date
+                END)::date = $2
+              )
+            ORDER BY fecpla DESC
+            LIMIT 1
+          `;
+          params = [rfc, fechaFPL];
+          console.log(`[FPL API] [${requestId}] Using calculated FPL date matching query`);
+        } else {
+          // Fallback: if we can't find antiguedad column, just search by fecpla (won't work for calculated dates)
+          console.log(`[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using simple fecpla lookup (may not work for calculated FPL dates)`);
+          query = `
+            SELECT *
+            FROM historico_fondos_gsau
+            WHERE numrfc = $1
+              AND DATE(fecpla) = $2
+            ORDER BY fecpla DESC
+            LIMIT 1
+          `;
+          params = [rfc, fechaFPL];
+        }
+      } else {
+        console.log(`[FPL API] [${requestId}] Using general lookup (most recent record)`);
+        query = `
+          SELECT *
+          FROM historico_fondos_gsau
+          WHERE numrfc = $1
+          ORDER BY fecpla DESC
+          LIMIT 1
+        `;
+        params = [rfc];
+      }
+      
+      console.log(`[FPL API] [${requestId}] Executing query...`);
+      console.log(`[FPL API] [${requestId}] SQL Query: ${query}`);
+      console.log(`[FPL API] [${requestId}] Query Parameters:`, params);
+      
+      let result = await client.query(query, params);
+      
+      console.log(`[FPL API] [${requestId}] Query executed successfully`);
+      console.log(`[FPL API] [${requestId}] Records found: ${result.rows.length}`);
+      
+      // FALLBACK STRATEGY: If precise match fails, try fallback queries
+      // Note: antiguedadColumn is declared at higher scope, so it's available here
+      if (result.rows.length === 0 && originalFecpla && originalAntiguedad) {
+        // Ensure antiguedadColumn is available for fallback
+        if (!antiguedadColumn) {
+          console.log(`[FPL API] [${requestId}] antiguedadColumn not found, trying to find it for fallback...`);
+          try {
+            const allColumnsQuery = `
+              SELECT column_name, data_type
+              FROM information_schema.columns 
+              WHERE table_name = 'historico_fondos_gsau'
+              ORDER BY ordinal_position
+            `;
+            const allColumnsResult = await client.query(allColumnsQuery);
+            
+            const exactNames = [
+              'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
+              'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
+              'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+            ];
+            
+            for (const exactName of exactNames) {
+              const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+              if (found) {
+                antiguedadColumn = found.column_name;
+                break;
+              }
+            }
+            
+            if (!antiguedadColumn) {
+              const keywordMatches = allColumnsResult.rows.filter(row => {
+                const colLower = row.column_name.toLowerCase();
+                return colLower.includes('antiguedad') || colLower.includes('fondo');
+              });
+              if (keywordMatches.length > 0) {
+                antiguedadColumn = keywordMatches[0].column_name;
+              }
+            }
+          } catch (e) {
+            console.log(`[FPL API] [${requestId}] Could not find antiguedad column for fallback:`, e.message);
+          }
+        }
+        
+        if (antiguedadColumn) {
+        console.log(`[FPL API] [${requestId}] Precise match failed, trying fallback strategies...`);
+        
+        // Fallback 1: Try with wider tolerance (0.01 instead of 0.0001)
+        const widerTolerance = 0.01;
+        console.log(`[FPL API] [${requestId}] Fallback 1: Trying with wider tolerance: ±${widerTolerance}`);
+        const fallbackQuery1 = `
+          SELECT *
+          FROM historico_fondos_gsau
+          WHERE numrfc = $1
+            AND DATE(fecpla) = $2
+            AND ABS(CAST("${antiguedadColumn}" AS NUMERIC) - $3) < $4
+          ORDER BY fecpla DESC
+          LIMIT 1
+        `;
+        result = await client.query(fallbackQuery1, [rfc, originalFecpla, parseFloat(originalAntiguedad), widerTolerance]);
+        console.log(`[FPL API] [${requestId}] Fallback 1 result: ${result.rows.length} records`);
+        
+        // Fallback 2: Try by date only (ignore antigüedad)
+        if (result.rows.length === 0) {
+          console.log(`[FPL API] [${requestId}] Fallback 2: Trying by date only (ignoring antigüedad)`);
+          const fallbackQuery2 = `
+            SELECT *
+            FROM historico_fondos_gsau
+            WHERE numrfc = $1
+              AND DATE(fecpla) = $2
+            ORDER BY fecpla DESC
+            LIMIT 1
+          `;
+          result = await client.query(fallbackQuery2, [rfc, originalFecpla]);
+          console.log(`[FPL API] [${requestId}] Fallback 2 result: ${result.rows.length} records`);
+          
+          // Fallback 3: Try with date range (±1 day) to handle timezone/date conversion issues
+          if (result.rows.length === 0) {
+            console.log(`[FPL API] [${requestId}] Fallback 3: Trying with date range ±1 day`);
+            const originalDate = new Date(originalFecpla);
+            const dayBefore = new Date(originalDate);
+            dayBefore.setDate(dayBefore.getDate() - 1);
+            const dayAfter = new Date(originalDate);
+            dayAfter.setDate(dayAfter.getDate() + 1);
+            
+            const fallbackQuery3 = `
+              SELECT *
+              FROM historico_fondos_gsau
+              WHERE numrfc = $1
+                AND DATE(fecpla) BETWEEN $2 AND $3
+              ORDER BY fecpla DESC
+              LIMIT 1
+            `;
+            result = await client.query(fallbackQuery3, [
+              rfc, 
+              dayBefore.toISOString().split('T')[0], 
+              dayAfter.toISOString().split('T')[0]
+            ]);
+            console.log(`[FPL API] [${requestId}] Fallback 3 result: ${result.rows.length} records`);
+            
+            if (result.rows.length > 0) {
+              const foundDate = result.rows[0].fecpla;
+              const foundAntiguedad = result.rows[0][antiguedadColumn];
+              console.log(`[FPL API] [${requestId}] Found record with date range:`);
+              console.log(`[FPL API] [${requestId}]   Expected date: ${originalFecpla}, Found: ${foundDate}`);
+              console.log(`[FPL API] [${requestId}]   Expected antigüedad: ${originalAntiguedad}, Found: ${foundAntiguedad}`);
+            }
+          } else {
+            const foundAntiguedad = result.rows[0][antiguedadColumn];
+            console.log(`[FPL API] [${requestId}] Found record by date, but antigüedad mismatch:`);
+            console.log(`[FPL API] [${requestId}]   Expected: ${originalAntiguedad}, Found: ${foundAntiguedad}`);
+            console.log(`[FPL API] [${requestId}]   Difference: ${Math.abs(parseFloat(foundAntiguedad) - parseFloat(originalAntiguedad))}`);
+          }
+        }
+        } else {
+          console.log(`[FPL API] [${requestId}] Cannot use fallback - antiguedad column not found`);
+        }
+      }
+      
+      if (result.rows.length === 0) {
+        console.log(`[FPL API] [${requestId}] No FPL data found for RFC: ${rfc} after all fallback attempts`);
+        console.log(`[FPL API] [${requestId}] Search parameters used:`);
+        console.log(`[FPL API] [${requestId}]   - RFC: ${rfc}`);
+        if (originalFecpla) console.log(`[FPL API] [${requestId}]   - originalFecpla: ${originalFecpla}`);
+        if (originalAntiguedad) console.log(`[FPL API] [${requestId}]   - originalAntiguedad: ${originalAntiguedad}`);
+        if (fechaFPL) console.log(`[FPL API] [${requestId}]   - fechaFPL: ${fechaFPL}`);
+        
+        // Debug: Check what records exist for this RFC
+        // First, try to find antiguedad column if not already found
+        if (!antiguedadColumn) {
+          try {
+            const allColumnsQuery = `
+              SELECT column_name, data_type
+              FROM information_schema.columns 
+              WHERE table_name = 'historico_fondos_gsau'
+              ORDER BY ordinal_position
+            `;
+            const allColumnsResult = await client.query(allColumnsQuery);
+            
+            const exactNames = [
+              'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
+              'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
+              'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+            ];
+            
+            for (const exactName of exactNames) {
+              const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+              if (found) {
+                antiguedadColumn = found.column_name;
+                break;
+              }
+            }
+            
+            if (!antiguedadColumn) {
+              const keywordMatches = allColumnsResult.rows.filter(row => {
+                const colLower = row.column_name.toLowerCase();
+                return colLower.includes('antiguedad') || colLower.includes('fondo');
+              });
+              if (keywordMatches.length > 0) {
+                antiguedadColumn = keywordMatches[0].column_name;
+              }
+            }
+          } catch (e) {
+            console.log(`[FPL API] [${requestId}] Could not find antiguedad column:`, e.message);
+          }
+        }
+        
+        console.log(`[FPL API] [${requestId}] Checking available records for RFC: ${rfc}...`);
+        const debugQuery = `
+          SELECT 
+            numrfc,
+            fecpla,
+            "${antiguedadColumn || 'antiguedad_en_fondo'}" as antiguedad,
+            nombre
+          FROM historico_fondos_gsau
+          WHERE numrfc = $1
+          ORDER BY fecpla DESC
+          LIMIT 10
+        `;
+        try {
+          const debugResult = await client.query(debugQuery, [rfc]);
+          console.log(`[FPL API] [${requestId}] Available records for RFC ${rfc}: ${debugResult.rows.length}`);
+          if (debugResult.rows.length > 0) {
+            console.log(`[FPL API] [${requestId}] Sample records:`);
+            debugResult.rows.slice(0, 5).forEach((row, idx) => {
+              console.log(`[FPL API] [${requestId}]   ${idx + 1}. fecpla: ${row.fecpla}, antigüedad: ${row.antiguedad}`);
+            });
+          }
+        } catch (debugError) {
+          console.log(`[FPL API] [${requestId}] Could not execute debug query:`, debugError.message);
+        }
+        
+        console.log(`[FPL API] [${requestId}] ==========================================\n`);
+        return res.json({
+          success: true,
+          data: null,
+          rfc: rfc,
+          fechaFPL: fechaFPL,
+          message: `No FPL data found for RFC: ${rfc} with the provided parameters`
+        });
+      }
+      
+      const fplData = result.rows[0];
+      console.log(`[FPL API] [${requestId}] FPL data retrieved successfully`);
+      console.log(`[FPL API] [${requestId}] Record keys:`, Object.keys(fplData));
+      console.log(`[FPL API] [${requestId}] Sample fields - RFC: ${fplData.numrfc || fplData.rfc || 'N/A'}, fecpla: ${fplData.fecpla || 'N/A'}`);
+      console.log(`[FPL API] [${requestId}] ==========================================\n`);
+      
+      res.json({
+        success: true,
+        data: fplData,
+        rfc: rfc,
+        fechaFPL: fechaFPL,
+        message: 'FPL data retrieved successfully'
+      });
+    } catch (dbError) {
+      console.error(`[FPL API] [${requestId}] Database error:`, dbError);
+      console.error(`[FPL API] [${requestId}] Error message:`, dbError.message);
+      console.error(`[FPL API] [${requestId}] Error stack:`, dbError.stack);
+      throw dbError;
+    } finally {
+      client.end();
+      console.log(`[FPL API] [${requestId}] Database connection closed`);
+    }
+  } catch (error) {
+    console.error(`[FPL API] [${requestId}] ERROR: Failed to get FPL data`);
+    console.error(`[FPL API] [${requestId}] Error message:`, error.message);
+    console.error(`[FPL API] [${requestId}] Error stack:`, error.stack);
+    console.log(`[FPL API] [${requestId}] ==========================================\n`);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: 'Error retrieving FPL data'
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Local API Server running on http://localhost:${PORT}`);
   console.log(`📊 Database Main: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
   console.log(`📊 Database Historic: ${gsauDbConfig.host}:${gsauDbConfig.port}/${gsauDbConfig.database}`);
+  console.log(`📊 Database Fondos: ${fondosDbConfig.host}:${fondosDbConfig.port}/${fondosDbConfig.database}`);
   console.log(`🔗 Endpoints:`);
   console.log(`   GET /api/employees - List employees with filters (from postgres)`);
   console.log(`   GET /api/employees/:id - Get employee details (from postgres)`);
   console.log(`   GET /api/payroll - List mapped payroll employees (from Historic)`);
+  console.log(`   GET /api/payroll/rfc-from-curp - Get RFC from CURP (from Historic)`);
+  console.log(`   GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates by RFC (from Fondos)`);
   console.log(`   GET /api/payroll/:rfc - Get payroll employee details (from Historic)`);
+  console.log(`   GET /api/fondos - Get fondos data by RFC (from Fondos)`);
+  console.log(`   GET /api/fpl/data-from-rfc - Get FPL data by RFC and date (from Fondos)`);
   console.log(`   GET /health - Health check`);
 });

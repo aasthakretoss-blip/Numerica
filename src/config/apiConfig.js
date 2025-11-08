@@ -1,30 +1,30 @@
-// ✅ UPDATED: Render backend URL for production
+// ✅ UPDATED: Use localhost for local development
+const LOCAL_API_URL = 'http://localhost:3001';
 const RENDER_API_URL = 'https://numerica-2.onrender.com';
 
-// ✅ OPTION: Use localhost for development (set REACT_APP_USE_LOCAL=true in .env)
-// By default, both development and production use Render backend
+// ✅ OPTION: Use Render for production (set REACT_APP_USE_RENDER=true in .env)
+// By default, both development and production use localhost:3001
+const USE_RENDER = process.env.REACT_APP_USE_RENDER === 'true';
 
 // CONFIGURACIÓN PARA DESARROLLO Y PRODUCCIÓN
-// ✅ UPDATED: Both development and production now use Render backend by default
-// To use localhost, set REACT_APP_USE_LOCAL=true in .env
-const USE_LOCAL = process.env.REACT_APP_USE_LOCAL === 'true';
-
+// ✅ UPDATED: Both development and production now use localhost:3001 by default
+// To use Render, set REACT_APP_USE_RENDER=true in .env
 const API_CONFIG = {
   development: {
-    // ✅ UPDATED: Use Render URL by default (can override with REACT_APP_USE_LOCAL=true)
-    BASE_URL: USE_LOCAL ? 'http://localhost:3001' : RENDER_API_URL,
-    PAYROLL_API: USE_LOCAL ? 'http://localhost:3001/api/payroll' : `${RENDER_API_URL}/api/payroll`,
-    EMPLOYEES_API: USE_LOCAL ? 'http://localhost:3001/api/employees' : `${RENDER_API_URL}/api/employees`,
-    DEMOGRAPHICS_API: USE_LOCAL ? 'http://localhost:3001/api/demographics' : `${RENDER_API_URL}/api/demographics`,
-    PROFILE_API: USE_LOCAL ? 'http://localhost:3001/api/profile' : `${RENDER_API_URL}/api/profile`,
+    // ✅ UPDATED: Use localhost by default
+    BASE_URL: USE_RENDER ? RENDER_API_URL : LOCAL_API_URL,
+    PAYROLL_API: USE_RENDER ? `${RENDER_API_URL}/api/payroll` : `${LOCAL_API_URL}/api/payroll`,
+    EMPLOYEES_API: USE_RENDER ? `${RENDER_API_URL}/api/employees` : `${LOCAL_API_URL}/api/employees`,
+    DEMOGRAPHICS_API: USE_RENDER ? `${RENDER_API_URL}/api/demographics` : `${LOCAL_API_URL}/api/demographics`,
+    PROFILE_API: USE_RENDER ? `${RENDER_API_URL}/api/profile` : `${LOCAL_API_URL}/api/profile`,
   },
   production: {
-    // ✅ UPDATED: Use Render backend URL for production
-    BASE_URL: RENDER_API_URL,
-    PAYROLL_API: `${RENDER_API_URL}/api/payroll`,
-    EMPLOYEES_API: `${RENDER_API_URL}/api/employees`,
-    DEMOGRAPHICS_API: `${RENDER_API_URL}/api/demographics`,
-    PROFILE_API: `${RENDER_API_URL}/api/profile`,
+    // ✅ UPDATED: Use localhost by default (can override with REACT_APP_USE_RENDER=true)
+    BASE_URL: USE_RENDER ? RENDER_API_URL : LOCAL_API_URL,
+    PAYROLL_API: USE_RENDER ? `${RENDER_API_URL}/api/payroll` : `${LOCAL_API_URL}/api/payroll`,
+    EMPLOYEES_API: USE_RENDER ? `${RENDER_API_URL}/api/employees` : `${LOCAL_API_URL}/api/employees`,
+    DEMOGRAPHICS_API: USE_RENDER ? `${RENDER_API_URL}/api/demographics` : `${LOCAL_API_URL}/api/demographics`,
+    PROFILE_API: USE_RENDER ? `${RENDER_API_URL}/api/profile` : `${LOCAL_API_URL}/api/profile`,
   }
 };
 
@@ -49,8 +49,8 @@ const getCurrentEnv = () => {
     const protocol = window.location.protocol;
     
     // Check for localhost first (most common in development)
-    // Only use development mode if explicitly using local backend
-    if ((hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') && USE_LOCAL) {
+    // Use development mode when on localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
       return 'development';
     }
     
@@ -95,8 +95,8 @@ const getApiConfig = () => {
 export const apiConfig = getApiConfig();
 export const isProduction = getCurrentEnv() === 'production';
 
-// ✅ UPDATED: Production uses Render backend (https://numerica-2.onrender.com)
-// Development uses localhost:3001 for local testing
+// ✅ UPDATED: Both development and production use localhost:3001 by default
+// To use Render backend, set REACT_APP_USE_RENDER=true in .env
 
 // URLs específicas para compatibilidad con el código existente
 export const API_BASE_URL = apiConfig.BASE_URL;

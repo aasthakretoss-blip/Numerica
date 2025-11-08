@@ -11,8 +11,14 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
   const [error, setError] = useState(null);
 
   const fetchFPLData = useCallback(async (rfcValue, fechaFPLValue) => {
+    const requestId = Date.now();
+    console.log(`\n[FPL FRONTEND] [${requestId}] ==========================================`);
+    console.log(`[FPL FRONTEND] [${requestId}] Starting FPL data fetch`);
+    console.log(`[FPL FRONTEND] [${requestId}] RFC: ${rfcValue || 'MISSING'}`);
+    console.log(`[FPL FRONTEND] [${requestId}] Fecha FPL: ${fechaFPLValue ? JSON.stringify(fechaFPLValue) : 'NOT PROVIDED'}`);
+    
     if (!rfcValue) {
-      console.log('Missing RFC, clearing data');
+      console.log(`[FPL FRONTEND] [${requestId}] Missing RFC, clearing data`);
       setFplData(null);
       return;
     }
@@ -21,8 +27,6 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
     setError(null);
 
     try {
-      console.log('🏦 Cargando datos FPL para RFC:', rfcValue, 'Fecha FPL:', fechaFPLValue);
-      
       let apiUrl;
       
       // If fechaFPLValue is provided, use /api/fpl/data-from-rfc with metadata for reverse lookup
@@ -49,14 +53,13 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
         if (metadata && metadata.originalFecpla && metadata.originalAntiguedad) {
           params.append('originalFecpla', metadata.originalFecpla);
           params.append('originalAntiguedad', metadata.originalAntiguedad);
-          console.log('📅 Usando endpoint FPL con metadata para búsqueda inversa:', {
-            originalFecpla: metadata.originalFecpla,
-            originalAntiguedad: metadata.originalAntiguedad
-          });
+          console.log(`[FPL FRONTEND] [${requestId}] Using FPL endpoint with metadata for reverse lookup`);
+          console.log(`[FPL FRONTEND] [${requestId}] originalFecpla: ${metadata.originalFecpla}`);
+          console.log(`[FPL FRONTEND] [${requestId}] originalAntiguedad: ${metadata.originalAntiguedad}`);
         } else {
           // Fallback to calculated date
           params.append('fechaFPL', fechaValue);
-          console.log('📅 Usando endpoint FPL con fecha calculada:', fechaValue);
+          console.log(`[FPL FRONTEND] [${requestId}] Using FPL endpoint with calculated date: ${fechaValue}`);
         }
         
         apiUrl = buildApiUrl(`/api/fpl/data-from-rfc?${params.toString()}`);
@@ -68,19 +71,27 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
           page: '1'
         });
         apiUrl = buildApiUrl(`/api/fondos?${params.toString()}`);
-        console.log('📅 Usando endpoint fondos para datos más recientes');
+        console.log(`[FPL FRONTEND] [${requestId}] Using fondos endpoint for most recent data`);
       }
       
-      console.log('📡 API URL para datos FPL:', apiUrl);
+      console.log(`[FPL FRONTEND] [${requestId}] API URL: ${apiUrl}`);
+      console.log(`[FPL FRONTEND] [${requestId}] Sending request...`);
       
       const response = await authenticatedFetch(apiUrl);
       
+      console.log(`[FPL FRONTEND] [${requestId}] Response status: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[FPL FRONTEND] [${requestId}] ERROR: Request failed with status ${response.status}`);
+        console.error(`[FPL FRONTEND] [${requestId}] Error response:`, errorText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log('🔍 DEBUG: Respuesta completa del servidor:', result);
+      console.log(`[FPL FRONTEND] [${requestId}] Response received successfully`);
+      console.log(`[FPL FRONTEND] [${requestId}] Response success: ${result.success}`);
+      console.log(`[FPL FRONTEND] [${requestId}] Response keys:`, Object.keys(result));
       
       // Extract data based on endpoint used
       let empleadoFPLData;
@@ -88,54 +99,50 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
         // /api/fpl/data-from-rfc returns single object
         if (Array.isArray(result.data)) {
           empleadoFPLData = result.data[0];
+          console.log(`[FPL FRONTEND] [${requestId}] Data is array, using first element`);
         } else {
           empleadoFPLData = result.data;
+          console.log(`[FPL FRONTEND] [${requestId}] Data is object, using directly`);
         }
       } else {
         empleadoFPLData = null;
+        console.log(`[FPL FRONTEND] [${requestId}] No data in response`);
       }
       
       if (!result.success || !empleadoFPLData) {
-        console.warn('No se encontraron datos FPL para el RFC:', rfcValue);
-        console.warn('Respuesta del servidor:', result);
+        console.warn(`[FPL FRONTEND] [${requestId}] No FPL data found for RFC: ${rfcValue}`);
+        console.warn(`[FPL FRONTEND] [${requestId}] Server response:`, result);
         setFplData(null);
-        setError(`No se encontraron datos FPL: ${result.error || result.message || 'Sin datos'}`);
+        setError(`No FPL data found: ${result.error || result.message || 'No data available'}`);
+        console.log(`[FPL FRONTEND] [${requestId}] ==========================================\n`);
         return;
       }
-      console.log('🔍 DEBUG: Datos extraídos:', empleadoFPLData);
       
-      console.log(`🏦 Datos FPL encontrados para RFC: ${rfcValue}`);
+      console.log(`[FPL FRONTEND] [${requestId}] FPL data extracted successfully`);
+      console.log(`[FPL FRONTEND] [${requestId}] Total properties: ${Object.keys(empleadoFPLData).length}`);
+      console.log(`[FPL FRONTEND] [${requestId}] Property keys:`, Object.keys(empleadoFPLData));
       
-      // LOGGING DETALLADO PARA DEBUGGING - Mostrar TODAS las propiedades del empleado FPL
-      console.log('🔍 EMPLEADO FPL COMPLETO - TODAS LAS PROPIEDADES:');
-      console.log('📋 Total propiedades:', Object.keys(empleadoFPLData).length);
-      console.log('📝 Lista de propiedades:', Object.keys(empleadoFPLData));
-      console.log('💾 Objeto completo:', empleadoFPLData);
-      
-      // Logging específico para campos que esperamos encontrar
-      console.log('🎯 CAMPOS ESPECÍFICOS BUSCADOS:');
-      console.log('- cvecia:', empleadoFPLData.cvecia);
-      console.log('- cvetno:', empleadoFPLData.cvetno);
-      console.log('- descripcion_cvetno:', empleadoFPLData.descripcion_cvetno);
-      console.log('- Descripción cvetno:', empleadoFPLData['Descripción cvetno']);
-      console.log('- nombre:', empleadoFPLData.nombre);
-      console.log('- Nombre completo:', empleadoFPLData['Nombre completo']);
-      console.log('- numrfc:', empleadoFPLData.numrfc);
-      console.log('- RFC:', empleadoFPLData['RFC']);
-      console.log('- saldo_inicial:', empleadoFPLData.saldo_inicial);
-      console.log('- aportacion_al_fideicomiso:', empleadoFPLData.aportacion_al_fideicomiso);
-      console.log('- status:', empleadoFPLData.status);
-      console.log('- Status:', empleadoFPLData['Status']);
+      // Logging specific fields we expect to find
+      console.log(`[FPL FRONTEND] [${requestId}] Key fields check:`);
+      console.log(`[FPL FRONTEND] [${requestId}]   - numrfc: ${empleadoFPLData.numrfc || empleadoFPLData.rfc || 'N/A'}`);
+      console.log(`[FPL FRONTEND] [${requestId}]   - fecpla: ${empleadoFPLData.fecpla || 'N/A'}`);
+      console.log(`[FPL FRONTEND] [${requestId}]   - nombre: ${empleadoFPLData.nombre || empleadoFPLData['Nombre completo'] || 'N/A'}`);
       
       // Pasar los datos raw completos a los componentes
       setFplData(empleadoFPLData);
+      console.log(`[FPL FRONTEND] [${requestId}] FPL data set successfully`);
+      console.log(`[FPL FRONTEND] [${requestId}] ==========================================\n`);
       
     } catch (error) {
-      console.error('Error fetching FPL data:', error);
-      setError(`Error al cargar datos FPL: ${error.message}`);
+      console.error(`[FPL FRONTEND] [${requestId}] ERROR: Failed to fetch FPL data`);
+      console.error(`[FPL FRONTEND] [${requestId}] Error message:`, error.message);
+      console.error(`[FPL FRONTEND] [${requestId}] Error stack:`, error.stack);
+      setError(`Error loading FPL data: ${error.message}`);
       setFplData(null);
+      console.log(`[FPL FRONTEND] [${requestId}] ==========================================\n`);
     } finally {
       setLoading(false);
+      console.log(`[FPL FRONTEND] [${requestId}] Loading state set to false`);
     }
   }, []);
 
