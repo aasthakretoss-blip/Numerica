@@ -6,4 +6,5 @@
   NODE_VERSION = "22.21.1"
   PNPM_VERSION = "9.0.0"
   PNPM_FLAGS = "--no-frozen-lockfile"
-
+  DISABLE_ESLINT_PLUGIN = "true"
+  CI = "false"
