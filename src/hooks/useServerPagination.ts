@@ -14,31 +14,38 @@ export interface ServerPaginationResult {
   pagination: PaginationInfo
   loading: boolean
   error: string | null
+  sortBy: string
+  sortDir: 'asc' | 'desc'
   setPage: (page: number) => void
   setPageSize: (pageSize: number) => void
   refresh: () => void
+  handleSortChange: (field: string, direction?: 'asc' | 'desc') => void
 }
 
 export function useServerPagination(
   endpoint: string = '/api/payroll',
-  initialPageSize: number = 25
+  initialPageSize: number = 25,
+  initialSortBy: string = 'periodo',
+  initialSortDir: 'asc' | 'desc' = 'asc'
 ): ServerPaginationResult {
-  const [data, setData] = useState<PayrollData[]>([])
-  const [pagination, setPagination] = useState<PaginationInfo>({
+  const [data, setData] = useState([] as PayrollData[])
+  const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
     pageSize: initialPageSize,
     totalPages: 0
-  })
+  } as PaginationInfo)
+  const [sortByState, setSortByState] = useState(initialSortBy)
+  const [sortDirState, setSortDirState] = useState(initialSortDir)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null as string | null)
 
-  const fetchData = async (page: number, pageSize: number) => {
+  const fetchData = async (page: number, pageSize: number, sortByParam: string = sortByState, sortDirParam: 'asc' | 'desc' = sortDirState) => {
     setLoading(true)
     setError(null)
     
     try {
-      const url = `${buildApiUrl(endpoint)}?page=${page}&pageSize=${pageSize}`
+      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${encodeURIComponent(sortByParam)}&orderDirection=${sortDirParam}`)
       const response = await fetch(url)
       
       if (!response.ok) {
@@ -81,10 +88,10 @@ export function useServerPagination(
     }
   }
 
-  // Initial load and when pagination changes
+  // Initial load and when pagination or sorting changes
   useEffect(() => {
-    fetchData(pagination.page, pagination.pageSize)
-  }, [pagination.page, pagination.pageSize, endpoint])
+    fetchData(pagination.page, pagination.pageSize, sortByState, sortDirState)
+  }, [pagination.page, pagination.pageSize, sortByState, sortDirState, endpoint])
 
   const setPage = (page: number) => {
     if (page < 1 || page > pagination.totalPages) return
@@ -97,7 +104,15 @@ export function useServerPagination(
   }
 
   const refresh = () => {
-    fetchData(pagination.page, pagination.pageSize)
+    fetchData(pagination.page, pagination.pageSize, sortByState, sortDirState)
+  }
+
+  const handleSortChange = (field: string, direction?: 'asc' | 'desc') => {
+    const newSortDir: 'asc' | 'desc' = direction || (sortByState === field && sortDirState === 'asc' ? 'desc' : 'asc')
+    setSortByState(field)
+    setSortDirState(newSortDir)
+    // Reset to page 1 when sorting changes
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   return {
@@ -105,8 +120,11 @@ export function useServerPagination(
     pagination,
     loading,
     error,
+    sortBy: sortByState,
+    sortDir: sortDirState,
     setPage,
     setPageSize,
-    refresh
+    refresh,
+    handleSortChange
   }
 }

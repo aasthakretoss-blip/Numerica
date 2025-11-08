@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { PayrollData } from '../types'
 import { parseMoney, formatCurrency, formatPeriod } from '../utils/data'
 import { useServerPagination } from '../hooks/useServerPagination'
@@ -38,7 +38,7 @@ const columns: { key: string; label: string; sortable: boolean; dataKey: keyof P
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500]
 
 export default function EmployeeTable() {
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState(null)
   
   const {
     data,
@@ -359,7 +359,7 @@ export default function EmployeeTable() {
               {(() => {
                 const totalPages = pagination.totalPages
                 const currentPage = pagination.page
-                const pages = []
+                const pages: (number | -1)[] = []
                 
                 if (totalPages <= 7) {
                   // Show all pages if 7 or fewer
