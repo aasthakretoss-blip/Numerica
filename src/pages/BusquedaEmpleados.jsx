@@ -709,12 +709,19 @@ const BusquedaEmpleados = () => {
 
   // Aplicar filtros y sorting cuando cambien (actualizar tabla en tiempo real)
   // SOLO después de que se hayan aplicado los valores por defecto Y cuando hay cambios reales
-  // PATRÓN: Similar a TablaDemografico - recarga automática cuando cambian filtros, sorting o paginación
+  // ✅ FIXED: Removed pagination from dependencies to prevent double API calls
+  // Pagination changes are handled directly in handlePageChange
   useEffect(() => {
     if (!initialLoading && defaultsApplied) {
-      // Filter/Sort: Reloading data due to filter/sort changes
+      // ✅ FIXED: Reset to page 1 when search term or filters change
+      if (employeeSearchTerm && employeeSearchTerm.trim() !== "" && pagination.page !== 1) {
+        setPagination(prev => ({ ...prev, page: 1 }));
+        return; // Will trigger again with page 1
+      }
       
+      // Filter/Sort: Reloading data due to filter/sort changes
       const timeoutId = setTimeout(() => {
+        console.log('🔄 [FILTER EFFECT] Loading with search:', employeeSearchTerm || 'NONE');
         loadEmployeesWithPagination(pagination.page, pagination.pageSize);
         loadUniqueEmployeesCount();
       }, 300);
@@ -730,10 +737,10 @@ const BusquedaEmpleados = () => {
     employeeSearchTerm,
     sortBy,        // Server-side sorting fields only
     sortDir,       // Server-side sorting direction only
-    pagination.page,
-    pagination.pageSize,
     initialLoading,
     defaultsApplied,
+    // ✅ FIXED: Removed pagination.page and pagination.pageSize from dependencies
+    // Pagination changes are handled separately in handlePageChange to prevent double calls
   ]);
 
   const loadInitialData = async () => {
@@ -855,7 +862,14 @@ const BusquedaEmpleados = () => {
   };
 
   // Cargar empleados SOLO desde Historic - usando filtros por defecto ya aplicados
+  // ✅ FIXED: Skip if search term exists to prevent overriding search results
   const loadEmployeesFromPayrollAPI = async () => {
+    // ✅ CRITICAL: Don't load if search term exists - let search useEffect handle it
+    if (employeeSearchTerm && employeeSearchTerm.trim() !== "") {
+      console.log('⏭️ [INITIAL LOAD] Skipping loadEmployeesFromPayrollAPI - search term exists:', employeeSearchTerm);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
@@ -1445,17 +1459,22 @@ const BusquedaEmpleados = () => {
     alert(`Editar empleado ${employee.name}`);
   };
 
-  // Handlers de paginación - SIMPLIFICADO como TablaDemografico
-  // Solo actualizar estado, useEffect se encargará de recargar
+  // Handlers de paginación - ✅ FIXED: Directly call API with current search term and filters
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages && newPage !== pagination.page) {
-    setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination(prev => ({ ...prev, page: newPage }));
+      // ✅ FIXED: Directly load data with new page (includes current search term and filters)
+      console.log('🔄 [PAGE CHANGE] Loading page', newPage, 'with search:', employeeSearchTerm || 'NONE');
+      loadEmployeesWithPagination(newPage, pagination.pageSize);
     }
   };
 
   const handlePageSizeChange = (newPageSize) => {
     if (newPageSize !== pagination.pageSize) {
       setPagination(prev => ({ ...prev, pageSize: newPageSize, page: 1 }));
+      // ✅ FIXED: Directly load data with new page size (includes current search term and filters)
+      console.log('🔄 [PAGE SIZE CHANGE] Loading with pageSize', newPageSize, 'and search:', employeeSearchTerm || 'NONE');
+      loadEmployeesWithPagination(1, newPageSize);
     }
   };
 

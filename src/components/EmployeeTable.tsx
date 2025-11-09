@@ -4,6 +4,7 @@ import { parseMoney, formatCurrency, formatPeriod } from '../utils/data'
 import { useServerPagination } from '../hooks/useServerPagination'
 import { buildApiUrl } from '../config/apiConfig'
 import { normalizePayrollStats } from '../utils/payrollStatsNormalizer'
+import { useNavigate } from 'react-router-dom'
 
 // ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
 const FRONTEND_TO_BACKEND_FIELD_MAP: Record<string, string> = {
@@ -22,40 +23,150 @@ const FRONTEND_TO_BACKEND_FIELD_MAP: Record<string, string> = {
 }
 
 const columns: { key: string; label: string; sortable: boolean; dataKey: keyof PayrollData | 'profile' }[] = [
-  { key: 'nombre', label: 'Empleado', sortable: true, dataKey: 'nombre' },
-  { key: 'rfc', label: 'RFC', sortable: true, dataKey: 'rfc' },
+  { key: 'nombre', label: 'Nombre completo', sortable: true, dataKey: 'nombre' },
+  { key: 'rfc', label: 'CURP', sortable: true, dataKey: 'rfc' },
   { key: 'puesto', label: 'Puesto', sortable: true, dataKey: 'puesto' },
-  { key: 'sucursal', label: 'Compañía', sortable: true, dataKey: 'sucursal' },
+  { key: 'sucursal', label: 'Sucursal', sortable: true, dataKey: 'sucursal' },
   { key: 'mes', label: 'Período', sortable: true, dataKey: 'mes' },
-  { key: 'sueldo', label: 'Sueldo', sortable: true, dataKey: 'sueldo' },
+  { key: 'sueldo', label: 'Salario', sortable: true, dataKey: 'sueldo' },
   { key: 'comisiones', label: 'Comisiones', sortable: true, dataKey: 'comisiones' },
-  { key: 'totalPercepciones', label: 'Total Percepciones', sortable: true, dataKey: 'totalPercepciones' },
   { key: 'percepcionesTotales', label: 'Percepciones totales', sortable: true, dataKey: 'totalPercepciones' },
-  { key: 'estado', label: 'Estado', sortable: true, dataKey: 'estado' },
-  { key: 'profile', label: 'Perfil', sortable: false, dataKey: 'profile' }
+  { key: 'estado', label: 'Estado', sortable: true, dataKey: 'estado' }
 ]
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500]
 
-export default function EmployeeTable() {
+interface EmployeeTableProps {
+  employees?: PayrollData[]
+  loading?: boolean
+  pagination?: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
+  onSortChange?: (field: string, direction?: 'asc' | 'desc') => void
+  onViewEmployee?: (employee: PayrollData) => void
+  onEditEmployee?: (employee: PayrollData) => void
+  error?: string | null
+}
+
+export default function EmployeeTable(props?: EmployeeTableProps) {
   const [stats, setStats] = useState(null)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
+  const [isTableCollapsed, setIsTableCollapsed] = useState(false)
+  const navigate = useNavigate()
   
-  const {
-    data,
-    pagination,
-    loading,
-    error,
-    sortBy,
-    sortDir,
-    setPage,
-    setPageSize,
-    refresh,
-    handleSortChange
-  } = useServerPagination('/api/payroll', 25, 'periodo', 'asc') // ✅ Default: periodo ASC as requested
+  // ✅ FIXED: Use props if provided, otherwise use useServerPagination (for backward compatibility)
+  // Check if props object exists and has employees array (even if empty)
+  const useProps = props !== undefined && props !== null && 'employees' in props
+  
+  // ✅ CRITICAL FIX: Use a special disabled endpoint when props are provided
+  // This prevents double API calls when BusquedaEmpleados passes data via props
+  // Using '__DISABLED__' instead of empty string to avoid URL building issues
+  const endpointToUse = useProps ? '__DISABLED__' : '/api/payroll'
+  
+  console.log('🔍 [EmployeeTable] Props check:', {
+    hasProps: props !== undefined && props !== null,
+    hasEmployees: props && 'employees' in props,
+    useProps: useProps,
+    endpoint: endpointToUse,
+    employeesCount: props?.employees?.length || 0
+  })
+  
+  const serverPagination = useServerPagination(
+    endpointToUse, // Special value disables fetch when using props
+    100, 
+    'nombre', 
+    'asc'
+  )
+  
+  // Use props if provided, otherwise use serverPagination
+  const data = useProps ? (props.employees || []) : serverPagination.data
+  const pagination = useProps ? (props.pagination || { page: 1, pageSize: 100, total: 0, totalPages: 0 }) : serverPagination.pagination
+  const loading = useProps ? (props.loading || false) : serverPagination.loading
+  const error = useProps ? (props.error || null) : serverPagination.error
+  const sortBy = useProps ? (props.sortBy || 'nombre') : serverPagination.sortBy
+  const sortDir = useProps ? (props.sortDir || 'asc') : serverPagination.sortDir
+  const setPage = useProps ? (props.onPageChange || (() => {})) : serverPagination.setPage
+  const setPageSize = useProps ? (props.onPageSizeChange || (() => {})) : serverPagination.setPageSize
+  const handleSortChange = useProps ? (props.onSortChange || (() => {})) : serverPagination.handleSortChange
+  const refresh = useProps ? (() => {}) : serverPagination.refresh
 
   // Calculate display range
   const from = pagination.total > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0
   const to = Math.min(pagination.page * pagination.pageSize, pagination.total)
+  
+  // Function to navigate to employee profile
+  const handleViewEmployee = (employee: PayrollData) => {
+    // ✅ FIXED: Use onViewEmployee prop if provided, otherwise navigate
+    if (useProps && props?.onViewEmployee) {
+      props.onViewEmployee(employee)
+      return
+    }
+    
+    const identifier = (employee.rfc?.trim()) || null
+    let navigationPath: string
+    
+    if (identifier) {
+      navigationPath = `/perfil/${encodeURIComponent(identifier)}`
+    } else {
+      // Fallback: use cleaned name
+      const cleanedName = employee.nombre
+        ?.replace(/\s+/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase() || 'unknown'
+      navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`
+    }
+    
+    navigate(navigationPath)
+  }
+  
+  // Function to export data to CSV
+  const exportToCSV = () => {
+    const headers = columns.map(col => col.label).join(',')
+    const rows = data.map(r => {
+      // ✅ FIXED: Map data fields to expected format (handle both API format and props format)
+      // Use bracket notation to access properties that may not be in PayrollData type
+      const rAny = r as any
+      const nombre = r.nombre || rAny.name || ''
+      const rfc = r.rfc || rAny.curp || rAny.RFC || ''
+      const puesto = r.puesto || rAny.position || rAny.Puesto || ''
+      const sucursal = r.sucursal || rAny.department || rAny.Sucursal || ''
+      const mes = r.mes || rAny.periodo || rAny.Mes || ''
+      const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0
+      const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
+      const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
+      const estado = r.estado || rAny.status || rAny.Estado || ''
+      
+      return [
+        nombre,
+        rfc,
+        puesto,
+        sucursal,
+        mes,
+        formatCurrency(parseMoney(sueldo)),
+        formatCurrency(parseMoney(comisiones)),
+        formatCurrency(parseMoney(totalPercepciones)),
+        estado
+      ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    })
+    
+    const csvContent = [headers, ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `empleados_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   // Sorting functions
   const toggleSort = (key: string) => {
@@ -104,21 +215,26 @@ export default function EmployeeTable() {
     
     if (!isActive) {
       return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
+        <div className="flex flex-col -space-y-1">
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       )
     }
     if (sortDir === 'asc') {
       return (
         <svg className="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       )
     } else {
       return (
         <svg className="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8V20m0 0l4-4m-4 4l-4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       )
     }
@@ -162,109 +278,73 @@ export default function EmployeeTable() {
   return (
     <div className="space-y-4">
       {/* Database Statistics Panel */}
-      {stats && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-300 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-blue-800 mb-3">📊 Estadísticas de Base de Datos AWS - Historic</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-            <div className="text-center">
-              <div className="font-bold text-blue-800 text-lg">{stats.totalRecords?.toLocaleString('es-MX')}</div>
-              <div className="text-blue-900">Total Registros</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-green-600 text-lg">{stats.uniqueEmployees?.toLocaleString('es-MX')}</div>
-              <div className="text-green-800">RFCs Únicos</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-blue-600 text-lg">{stats.uniquePeriods}</div>
-              <div className="text-blue-800">Períodos</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-blue-700 text-lg">{stats.averageRecordsPerEmployee}</div>
-              <div className="text-blue-800">Promedio/Empleado</div>
-            </div>
-          </div>
-          {/* Status Distribution */}
-          {stats.statusDistribution && (
-            <div className="border-t border-blue-200 pt-3">
-              <h4 className="text-xs font-medium text-blue-800 mb-2">Distribución por Estado:</h4>
-              <div className="flex flex-wrap gap-2">
-                {stats.statusDistribution.map((status: any, index: number) => (
-                  <span key={index} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    status.statusName === 'Activo' ? 'bg-green-100 text-green-800' :
-                    status.statusName === 'Baja' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {status.statusName}: {status.count.toLocaleString('es-MX')} ({status.percentage}%)
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
       
-      {/* Sticky Status Indicator */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-gray-200 py-2">
-        <div className="text-center">
-          <span className="text-xs text-gray-500 font-mono">
-            {loading ? (
-              "Cargando datos de Historic..."
-            ) : (
-              `Mostrando ${from}–${to} de ${pagination.total} registros • Página ${pagination.page} de ${pagination.totalPages} • Conectado a AWS`
-            )}
-          </span>
-        </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-auto rounded border bg-white">
+      {/* Table - Clean white design matching reference image */}
+      <div className={`overflow-auto rounded-lg border border-gray-300 bg-white shadow-sm ${isTableCollapsed ? 'max-h-[400px]' : ''}`}>
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-left">
+          <thead className="bg-[#d2d8e8] border-b-2 border-blue-200 text-left sticky top-0 z-10 shadow-sm">
             <tr>
-              {columns.map(col => (
-                <th key={col.key} className="px-4 py-2 whitespace-nowrap font-medium text-gray-700">
+              {columns.map((col, idx) => (
+                <th 
+                  key={col.key} 
+                  className={`px-4 py-3 whitespace-nowrap font-semibold text-blue-900 border-r border-blue-200 ${idx === columns.length - 1 ? 'border-r-0' : ''}`}
+                >
                   {col.sortable ? (
                     <button
                       onClick={() => toggleSort(col.key)}
-                      className="flex items-center gap-2 hover:text-blue-800 transition-colors cursor-pointer"
+                      className="flex items-center gap-2 hover:text-blue-800 transition-colors cursor-pointer w-full text-left"
                       disabled={loading}
                     >
                       <span>{col.label}</span>
-                      {getSortIcon(col.key)}
+                      <span className="ml-auto">{getSortIcon(col.key)}</span>
                     </button>
                   ) : (
-                    col.label
+                    <span>{col.label}</span>
                   )}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-8 text-center text-gray-500">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-blue-800 border-t-transparent rounded-full"></div>
-                    <span>Cargando datos...</span>
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-500">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="animate-spin h-6 w-6 border-3 border-blue-600 border-t-transparent rounded-full"></div>
+                    <span className="text-base">Cargando datos...</span>
                   </div>
                 </td>
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-6 text-center text-gray-500">
-                  Sin resultados
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-500">
+                  <div className="text-base">Sin resultados</div>
                 </td>
               </tr>
             ) : (
               data.map((r, i) => {
+                // ✅ FIXED: Map data fields to expected format (handle both API format and props format)
+                // Use bracket notation to access properties that may not be in PayrollData type
+                const rAny = r as any
+                const nombre = r.nombre || rAny.name || 'N/A'
+                const rfc = r.rfc || rAny.curp || rAny.RFC || 'N/A'
+                const puesto = r.puesto || rAny.position || rAny.Puesto || 'N/A'
+                const sucursal = r.sucursal || rAny.department || rAny.Sucursal || 'N/A'
+                const mes = r.mes || rAny.periodo || rAny.Mes || ''
+                const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0
+                const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
+                const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
+                const estado = r.estado || rAny.status || rAny.Estado || 'N/A'
+                
                 // ✅ FRONTEND LOGGING: Log values before display (only for first 5 rows and when sorting by percepciones)
                 if (i < 5 && (sortBy === 'percepcionestotales' || sortBy === 'totalpercepciones')) {
-                  const rawValue = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "];
+                  const rawValue = totalPercepciones;
                   const parsedValue = parseMoney(rawValue);
                   const formattedValue = formatCurrency(parsedValue);
                   
                   console.log(`🟡 [FRONTEND DISPLAY DEBUG] Row ${i + 1}:`, {
-                    nombre: r.nombre,
+                    nombre: nombre,
                     rawTotalPercepciones: rawValue,
                     rawType: typeof rawValue,
                     parsedValue: parsedValue,
@@ -276,147 +356,55 @@ export default function EmployeeTable() {
                 }
                 
                 return (
-                <tr key={`${r.rfc}-${r.mes}-${i}`} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2">{r.nombre}</td>
-                  <td className="px-4 py-2 font-mono text-xs">{r.rfc}</td>
-                  <td className="px-4 py-2">{r.puesto}</td>
-                  <td className="px-4 py-2">{r.sucursal}</td>
-                  <td className="px-4 py-2">{formatPeriod(r.mes)}</td>
-                  <td className="px-4 py-2 text-right font-medium">
-                    {formatCurrency(parseMoney(r.sueldo))}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    {formatCurrency(parseMoney(r.comisiones))}
-                  </td>
-                  <td className="px-4 py-2 text-right font-medium">
-                    {formatCurrency(parseMoney(r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || 0))}
-                  </td>
-                  <td className="px-4 py-2 text-right font-medium">
-                    {formatCurrency(parseMoney(r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || 0))}
-                  </td>
-                  <td className="px-4 py-2">
-                    {r.estado === 'Activo' ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Activo
-                      </span>
-                    ) : r.estado === 'Baja' ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Baja
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {r.estado || 'N/A'}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )})
+                  <tr key={`${rfc}-${mes}-${i}`} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleViewEmployee(r)}
+                        className="text-blue-800 underline font-semibold text-left hover:text-blue-900 transition-colors"
+                        title={`View profile of ${nombre}`}
+                      >
+                        {nombre}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <code className="font-mono text-xs text-gray-700 bg-gray-50 rounded px-2 py-1">
+                        {rfc}
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-gray-800">{puesto}</td>
+                    <td className="px-4 py-3 text-gray-800">{sucursal}</td>
+                    <td className="px-4 py-3 text-gray-700 font-mono text-xs">{mes || ''}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                      {formatCurrency(parseMoney(sueldo))}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700">
+                      {formatCurrency(parseMoney(comisiones))}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-blue-800">
+                      {formatCurrency(parseMoney(totalPercepciones || 0))}
+                    </td>
+                    <td className="px-4 py-3">
+                      {estado === 'Activo' || estado === 'A' ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                          Activo
+                        </span>
+                      ) : estado === 'Baja' || estado === 'B' ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                          Baja
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                          {estado || 'N/A'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
       </div>
-
-      {/* Pagination Controls */}
-      <div className="bg-white border rounded-lg p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          {/* Page Size Selector */}
-          <div className="flex items-center space-x-2">
-            <label htmlFor="pageSize" className="text-sm text-gray-700 font-medium">
-              Registros por página:
-            </label>
-            <select
-              id="pageSize"
-              value={pagination.pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading}
-            >
-              {PAGE_SIZE_OPTIONS.map(size => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => setPage(1)}
-              disabled={pagination.page <= 1 || loading}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Primera
-            </button>
-            <button
-              onClick={() => setPage(pagination.page - 1)}
-              disabled={pagination.page <= 1 || loading}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Anterior
-            </button>
-            
-            {/* Page Numbers */}
-            <div className="flex items-center space-x-1 mx-2">
-              {(() => {
-                const totalPages = pagination.totalPages
-                const currentPage = pagination.page
-                const pages: (number | -1)[] = []
-                
-                if (totalPages <= 7) {
-                  // Show all pages if 7 or fewer
-                  for (let i = 1; i <= totalPages; i++) {
-                    pages.push(i)
-                  }
-                } else {
-                  // Show smart pagination
-                  if (currentPage <= 4) {
-                    pages.push(1, 2, 3, 4, 5, -1, totalPages)
-                  } else if (currentPage >= totalPages - 3) {
-                    pages.push(1, -1, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
-                  } else {
-                    pages.push(1, -1, currentPage - 1, currentPage, currentPage + 1, -1, totalPages)
-                  }
-                }
-                
-                return pages.map((page, index) => (
-                  page === -1 ? (
-                    <span key={`ellipsis-${index}`} className="px-2 py-1 text-gray-400">...</span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => setPage(page)}
-                      disabled={loading}
-                      className={`px-3 py-1 text-sm border rounded transition-colors ${
-                        page === currentPage
-                          ? 'bg-blue-800 text-white border-blue-800'
-                          : 'border-gray-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                ))
-              })()
-            }
-            </div>
-            
-            <button
-              onClick={() => setPage(pagination.page + 1)}
-              disabled={pagination.page >= pagination.totalPages || loading}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Siguiente
-            </button>
-            <button
-              onClick={() => setPage(pagination.totalPages)}
-              disabled={pagination.page >= pagination.totalPages || loading}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Última
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
-

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { PayrollData } from '../types'
 import { buildApiUrl } from '../config/apiConfig'
 
@@ -39,13 +39,34 @@ export function useServerPagination(
   const [sortDirState, setSortDirState] = useState(initialSortDir)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null as string | null)
+  
+  // ✅ CRITICAL: Use ref to track if endpoint is disabled to prevent any fetch attempts
+  const isDisabledRef = useRef(endpoint === '__DISABLED__' || !endpoint || endpoint.trim() === '')
+  
+  // Update ref when endpoint changes
+  useEffect(() => {
+    isDisabledRef.current = endpoint === '__DISABLED__' || !endpoint || endpoint.trim() === ''
+    console.log('🔍 [useServerPagination] Endpoint changed:', { endpoint, isDisabled: isDisabledRef.current })
+  }, [endpoint])
 
-  const fetchData = async (page: number, pageSize: number, sortByParam: string = sortByState, sortDirParam: 'asc' | 'desc' = sortDirState) => {
+  const fetchData = useCallback(async (page: number, pageSize: number, sortByParam?: string, sortDirParam?: 'asc' | 'desc') => {
+    // ✅ FIXED: Skip fetch if endpoint is disabled (when component is using props instead)
+    // Check both the endpoint parameter and the ref for extra safety
+    if (isDisabledRef.current || !endpoint || endpoint.trim() === '' || endpoint === '__DISABLED__') {
+      console.log('⏭️ [useServerPagination fetchData] Skipping fetch - endpoint is disabled:', endpoint, 'isDisabledRef:', isDisabledRef.current)
+      return
+    }
+    
+    // Use provided params or fall back to state
+    const finalSortBy = sortByParam ?? sortByState
+    const finalSortDir = sortDirParam ?? sortDirState
+    
     setLoading(true)
     setError(null)
     
     try {
-      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${encodeURIComponent(sortByParam)}&orderDirection=${sortDirParam}`)
+      const url = buildApiUrl(`${endpoint}?page=${page}&pageSize=${pageSize}&orderBy=${encodeURIComponent(finalSortBy)}&orderDirection=${finalSortDir}`)
+      console.log('🌐 [useServerPagination fetchData] Making API call to:', url)
       const response = await fetch(url)
       
       if (!response.ok) {
@@ -86,12 +107,20 @@ export function useServerPagination(
     } finally {
       setLoading(false)
     }
-  }
+  }, [endpoint, sortByState, sortDirState])
 
   // Initial load and when pagination or sorting changes
+  // ✅ FIXED: Skip fetch if endpoint is disabled (when component is using props instead)
   useEffect(() => {
+    // ✅ CRITICAL: Early return to prevent any fetch when endpoint is disabled
+    // Check both the endpoint and the ref for extra safety
+    if (isDisabledRef.current || !endpoint || endpoint.trim() === '' || endpoint === '__DISABLED__') {
+      console.log('⏭️ [useServerPagination useEffect] Skipping fetch - endpoint is disabled:', endpoint, 'isDisabledRef:', isDisabledRef.current)
+      return // Don't fetch if endpoint is disabled (props mode)
+    }
+    console.log('🔄 [useServerPagination useEffect] Fetching data with endpoint:', endpoint)
     fetchData(pagination.page, pagination.pageSize, sortByState, sortDirState)
-  }, [pagination.page, pagination.pageSize, sortByState, sortDirState, endpoint])
+  }, [pagination.page, pagination.pageSize, sortByState, sortDirState, endpoint, fetchData])
 
   const setPage = (page: number) => {
     if (page < 1 || page > pagination.totalPages) return
@@ -104,6 +133,11 @@ export function useServerPagination(
   }
 
   const refresh = () => {
+    // ✅ FIXED: Don't refresh if endpoint is disabled (props mode)
+    if (!endpoint || endpoint.trim() === '' || endpoint === '__DISABLED__') {
+      console.log('⏭️ [useServerPagination] Skipping refresh - endpoint is disabled (props mode)')
+      return
+    }
     fetchData(pagination.page, pagination.pageSize, sortByState, sortDirState)
   }
 
