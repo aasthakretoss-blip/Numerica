@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useLocation } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
 import MenuPerfil from '../MenuPerfil';
 import PeriodDropdownCurpBased from './PeriodDropdownCurpBased';
 import PayrollDataViewer from './PayrollDataViewer';
+import { authenticatedFetch } from '../../services/authenticatedFetch';
+import { buildApiUrl } from '../../config/apiConfig';
 
 const PerfilContainer = styled.div`
   display: flex;
@@ -95,6 +98,10 @@ const TextBox = styled.input`
 const PerfilEmpleado = ({ rfc }) => {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [forcedPeriod, setForcedPeriod] = useState(null);
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const theme = useTheme();
   const location = useLocation();
 
   // El RFC del parámetro URL es en realidad el CURP
@@ -126,7 +133,6 @@ const PerfilEmpleado = ({ rfc }) => {
     } else {
       console.log('ℹ️ [PerfilEmpleado] No se encontró parámetro periodo en URL');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   const handlePeriodChange = (period) => {

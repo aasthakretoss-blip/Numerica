@@ -261,6 +261,7 @@ export const validarFechaFPL = (fechaFPL, opciones = {}) => {
 export const formatearFechaFPL = (fechaFPL, opciones = {}) => {
   const {
     formato = 'corto', // 'corto', 'largo', 'iso'
+    incluirDia = false,
     locale = 'es-MX'
   } = opciones;
   
@@ -315,7 +316,7 @@ export const buscarFechaFPLPorPeriodo = (datosPayroll, periodoObjetivo, rfc) => 
   };
 };
 
-const fplUtils = {
+export default {
   normalizarFechaFPL,
   calcularFechaFPLReciente,
   obtenerFechasFPLUnicas,
@@ -324,5 +325,3 @@ const fplUtils = {
   formatearFechaFPL,
   buscarFechaFPLPorPeriodo
 };
-
-export default fplUtils;

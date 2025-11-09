@@ -306,7 +306,9 @@ export default function AntiguedadPorSucursal({
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [allEmployees, setAllEmployees] = useState([]);
+  const [latestPeriod, setLatestPeriod] = useState(null);
   const [periodFilter, setPeriodFilter] = useState(null);
+  const [totalUniqueEmployees, setTotalUniqueEmployees] = useState(0);
 
   // Función para obtener años de antigüedad de un empleado
   const getYearsOfSeniority = (emp) => {
@@ -371,6 +373,7 @@ export default function AntiguedadPorSucursal({
           
           console.log('📅 DistribuciónPorSucursal - Último período encontrado:', latest.value, 'Filtro aplicado:', monthFilter);
           
+          setLatestPeriod(latest);
           setPeriodFilter(monthFilter);
         }
       }
@@ -399,6 +402,7 @@ export default function AntiguedadPorSucursal({
         const result = await response.json();
         console.log('🔍 DEBUG: Respuesta del servidor:', result);
         if (result.success) {
+          setTotalUniqueEmployees(result.uniqueCurpCount || 0);
           console.log('🔢 CURPs únicos cargados:', result.uniqueCurpCount);
         }
       } else {
@@ -510,7 +514,6 @@ export default function AntiguedadPorSucursal({
       console.log('🔄 DistribuciónPorSucursal: Cargando datos completos - Period Filter:', periodFilter);
       loadAllEmployees();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodFilter, filters]);
 
   // Procesar datos para agrupar por sucursal y bandas salariales
@@ -757,6 +760,7 @@ export default function AntiguedadPorSucursal({
                 <BarsContainer>
                   {seniorityData.sortedBranches?.map(branchName => {
                     const branchInfo = seniorityData.branchData[branchName];
+                    const totalEmployees = branchInfo.total;
                     
                     return (
                       <BarRow key={branchName}>

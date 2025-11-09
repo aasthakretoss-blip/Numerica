@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { 
   FaTable, FaUsers, FaChartBar, FaBriefcase, 
-  FaSpinner, FaTimes, FaInfoCircle,
+  FaSpinner, FaTimes, FaInfoCircle, FaExpand,
   FaSort, FaSortUp, FaSortDown,
   FaAngleDoubleLeft, FaAngleDoubleRight, 
   FaChevronLeft, FaChevronRight
@@ -425,10 +425,6 @@ export default function InteractiveDataViewer() {
           filters.puesto = data.position;
         }
         break;
-      
-      default:
-        // No additional filters for unknown types
-        break;
     }
 
     return filters;
@@ -506,7 +502,6 @@ export default function InteractiveDataViewer() {
   // Efectos
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSelection, pagination.page, pagination.pageSize, sortBy, sortDir]);
 
   // Manejadores de eventos

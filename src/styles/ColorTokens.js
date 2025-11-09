@@ -213,7 +213,7 @@ export const withOpacity = (color, opacity) => {
   }
   // Si ya es rgba, reemplazar opacidad
   if (color.startsWith('rgba')) {
-    return color.replace(/[\d.]+\)$/g, `${opacity})`);
+    return color.replace(/[\d\.]+\)$/g, `${opacity})`);
   }
   return color;
 };

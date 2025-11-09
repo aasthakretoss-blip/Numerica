@@ -10,7 +10,9 @@ import { FaFilter, FaTimes, FaSpinner } from 'react-icons/fa';
 import DropDownMenu from './DropDownMenu';
 import { 
   loadDemographicFilterOptions, 
-  loadDemographicFilterCounts
+  loadDemographicFilterCounts, 
+  hasFiltersChanged,
+  calculateLatestPeriodFromDatabase 
 } from '../services/demographicFiltersApi';
 
 // Styled Components
@@ -190,8 +192,7 @@ const DemographicFilterSystem = ({
       
       onFiltersChange(filters);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSucursales, selectedPuestos, selectedPuestosCategorias, periodFilter]);
+  }, [selectedSucursales, selectedPuestos, selectedPuestosCategorias, periodFilter]); // Remover onFiltersChange de dependencies
   
   const loadStaticOptions = async () => {
     try {

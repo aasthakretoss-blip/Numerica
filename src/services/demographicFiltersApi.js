@@ -3,8 +3,8 @@
  * Reutiliza la funcionalidad existente de BusquedaEmpleados pero adaptada para demográfico
  */
 
-import { getPuestoCategoria, formatPuestosForDropdown } from '../utils/puestoMapping';
-import { buildApiUrl } from '../config/apiConfig';
+import { getPuestoCategoria, formatPuestosForDropdown, formatCategoriasForDropdown } from '../utils/puestoMapping';
+import { buildApiUrl, isProduction, API_BASE_URL } from '../config/apiConfig';
 
 /**
  * Carga todas las opciones de filtros para el dashboard demográfico
@@ -340,12 +340,10 @@ export const hasFiltersChanged = (oldFilters, newFilters) => {
   return false;
 };
 
-const demographicFiltersApi = {
+export default {
   loadDemographicFilterOptions,
   loadDemographicFilterCounts,
   calculateLatestPeriodFromDatabase,
   buildDemographicFilterParams,
   hasFiltersChanged
 };
-
-export default demographicFiltersApi;
