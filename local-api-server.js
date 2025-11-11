@@ -1,45 +1,66 @@
-const express = require('express');
-const cors = require('cors');
-const { Client } = require('pg');
-require('dotenv').config({ path: '.env.database' });
-const authService = require('./api-server/services/authService');
+const express = require("express");
+const cors = require("cors");
+const { Client } = require("pg");
+require("dotenv").config({ path: ".env.database" });
+const authService = require("./api-server/services/authService");
+const { authenticate: verifyToken } = require("./middleware/auth");
 // Try to load payrollFilterService - check both possible paths
 let payrollFilterService;
 try {
-  payrollFilterService = require('./services/payrollFilterService');
-  console.log('✅ Loaded payrollFilterService from ./services/payrollFilterService');
+  payrollFilterService = require("./services/payrollFilterService");
+  console.log(
+    "✅ Loaded payrollFilterService from ./services/payrollFilterService"
+  );
 } catch (e1) {
   try {
-    payrollFilterService = require('./api-server/services/payrollFilterService');
-    console.log('✅ Loaded payrollFilterService from ./api-server/services/payrollFilterService');
+    payrollFilterService = require("./api-server/services/payrollFilterService");
+    console.log(
+      "✅ Loaded payrollFilterService from ./api-server/services/payrollFilterService"
+    );
   } catch (e2) {
-    console.error('❌ Could not load payrollFilterService from either path:', e1.message, e2.message);
-    throw new Error('payrollFilterService not found');
+    console.error(
+      "❌ Could not load payrollFilterService from either path:",
+      e1.message,
+      e2.message
+    );
+    throw new Error("payrollFilterService not found");
   }
 }
 
 // ✅ FIX: Load nominasService to get puesto categorizado mapping
 let nominasService;
 try {
-  nominasService = require('./services/nominasService');
-  console.log('✅ Loaded nominasService from ./services/nominasService');
+  nominasService = require("./services/nominasService");
+  console.log("✅ Loaded nominasService from ./services/nominasService");
 } catch (e1) {
   try {
-    nominasService = require('./api-server/services/nominasService');
-    console.log('✅ Loaded nominasService from ./api-server/services/nominasService');
+    nominasService = require("./api-server/services/nominasService");
+    console.log(
+      "✅ Loaded nominasService from ./api-server/services/nominasService"
+    );
   } catch (e2) {
-    console.error('❌ Could not load nominasService from either path:', e1.message, e2.message);
+    console.error(
+      "❌ Could not load nominasService from either path:",
+      e1.message,
+      e2.message
+    );
   }
 }
 
 // ✅ FIX: Initialize puesto categorizado mapping on startup
 if (nominasService) {
-  nominasService.loadPuestoCategorizado().then(() => {
-    const categorias = nominasService.getPuestosCategorias();
-    console.log(`✅ Cargadas ${categorias.length} categorías de puestos:`, categorias.join(', '));
-  }).catch(err => {
-    console.error('⚠️ Error cargando categorías de puestos:', err.message);
-  });
+  nominasService
+    .loadPuestoCategorizado()
+    .then(() => {
+      const categorias = nominasService.getPuestosCategorias();
+      console.log(
+        `✅ Cargadas ${categorias.length} categorías de puestos:`,
+        categorias.join(", ")
+      );
+    })
+    .catch((err) => {
+      console.error("⚠️ Error cargando categorías de puestos:", err.message);
+    });
 }
 
 const app = express();
@@ -52,7 +73,7 @@ app.use(express.json());
 // Debug middleware to log all incoming requests (for troubleshooting)
 app.use((req, res, next) => {
   // Only log payroll-related routes for debugging
-  if (req.path.startsWith('/api/payroll/')) {
+  if (req.path.startsWith("/api/payroll/")) {
     console.log(`[ROUTE DEBUG] ${req.method} ${req.path} - Query:`, req.query);
   }
   next();
@@ -65,14 +86,17 @@ const dbConfig = {
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
 };
 
 // Database config for Historic
 const gsauDbConfig = {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 5432,
-  database: 'Historic',
+  database: "Historic",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   ssl: { rejectUnauthorized: false }, // Always use SSL for AWS RDS
@@ -82,7 +106,7 @@ const gsauDbConfig = {
 const fondosDbConfig = {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 5432,
-  database: process.env.DB_FONDOS || 'Fondos',
+  database: process.env.DB_FONDOS || "Fondos",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   ssl: { rejectUnauthorized: false }, // Always use SSL for AWS RDS
@@ -110,72 +134,87 @@ async function getFondosClient() {
 }
 
 // GET /api/employees - List employees with filters, sorting, and pagination
-app.get('/api/employees', async (req, res) => {
+app.get("/api/employees", verifyToken, async (req, res) => {
   try {
-    const { q, department, role, status, location, sortBy = 'first_name', sortDir = 'asc', page = 1, pageSize = 20 } = req.query;
-    
+    const {
+      q,
+      department,
+      role,
+      status,
+      location,
+      sortBy = "first_name",
+      sortDir = "asc",
+      page = 1,
+      pageSize = 20,
+    } = req.query;
+
     const client = await getClient();
-    
+
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (q) {
-      conditions.push(`(LOWER(first_name) LIKE $${paramIndex} OR LOWER(last_name) LIKE $${paramIndex + 1} OR LOWER(email) LIKE $${paramIndex + 2})`);
+      conditions.push(
+        `(LOWER(first_name) LIKE $${paramIndex} OR LOWER(last_name) LIKE $${
+          paramIndex + 1
+        } OR LOWER(email) LIKE $${paramIndex + 2})`
+      );
       const searchTerm = `%${q.toLowerCase()}%`;
       params.push(searchTerm, searchTerm, searchTerm);
       paramIndex += 3;
     }
-    
+
     if (department) {
       conditions.push(`department = $${paramIndex}`);
       params.push(department);
       paramIndex++;
     }
-    
+
     if (role) {
       conditions.push(`role = $${paramIndex}`);
       params.push(role);
       paramIndex++;
     }
-    
+
     if (status) {
       conditions.push(`status = $${paramIndex}`);
       params.push(status);
       paramIndex++;
     }
-    
+
     if (location) {
       conditions.push(`location = $${paramIndex}`);
       params.push(location);
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Validate and sanitize sort parameters
     const validSortColumns = {
-      'fullName': 'first_name || \' \' || last_name',
-      'firstName': 'first_name',
-      'lastName': 'last_name',
-      'first_name': 'first_name',
-      'last_name': 'last_name',
-      'department': 'department',
-      'role': 'role',
-      'status': 'status',
-      'location': 'location',
-      'hire_date': 'hire_date'
+      fullName: "first_name || ' ' || last_name",
+      firstName: "first_name",
+      lastName: "last_name",
+      first_name: "first_name",
+      last_name: "last_name",
+      department: "department",
+      role: "role",
+      status: "status",
+      location: "location",
+      hire_date: "hire_date",
     };
-    
-    const sortColumn = validSortColumns[sortBy] || 'first_name';
-    const sortDirection = sortDir.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-    
+
+    const sortColumn = validSortColumns[sortBy] || "first_name";
+    const sortDirection = sortDir.toLowerCase() === "desc" ? "DESC" : "ASC";
+
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM employees ${whereClause}`;
     const countResult = await client.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
-    
+
     // Get paginated results
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
     const dataQuery = `
@@ -198,13 +237,17 @@ app.get('/api/employees', async (req, res) => {
       ORDER BY ${sortColumn} ${sortDirection}
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    
-    const dataResult = await client.query(dataQuery, [...params, offset, parseInt(pageSize)]);
-    
+
+    const dataResult = await client.query(dataQuery, [
+      ...params,
+      offset,
+      parseInt(pageSize),
+    ]);
+
     await client.end();
-    
+
     res.json({
-      data: dataResult.rows.map(row => ({
+      data: dataResult.rows.map((row) => ({
         id: row.id,
         firstName: row.first_name,
         lastName: row.last_name,
@@ -217,31 +260,31 @@ app.get('/api/employees', async (req, res) => {
         status: row.status,
         hireDate: row.hire_date,
         tags: row.tags,
-        avatarUrl: row.avatar_url
+        avatarUrl: row.avatar_url,
       })),
       page: parseInt(page),
       pageSize: parseInt(pageSize),
-      total: total
+      total: total,
     });
-    
   } catch (error) {
-    console.error('Error in /api/employees:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/employees:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/user/profile - Get current user profile from Numerica_Users
-app.get('/api/user/profile', async (req, res) => {
+app.get("/api/user/profile", verifyToken, async (req, res) => {
   try {
-    const userEmail = req.headers['x-user-email']; // Email del usuario logueado
-    
+    const userEmail = req.headers["x-user-email"]; // Email del usuario logueado
+
     if (!userEmail) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
+      return res.status(401).json({ error: "Usuario no autenticado" });
     }
-    
+
     const client = await getHistoricClient();
-    
-    const result = await client.query(`
+
+    const result = await client.query(
+      `
       SELECT 
         id,
         email,
@@ -254,16 +297,18 @@ app.get('/api/user/profile', async (req, res) => {
         last_login
       FROM numerica_users 
       WHERE email = $1
-    `, [userEmail]);
-    
+    `,
+      [userEmail]
+    );
+
     await client.end();
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
-    
+
     const user = result.rows[0];
-    
+
     res.json({
       success: true,
       user: {
@@ -275,38 +320,40 @@ app.get('/api/user/profile', async (req, res) => {
         phoneVerified: user.phone_verified,
         status: user.status,
         createdAt: user.created_at,
-        lastLogin: user.last_login
-      }
+        lastLogin: user.last_login,
+      },
     });
-    
   } catch (error) {
-    console.error('Error in /api/user/profile:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error in /api/user/profile:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
 // PUT /api/user/profile - Update current user profile
-app.put('/api/user/profile', async (req, res) => {
+app.put("/api/user/profile", async (req, res) => {
   try {
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.headers["x-user-email"];
     const { firstName, lastName, phoneNumber } = req.body;
-    
+
     if (!userEmail) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
+      return res.status(401).json({ error: "Usuario no autenticado" });
     }
-    
+
     // Validaciones básicas
     if (!firstName || !lastName) {
-      return res.status(400).json({ error: 'Nombre y apellido son requeridos' });
+      return res
+        .status(400)
+        .json({ error: "Nombre y apellido son requeridos" });
     }
-    
+
     if (phoneNumber && !/^\+?[1-9]\d{1,14}$/.test(phoneNumber)) {
-      return res.status(400).json({ error: 'Formato de teléfono inválido' });
+      return res.status(400).json({ error: "Formato de teléfono inválido" });
     }
-    
+
     const client = await getHistoricClient();
-    
-    const result = await client.query(`
+
+    const result = await client.query(
+      `
       UPDATE numerica_users 
       SET 
         first_name = $1,
@@ -316,85 +363,100 @@ app.put('/api/user/profile', async (req, res) => {
         updated_at = NOW()
       WHERE email = $4
       RETURNING id, email, first_name, last_name, phone_number, phone_verified
-    `, [firstName, lastName, phoneNumber, userEmail]);
-    
+    `,
+      [firstName, lastName, phoneNumber, userEmail]
+    );
+
     await client.end();
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
-    
+
     const updatedUser = result.rows[0];
-    
+
     res.json({
       success: true,
-      message: 'Perfil actualizado exitosamente',
+      message: "Perfil actualizado exitosamente",
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
         firstName: updatedUser.first_name,
         lastName: updatedUser.last_name,
         phoneNumber: updatedUser.phone_number,
-        phoneVerified: updatedUser.phone_verified
-      }
+        phoneVerified: updatedUser.phone_verified,
+      },
     });
-    
   } catch (error) {
-    console.error('Error in PUT /api/user/profile:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error in PUT /api/user/profile:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
 // FALLBACK: Simple query fallback if service fails
 async function fallbackSimpleQuery(req, res, serviceOptions) {
   try {
-    console.log('🔄 [FALLBACK] Using simple query fallback');
-    const { search, sucursal, puesto, status, cveper, orderBy, orderDirection, pageSize, page } = serviceOptions;
-    
+    console.log("🔄 [FALLBACK] Using simple query fallback");
+    const {
+      search,
+      sucursal,
+      puesto,
+      status,
+      cveper,
+      orderBy,
+      orderDirection,
+      pageSize,
+      page,
+    } = serviceOptions;
+
     const client = await getHistoricClient();
-    
+
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (search) {
-      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex})`);
+      conditions.push(
+        `(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex})`
+      );
       const searchTerm = `%${search.toLowerCase()}%`;
       params.push(searchTerm);
       paramIndex++;
     }
-    
+
     if (sucursal) {
       conditions.push(`"Compañía" = $${paramIndex}`);
       params.push(sucursal);
       paramIndex++;
     }
-    
+
     if (puesto) {
       conditions.push(`"Puesto" = $${paramIndex}`);
       params.push(puesto);
       paramIndex++;
     }
-    
+
     if (status) {
       conditions.push(`"Status" = $${paramIndex}`);
       params.push(status);
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM historico_nominas_gsau ${whereClause}`;
     const countResult = await client.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
-    
+
     // Get paginated results
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
-    const sortColumn = orderBy === 'nombre' ? '"Nombre completo"' : '"Nombre completo"';
-    const sortDirection = orderDirection === 'desc' ? 'DESC' : 'ASC';
-    
+    const sortColumn =
+      orderBy === "nombre" ? '"Nombre completo"' : '"Nombre completo"';
+    const sortDirection = orderDirection === "desc" ? "DESC" : "ASC";
+
     const dataQuery = `
       SELECT 
         "RFC" as rfc,
@@ -410,11 +472,15 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
       ORDER BY ${sortColumn} ${sortDirection}
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    
-    const dataResult = await client.query(dataQuery, [...params, offset, parseInt(pageSize)]);
+
+    const dataResult = await client.query(dataQuery, [
+      ...params,
+      offset,
+      parseInt(pageSize),
+    ]);
     await client.end();
-    
-    const transformedData = dataResult.rows.map(row => ({
+
+    const transformedData = dataResult.rows.map((row) => ({
       rfc: row.rfc,
       nombre: row.nombre,
       name: row.nombre,
@@ -423,14 +489,15 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
       puesto: row.puesto,
       sueldo: parseFloat(row.sueldo || 0),
       status: row.status,
-      estado: row.status === 'A' ? 'Activo' : row.status === 'B' ? 'Baja' : 'N/A'
+      estado:
+        row.status === "A" ? "Activo" : row.status === "B" ? "Baja" : "N/A",
     }));
-    
-    console.log('✅ [FALLBACK] Fallback query completed:', {
+
+    console.log("✅ [FALLBACK] Fallback query completed:", {
       total,
-      dataLength: transformedData.length
+      dataLength: transformedData.length,
     });
-    
+
     res.json({
       success: true,
       data: transformedData,
@@ -438,17 +505,20 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
         page: parseInt(page) || 1,
         pageSize: parseInt(pageSize) || 100,
         total: total,
-        totalPages: Math.ceil(total / (parseInt(pageSize) || 100))
-      }
+        totalPages: Math.ceil(total / (parseInt(pageSize) || 100)),
+      },
     });
   } catch (fallbackError) {
-    console.error('❌ [FALLBACK ERROR] Fallback query also failed:', fallbackError);
+    console.error(
+      "❌ [FALLBACK ERROR] Fallback query also failed:",
+      fallbackError
+    );
     throw fallbackError;
   }
 }
 
 // GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
-app.get('/api/payroll', async (req, res) => {
+app.get("/api/payroll", verifyToken, async (req, res) => {
   // COMMENTED OUT: Verbose logging - keeping only FPL/fondos logs active
   // console.error('========================================');
   // console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
@@ -457,24 +527,38 @@ app.get('/api/payroll', async (req, res) => {
   // console.error('SEARCH PARAM (search):', req.query.search);
   // console.error('ALL QUERY:', JSON.stringify(req.query));
   // console.error('========================================');
-  
+
   try {
     // Support both 'q' and 'search' parameters (frontend might use 'search')
-    const { q, search, sucursal, puesto, status, cveper, sortBy = 'nombre', sortDir = 'asc', page = 1, pageSize = 50, orderBy, orderDirection, fullData } = req.query;
-    
+    const {
+      q,
+      search,
+      sucursal,
+      puesto,
+      status,
+      cveper,
+      sortBy = "nombre",
+      sortDir = "asc",
+      page = 1,
+      pageSize = 50,
+      orderBy,
+      orderDirection,
+      fullData,
+    } = req.query;
+
     // Use 'search' if provided, otherwise use 'q'
     const searchTerm = search || q;
-    
+
     // COMMENTED OUT: Verbose logging
     // console.log('📥 [API REQUEST] Raw query parameters received:', {...});
-    
+
     // ✅ FIXED: Clean and decode search parameter
     let cleanedSearch = null;
     if (searchTerm) {
       try {
         // Decode URL encoding and handle + signs
         let decoded = decodeURIComponent(String(searchTerm));
-        decoded = decoded.replace(/\+/g, ' ');
+        decoded = decoded.replace(/\+/g, " ");
         cleanedSearch = decoded.trim();
         // Only use if not empty after cleaning
         if (cleanedSearch.length === 0) {
@@ -482,20 +566,20 @@ app.get('/api/payroll', async (req, res) => {
         }
       } catch (e) {
         // If decode fails, just clean the string
-        cleanedSearch = String(searchTerm).replace(/\+/g, ' ').trim();
+        cleanedSearch = String(searchTerm).replace(/\+/g, " ").trim();
         if (cleanedSearch.length === 0) {
           cleanedSearch = null;
         }
       }
     }
-    
+
     // COMMENTED OUT: Verbose logging
     // console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {...});
-    
+
     // Use orderBy/orderDirection if provided, otherwise fallback to sortBy/sortDir
     const finalOrderBy = orderBy || sortBy;
     const finalOrderDirection = orderDirection || sortDir;
-    
+
     // Build service options to use payrollFilterService
     const serviceOptions = {
       pageSize: parseInt(pageSize) || 100,
@@ -507,85 +591,100 @@ app.get('/api/payroll', async (req, res) => {
       cveper,
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
-      fullData: fullData === 'true' || fullData === true
+      fullData: fullData === "true" || fullData === true,
     };
-    
+
     // COMMENTED OUT: Verbose logging
     // console.log('🔍 [FILTER/SORT] Active filters and sorting:', {...});
     // console.log('🚀 [SERVICE CALL] Calling payrollFilterService...', {...});
-    
+
     // Use payrollFilterService for proper search, filtering, and sorting
     let result;
     try {
       // COMMENTED OUT: Verbose logging
       // console.log('🚀 [SERVICE CALL] About to call payrollFilterService...');
-      
-      if (!payrollFilterService || typeof payrollFilterService.getPayrollDataWithFiltersAndSorting !== 'function') {
-        throw new Error('payrollFilterService.getPayrollDataWithFiltersAndSorting is not a function');
+
+      if (
+        !payrollFilterService ||
+        typeof payrollFilterService.getPayrollDataWithFiltersAndSorting !==
+          "function"
+      ) {
+        throw new Error(
+          "payrollFilterService.getPayrollDataWithFiltersAndSorting is not a function"
+        );
       }
-      
+
       // Add timeout to prevent hanging
-      const servicePromise = payrollFilterService.getPayrollDataWithFiltersAndSorting(serviceOptions);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Service call timed out after 30 seconds')), 30000)
+      const servicePromise =
+        payrollFilterService.getPayrollDataWithFiltersAndSorting(
+          serviceOptions
+        );
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Service call timed out after 30 seconds")),
+          30000
+        )
       );
-      
+
       result = await Promise.race([servicePromise, timeoutPromise]);
       // COMMENTED OUT: Verbose logging
       // console.log('✅ [SERVICE CALL] Service call completed successfully');
     } catch (serviceError) {
-      console.error('❌ [PAYROLL ERROR] Error calling payrollFilterService:', serviceError.message);
-      
+      console.error(
+        "❌ [PAYROLL ERROR] Error calling payrollFilterService:",
+        serviceError.message
+      );
+
       // FALLBACK: Use simple query if service fails
       return await fallbackSimpleQuery(req, res, serviceOptions);
     }
-    
+
     // COMMENTED OUT: Verbose logging
     // console.log('🟢 [AFTER SERVICE] Service returned...', {...});
-    
+
     // Validate result
     if (!result) {
-      throw new Error('Service returned null or undefined result');
+      throw new Error("Service returned null or undefined result");
     }
-    
+
     if (!result.success) {
       // COMMENTED OUT: Verbose logging
       // console.warn('⚠️ [SERVICE WARNING] Service returned success: false');
     }
-    
+
     if (!result.data) {
       // COMMENTED OUT: Verbose logging
       // console.warn('⚠️ [SERVICE WARNING] Service returned no data array');
       result.data = [];
     }
-    
+
     // Transform data to match expected format
-    const transformedData = result.data.map(row => ({
-        rfc: row.rfc,
-        nombre: row.nombre,
+    const transformedData = result.data.map((row) => ({
+      rfc: row.rfc,
+      nombre: row.nombre,
       name: row.name || row.nombre,
-        curp: row.curp,
-        sucursal: row.sucursal,
+      curp: row.curp,
+      sucursal: row.sucursal,
       department: row.sucursal,
-        puesto: row.puesto,
+      puesto: row.puesto,
       position: row.puesto,
       periodo: row.periodo || row.mes,
       fecha: row.fecha || row.cveper,
-        mes: row.mes || 'Enero 2024',
+      mes: row.mes || "Enero 2024",
       sueldo: parseFloat(row.sueldo || row.salary || 0),
       salary: parseFloat(row.salary || row.sueldo || 0),
-        comisiones: parseFloat(row.comisiones || 0),
+      comisiones: parseFloat(row.comisiones || 0),
       commissions: parseFloat(row.comisiones || 0),
       totalPercepciones: parseFloat(row.totalPercepciones || row.sueldo || 0),
       totalCost: parseFloat(row.totalPercepciones || row.sueldo || 0),
-        status: row.status,
+      status: row.status,
       estado: row.estado || row.status,
-        perfilUrl: null
+      perfilUrl: null,
     }));
-    
+
     // COMMENTED OUT: Verbose logging
     // console.log('✅ [RESPONSE] Sending response:', {...});
-    
+
     res.json({
       success: result.success,
       data: transformedData,
@@ -593,33 +692,36 @@ app.get('/api/payroll', async (req, res) => {
         page: parseInt(page) || 1,
         pageSize: parseInt(pageSize) || 100,
         total: result.total || 0,
-        totalPages: Math.ceil((result.total || 0) / (parseInt(pageSize) || 100))
-      }
+        totalPages: Math.ceil(
+          (result.total || 0) / (parseInt(pageSize) || 100)
+        ),
+      },
     });
-    
   } catch (error) {
-    console.error('❌ [ERROR] Error in /api/payroll:', error);
-    console.error('❌ [ERROR] Error stack:', error.stack);
-    console.error('❌ [ERROR] Error message:', error.message);
-    res.status(500).json({ 
+    console.error("❌ [ERROR] Error in /api/payroll:", error);
+    console.error("❌ [ERROR] Error stack:", error.stack);
+    console.error("❌ [ERROR] Error message:", error.message);
+    res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
       message: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
     });
   }
 });
 
 // GET /api/payroll/stats - Get statistics for payroll data
-app.get('/api/payroll/stats', async (req, res) => {
+app.get("/api/payroll/stats", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
-    
+
     // Get statistics in old format (data property)
     // 1. Total records
-    const totalResult = await client.query(`SELECT COUNT(*) as total FROM historico_nominas_gsau`);
+    const totalResult = await client.query(
+      `SELECT COUNT(*) as total FROM historico_nominas_gsau`
+    );
     const totalRecords = parseInt(totalResult.rows[0].total);
-    
+
     // 2. Unique employees (CURPs únicas)
     const uniqueCurpResult = await client.query(`
       SELECT COUNT(DISTINCT "CURP") as unique_curps 
@@ -627,7 +729,7 @@ app.get('/api/payroll/stats', async (req, res) => {
       WHERE "CURP" IS NOT NULL AND "CURP" != ''
     `);
     const uniqueEmployees = parseInt(uniqueCurpResult.rows[0].unique_curps);
-    
+
     // 3. Earliest and latest periods
     const periodResult = await client.query(`
       SELECT 
@@ -638,24 +740,28 @@ app.get('/api/payroll/stats', async (req, res) => {
     `);
     const earliestPeriod = periodResult.rows[0]?.earliest_period || null;
     const latestPeriod = periodResult.rows[0]?.latest_period || null;
-    
+
     // 4. Total fondos records
     let totalFondosRecords = 0;
     try {
-      const fondosResult = await client.query(`SELECT COUNT(*) as total FROM historico_fondos_gsau`);
+      const fondosResult = await client.query(
+        `SELECT COUNT(*) as total FROM historico_fondos_gsau`
+      );
       totalFondosRecords = parseInt(fondosResult.rows[0].total);
     } catch (error) {
-      console.warn('⚠️ Tabla historico_fondos_gsau no encontrada:', error.message);
+      console.warn(
+        "⚠️ Tabla historico_fondos_gsau no encontrada:",
+        error.message
+      );
       totalFondosRecords = 0;
     }
-    
+
     await client.end();
-    
+
     // Calculate average records per employee
-    const averageRecordsPerEmployee = uniqueEmployees > 0 
-      ? Math.round(totalRecords / uniqueEmployees) 
-      : 0;
-    
+    const averageRecordsPerEmployee =
+      uniqueEmployees > 0 ? Math.round(totalRecords / uniqueEmployees) : 0;
+
     // Return in old format (data property) for frontend compatibility
     res.json({
       success: true,
@@ -666,38 +772,42 @@ app.get('/api/payroll/stats', async (req, res) => {
         latestPeriod,
         totalFondosRecords,
         uniquePeriods: 0,
-        averageRecordsPerEmployee
-      }
+        averageRecordsPerEmployee,
+      },
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/stats:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/stats:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/payroll/filters - Get filter options and counts for the payroll data
-app.get('/api/payroll/filters', async (req, res) => {
+app.get("/api/payroll/filters", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
-    
+
     // Build filter parameters for dynamic counting
-    const { search, sucursal, puesto, status, cveper, puestoCategorizado } = req.query;
+    const { search, sucursal, puesto, status, cveper, puestoCategorizado } =
+      req.query;
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     // Apply filters if provided (for dynamic counts)
     if (search) {
-      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex + 1})`);
+      conditions.push(
+        `(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${
+          paramIndex + 1
+        })`
+      );
       const searchTerm = `%${search.toLowerCase()}%`;
       params.push(searchTerm, searchTerm);
       paramIndex += 2;
     }
-    
+
     if (sucursal) {
       if (Array.isArray(sucursal)) {
-        const placeholders = sucursal.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = sucursal.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Compañía" IN (${placeholders})`);
         params.push(...sucursal);
       } else {
@@ -706,10 +816,10 @@ app.get('/api/payroll/filters', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (puesto) {
       if (Array.isArray(puesto)) {
-        const placeholders = puesto.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = puesto.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Puesto" IN (${placeholders})`);
         params.push(...puesto);
       } else {
@@ -718,10 +828,10 @@ app.get('/api/payroll/filters', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (status) {
       if (Array.isArray(status)) {
-        const placeholders = status.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = status.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Status" IN (${placeholders})`);
         params.push(...status);
       } else {
@@ -730,7 +840,7 @@ app.get('/api/payroll/filters', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (cveper) {
       // Detectar formato de cveper y aplicar filtro apropiado
       if (cveper.match(/^\d{4}-\d{2}$/)) {
@@ -748,58 +858,72 @@ app.get('/api/payroll/filters', async (req, res) => {
       }
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Get distinct values and counts for each filter
-    const [puestosResult, sucursalesResult, estadosResult, periodosResult] = await Promise.all([
-      // Puestos
-      client.query(`
+    const [puestosResult, sucursalesResult, estadosResult, periodosResult] =
+      await Promise.all([
+        // Puestos
+        client.query(
+          `
         SELECT "Puesto" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Puesto"
         ORDER BY "Puesto"
-      `, params),
-      
-      // Sucursales
-      client.query(`
+      `,
+          params
+        ),
+
+        // Sucursales
+        client.query(
+          `
         SELECT "Compañía" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Compañía"
         ORDER BY "Compañía"
-      `, params),
-      
-      // Estados
-      client.query(`
+      `,
+          params
+        ),
+
+        // Estados
+        client.query(
+          `
         SELECT "Status" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Status"
         ORDER BY "Status"
-      `, params),
-      
-      // Periodos
-      client.query(`
+      `,
+          params
+        ),
+
+        // Periodos
+        client.query(
+          `
         SELECT "cveper" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "cveper"
         ORDER BY "cveper" DESC
-      `, params)
-    ]);
-    
+      `,
+          params
+        ),
+      ]);
+
     // ✅ FIX: Calculate puestosCategorias using nominasService
     let puestosCategorias = [];
     if (nominasService) {
       try {
         // Get all unique puestos with counts
         // ✅ FIX: Handle WHERE clause properly - use WHERE if empty, AND if not empty
-        const puestoWhereClause = whereClause 
+        const puestoWhereClause = whereClause
           ? `${whereClause} AND "Puesto" IS NOT NULL`
           : `WHERE "Puesto" IS NOT NULL`;
-        
+
         const puestosQuery = `
           SELECT "Puesto" as puesto, COUNT(*) as count
           FROM historico_nominas_gsau
@@ -807,121 +931,152 @@ app.get('/api/payroll/filters', async (req, res) => {
           GROUP BY "Puesto"
         `;
         const puestosForCategorias = await client.query(puestosQuery, params);
-        
+
         // Map puestos to categories and calculate counts
         const categoriaConteos = new Map();
-        
+
         // Initialize all available categories with count 0
         const categoriasDisponibles = nominasService.getPuestosCategorias();
-        categoriasDisponibles.forEach(categoria => {
+        categoriasDisponibles.forEach((categoria) => {
           categoriaConteos.set(categoria, 0);
         });
-        
+
         // Sum counts by category
-        puestosForCategorias.rows.forEach(row => {
+        puestosForCategorias.rows.forEach((row) => {
           let categoria = nominasService.getPuestoCategorizado(row.puesto);
           // ✅ FIX: Normalize "Categorizar" to "Sin Categorizar"
-          if (categoria === 'Categorizar') {
-            categoria = 'Sin Categorizar';
+          if (categoria === "Categorizar") {
+            categoria = "Sin Categorizar";
           }
           const currentCount = categoriaConteos.get(categoria) || 0;
           categoriaConteos.set(categoria, currentCount + parseInt(row.count));
         });
-        
+
         // ✅ FIX: Ensure "Sin Categorizar" exists
-        if (!categoriaConteos.has('Sin Categorizar')) {
-          categoriaConteos.set('Sin Categorizar', 0);
+        if (!categoriaConteos.has("Sin Categorizar")) {
+          categoriaConteos.set("Sin Categorizar", 0);
         }
-        
+
         // Convert to array format - SHOW ALL categories (even with count 0)
         puestosCategorias = Array.from(categoriaConteos.entries())
-          .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
+          .map(([categoria, count]) => ({
+            value: categoria,
+            count: count || 0,
+          }))
           .sort((a, b) => a.value.localeCompare(b.value));
-        
-        console.log('✅ [Puesto Categorizado] Categorías calculadas:', puestosCategorias.length);
-        console.log('✅ [Puesto Categorizado] Categorías:', puestosCategorias.map(c => `${c.value} (${c.count})`).join(', '));
-        console.log('✅ [Puesto Categorizado] Full array:', JSON.stringify(puestosCategorias, null, 2));
+
+        console.log(
+          "✅ [Puesto Categorizado] Categorías calculadas:",
+          puestosCategorias.length
+        );
+        console.log(
+          "✅ [Puesto Categorizado] Categorías:",
+          puestosCategorias.map((c) => `${c.value} (${c.count})`).join(", ")
+        );
+        console.log(
+          "✅ [Puesto Categorizado] Full array:",
+          JSON.stringify(puestosCategorias, null, 2)
+        );
       } catch (catError) {
-        console.error('❌ Error calculando categorías de puestos:', catError);
-        console.error('❌ Error stack:', catError.stack);
+        console.error("❌ Error calculando categorías de puestos:", catError);
+        console.error("❌ Error stack:", catError.stack);
         // Fallback: return empty array if error
         puestosCategorias = [];
       }
     } else {
-      console.warn('⚠️ nominasService no disponible, puestosCategorias será vacío');
+      console.warn(
+        "⚠️ nominasService no disponible, puestosCategorias será vacío"
+      );
     }
-    
+
     // ✅ FIX: Ensure client is closed even if there was an error in puestosCategorias calculation
     try {
       await client.end();
     } catch (closeError) {
-      console.error('⚠️ Error closing database connection:', closeError);
+      console.error("⚠️ Error closing database connection:", closeError);
     }
-    
+
     const responseData = {
       success: true,
       data: {
-        puestos: puestosResult.rows.map(row => ({
+        puestos: puestosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        sucursales: sucursalesResult.rows.map(row => ({
+        sucursales: sucursalesResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        estados: estadosResult.rows.map(row => ({
+        estados: estadosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        periodos: periodosResult.rows.map(row => ({
+        periodos: periodosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        puestosCategorias: puestosCategorias // ✅ FIXED: Now returns actual categories
-      }
+        puestosCategorias: puestosCategorias, // ✅ FIXED: Now returns actual categories
+      },
     };
-    
-    console.log('✅ [API Response] puestosCategorias count:', responseData.data.puestosCategorias.length);
+
+    console.log(
+      "✅ [API Response] puestosCategorias count:",
+      responseData.data.puestosCategorias.length
+    );
     if (responseData.data.puestosCategorias.length > 0) {
-      console.log('✅ [API Response] puestosCategorias sample:', JSON.stringify(responseData.data.puestosCategorias.slice(0, Math.min(3, responseData.data.puestosCategorias.length)), null, 2));
+      console.log(
+        "✅ [API Response] puestosCategorias sample:",
+        JSON.stringify(
+          responseData.data.puestosCategorias.slice(
+            0,
+            Math.min(3, responseData.data.puestosCategorias.length)
+          ),
+          null,
+          2
+        )
+      );
     } else {
-      console.log('⚠️ [API Response] puestosCategorias is empty');
+      console.log("⚠️ [API Response] puestosCategorias is empty");
     }
-    
+
     res.json(responseData);
-    
   } catch (error) {
-    console.error('Error in /api/payroll/filters:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/filters:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/payroll/filter-options - Alias for /api/payroll/filters (compatibility)
-app.get('/api/payroll/filter-options', async (req, res) => {
+app.get("/api/payroll/filter-options", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
-    
+
     // Build filter parameters for dynamic counting
-    const { search, sucursal, puesto, status, cveper, puestoCategorizado } = req.query;
+    const { search, sucursal, puesto, status, cveper, puestoCategorizado } =
+      req.query;
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     // Apply filters if provided (for dynamic counts)
     if (search) {
-      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex + 1})`);
+      conditions.push(
+        `(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${
+          paramIndex + 1
+        })`
+      );
       const searchTerm = `%${search.toLowerCase()}%`;
       params.push(searchTerm, searchTerm);
       paramIndex += 2;
     }
-    
+
     if (sucursal) {
       if (Array.isArray(sucursal)) {
-        const placeholders = sucursal.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = sucursal.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Compañía" IN (${placeholders})`);
         params.push(...sucursal);
       } else {
@@ -930,10 +1085,10 @@ app.get('/api/payroll/filter-options', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (puesto) {
       if (Array.isArray(puesto)) {
-        const placeholders = puesto.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = puesto.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Puesto" IN (${placeholders})`);
         params.push(...puesto);
       } else {
@@ -942,10 +1097,10 @@ app.get('/api/payroll/filter-options', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (status) {
       if (Array.isArray(status)) {
-        const placeholders = status.map(() => `$${paramIndex++}`).join(', ');
+        const placeholders = status.map(() => `$${paramIndex++}`).join(", ");
         conditions.push(`"Status" IN (${placeholders})`);
         params.push(...status);
       } else {
@@ -954,7 +1109,7 @@ app.get('/api/payroll/filter-options', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     if (cveper) {
       // Detectar formato de cveper y aplicar filtro apropiado
       if (cveper.match(/^\d{4}-\d{2}$/)) {
@@ -972,57 +1127,71 @@ app.get('/api/payroll/filter-options', async (req, res) => {
       }
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Get distinct values and counts for each filter
-    const [puestosResult, sucursalesResult, estadosResult, periodosResult] = await Promise.all([
-      // Puestos
-      client.query(`
+    const [puestosResult, sucursalesResult, estadosResult, periodosResult] =
+      await Promise.all([
+        // Puestos
+        client.query(
+          `
         SELECT "Puesto" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Puesto"
         ORDER BY "Puesto"
-      `, params),
-      
-      // Sucursales
-      client.query(`
+      `,
+          params
+        ),
+
+        // Sucursales
+        client.query(
+          `
         SELECT "Compañía" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Compañía"
         ORDER BY "Compañía"
-      `, params),
-      
-      // Estados
-      client.query(`
+      `,
+          params
+        ),
+
+        // Estados
+        client.query(
+          `
         SELECT "Status" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "Status"
         ORDER BY "Status"
-      `, params),
-      
-      // Periodos
-      client.query(`
+      `,
+          params
+        ),
+
+        // Periodos
+        client.query(
+          `
         SELECT "cveper" as value, COUNT(*) as count
         FROM historico_nominas_gsau
         ${whereClause}
         GROUP BY "cveper"
         ORDER BY "cveper" DESC
-      `, params)
-    ]);
-    
+      `,
+          params
+        ),
+      ]);
+
     // ✅ FIX: Calculate puestosCategorias using nominasService (same logic as /api/payroll/filters)
     let puestosCategorias = [];
     if (nominasService) {
       try {
         // ✅ FIX: Handle WHERE clause properly - use WHERE if empty, AND if not empty
-        const puestoWhereClause = whereClause 
+        const puestoWhereClause = whereClause
           ? `${whereClause} AND "Puesto" IS NOT NULL`
           : `WHERE "Puesto" IS NOT NULL`;
-        
+
         const puestosQuery = `
           SELECT "Puesto" as puesto, COUNT(*) as count
           FROM historico_nominas_gsau
@@ -1030,83 +1199,90 @@ app.get('/api/payroll/filter-options', async (req, res) => {
           GROUP BY "Puesto"
         `;
         const puestosForCategorias = await client.query(puestosQuery, params);
-        
+
         const categoriaConteos = new Map();
         const categoriasDisponibles = nominasService.getPuestosCategorias();
-        categoriasDisponibles.forEach(categoria => {
+        categoriasDisponibles.forEach((categoria) => {
           categoriaConteos.set(categoria, 0);
         });
-        
-        puestosForCategorias.rows.forEach(row => {
+
+        puestosForCategorias.rows.forEach((row) => {
           let categoria = nominasService.getPuestoCategorizado(row.puesto);
-          if (categoria === 'Categorizar') {
-            categoria = 'Sin Categorizar';
+          if (categoria === "Categorizar") {
+            categoria = "Sin Categorizar";
           }
           const currentCount = categoriaConteos.get(categoria) || 0;
           categoriaConteos.set(categoria, currentCount + parseInt(row.count));
         });
-        
-        if (!categoriaConteos.has('Sin Categorizar')) {
-          categoriaConteos.set('Sin Categorizar', 0);
+
+        if (!categoriaConteos.has("Sin Categorizar")) {
+          categoriaConteos.set("Sin Categorizar", 0);
         }
-        
+
         puestosCategorias = Array.from(categoriaConteos.entries())
-          .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
+          .map(([categoria, count]) => ({
+            value: categoria,
+            count: count || 0,
+          }))
           .sort((a, b) => a.value.localeCompare(b.value));
-        
-        console.log('✅ [filter-options] Puesto Categorizado - Categorías:', puestosCategorias.length);
+
+        console.log(
+          "✅ [filter-options] Puesto Categorizado - Categorías:",
+          puestosCategorias.length
+        );
       } catch (catError) {
-        console.error('❌ Error calculando categorías en filter-options:', catError);
+        console.error(
+          "❌ Error calculando categorías en filter-options:",
+          catError
+        );
         puestosCategorias = [];
       }
     }
-    
+
     // ✅ FIX: Ensure client is closed even if there was an error in puestosCategorias calculation
     try {
       await client.end();
     } catch (closeError) {
-      console.error('⚠️ Error closing database connection:', closeError);
+      console.error("⚠️ Error closing database connection:", closeError);
     }
-    
+
     res.json({
       success: true,
       data: {
-        puestos: puestosResult.rows.map(row => ({
+        puestos: puestosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        sucursales: sucursalesResult.rows.map(row => ({
+        sucursales: sucursalesResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        estados: estadosResult.rows.map(row => ({
+        estados: estadosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        periodos: periodosResult.rows.map(row => ({
+        periodos: periodosResult.rows.map((row) => ({
           value: row.value,
           label: row.value,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
-        puestosCategorias: puestosCategorias // ✅ FIXED: Now returns actual categories
-      }
+        puestosCategorias: puestosCategorias, // ✅ FIXED: Now returns actual categories
+      },
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/filter-options:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/filter-options:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
 // GET /api/payroll/periodos - Get available periods
-app.get('/api/payroll/periodos', async (req, res) => {
+app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
-    
+
     const result = await client.query(`
       SELECT DISTINCT "cveper" as value, COUNT(*) as count
       FROM historico_nominas_gsau
@@ -1114,71 +1290,88 @@ app.get('/api/payroll/periodos', async (req, res) => {
       GROUP BY "cveper"
       ORDER BY "cveper" DESC
     `);
-    
+
     await client.end();
-    
+
     res.json({
       success: true,
-      data: result.rows.map(row => ({
+      data: result.rows.map((row) => ({
         value: row.value,
-        count: parseInt(row.count)
-      }))
+        count: parseInt(row.count),
+      })),
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/periodos:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/periodos:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/payroll/demographic - Get demographic data with pagination and filters
-app.get('/api/payroll/demographic', async (req, res) => {
+app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
   try {
-    const { q, sucursal, puesto, status, cveper, sortBy = 'nombre', sortDir = 'asc', page = 1, pageSize = 50 } = req.query;
-    
+    const {
+      q,
+      sucursal,
+      puesto,
+      status,
+      cveper,
+      sortBy = "nombre",
+      sortDir = "asc",
+      page = 1,
+      pageSize = 50,
+    } = req.query;
+
     const maxPageSize = 1000;
     const validatedPageSize = Math.min(parseInt(pageSize), maxPageSize);
     const validatedPage = Math.max(1, parseInt(page));
-    
+
     const client = await getHistoricClient();
-    
+
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (q) {
-      conditions.push(`(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${paramIndex + 1})`);
+      conditions.push(
+        `(LOWER("Nombre completo") LIKE $${paramIndex} OR LOWER("CURP") LIKE $${
+          paramIndex + 1
+        })`
+      );
       const searchTerm = `%${q.toLowerCase()}%`;
       params.push(searchTerm, searchTerm);
       paramIndex += 2;
     }
-    
+
     if (sucursal) {
       conditions.push(`"Compañía" = $${paramIndex}`);
       params.push(sucursal);
       paramIndex++;
     }
-    
+
     if (puesto) {
       conditions.push(`"Puesto" = $${paramIndex}`);
       params.push(puesto);
       paramIndex++;
     }
-    
+
     if (status) {
       conditions.push(`"Status" = $${paramIndex}`);
       params.push(status);
       paramIndex++;
     }
-    
+
     if (cveper) {
       // Handle cveper as date range if it's in YYYY-MM format
       if (/^\d{4}-\d{2}$/.test(cveper)) {
         // Convert 2025-06 to a date range for the entire month
         const startDate = `${cveper}-01`;
         const endDate = `${cveper}-31`; // Using 31 to cover all possible days in month
-        conditions.push(`"cveper" >= $${paramIndex} AND "cveper" < ($${paramIndex + 1}::date + INTERVAL '1 month')`);
+        conditions.push(
+          `"cveper" >= $${paramIndex} AND "cveper" < ($${
+            paramIndex + 1
+          }::date + INTERVAL '1 month')`
+        );
         params.push(startDate, startDate);
         paramIndex += 2;
       } else {
@@ -1188,27 +1381,28 @@ app.get('/api/payroll/demographic', async (req, res) => {
         paramIndex++;
       }
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM historico_nominas_gsau ${whereClause}`;
     const countResult = await client.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
-    
+
     // Validate and sanitize sort parameters
     const validSortColumns = {
-      'nombre': '"Nombre completo"',
-      'curp': '"CURP"',
-      'sucursal': '"Compañía"',
-      'puesto': '"Puesto"',
-      'cveper': '"cveper"',
-      'sueldo': '" SUELDO CLIENTE "'
+      nombre: '"Nombre completo"',
+      curp: '"CURP"',
+      sucursal: '"Compañía"',
+      puesto: '"Puesto"',
+      cveper: '"cveper"',
+      sueldo: '" SUELDO CLIENTE "',
     };
-    
+
     const sortColumn = validSortColumns[sortBy] || '"Nombre completo"';
-    const sortDirection = sortDir.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-    
+    const sortDirection = sortDir.toLowerCase() === "desc" ? "DESC" : "ASC";
+
     // Get paginated results
     const offset = (validatedPage - 1) * validatedPageSize;
     const dataQuery = `
@@ -1229,50 +1423,57 @@ app.get('/api/payroll/demographic', async (req, res) => {
       ORDER BY ${sortColumn} ${sortDirection}
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    
-    const dataResult = await client.query(dataQuery, [...params, offset, validatedPageSize]);
-    
+
+    const dataResult = await client.query(dataQuery, [
+      ...params,
+      offset,
+      validatedPageSize,
+    ]);
+
     await client.end();
-    
+
     res.json({
       success: true,
       data: dataResult.rows,
       page: validatedPage,
       pageSize: validatedPageSize,
-      total: total
+      total: total,
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/demographic:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/demographic:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/payroll/demographic/unique-count - Get unique CURP count
-app.get('/api/payroll/demographic/unique-count', async (req, res) => {
+app.get("/api/payroll/demographic/unique-count", verifyToken, async (req, res) => {
   try {
     const { status, cveper } = req.query;
-    
+
     const client = await getHistoricClient();
-    
+
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (status) {
       conditions.push(`"Status" = $${paramIndex}`);
       params.push(status);
       paramIndex++;
     }
-    
+
     if (cveper) {
       // Handle cveper as date range if it's in YYYY-MM format
       if (/^\d{4}-\d{2}$/.test(cveper)) {
         // Convert 2025-06 to a date range for the entire month
         const startDate = `${cveper}-01`;
         const endDate = `${cveper}-31`; // Using 31 to cover all possible days in month
-        conditions.push(`"cveper" >= $${paramIndex} AND "cveper" < ($${paramIndex + 1}::date + INTERVAL '1 month')`);
+        conditions.push(
+          `"cveper" >= $${paramIndex} AND "cveper" < ($${
+            paramIndex + 1
+          }::date + INTERVAL '1 month')`
+        );
         params.push(startDate, startDate);
         paramIndex += 2;
       } else {
@@ -1282,70 +1483,76 @@ app.get('/api/payroll/demographic/unique-count', async (req, res) => {
         paramIndex++;
       }
     }
-    
+
     // Build complete WHERE clause including CURP conditions
-    const curpConditions = ['"CURP" IS NOT NULL', '"CURP" != \'\'']; 
+    const curpConditions = ['"CURP" IS NOT NULL', "\"CURP\" != ''"];
     const allConditions = [...conditions, ...curpConditions];
-    const whereClause = `WHERE ${allConditions.join(' AND ')}`;
-    
-    const result = await client.query(`
+    const whereClause = `WHERE ${allConditions.join(" AND ")}`;
+
+    const result = await client.query(
+      `
       SELECT COUNT(DISTINCT "CURP") as unique_curp_count
       FROM historico_nominas_gsau 
       ${whereClause}
-    `, params);
-    
+    `,
+      params
+    );
+
     await client.end();
-    
+
     res.json({
       success: true,
-      uniqueCurpCount: parseInt(result.rows[0].unique_curp_count)
+      uniqueCurpCount: parseInt(result.rows[0].unique_curp_count),
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/demographic/unique-count:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/demographic/unique-count:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/percepciones - Get employee payroll data (percepciones) by CURP
-app.get('/api/percepciones', async (req, res) => {
+app.get("/api/percepciones", verifyToken, async (req, res) => {
   try {
     const { curp, cveper, pageSize = 1000, page = 1 } = req.query;
-    
+
     if (!curp) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'CURP parameter is required' 
+      return res.status(400).json({
+        success: false,
+        error: "CURP parameter is required",
       });
     }
-    
+
     const maxPageSize = 1000;
     const validatedPageSize = Math.min(parseInt(pageSize), maxPageSize);
     const validatedPage = Math.max(1, parseInt(page));
-    
+
     const client = await getHistoricClient();
-    
+
     // Build WHERE clause - always filter by CURP
     const conditions = ['"CURP" = $1'];
     const params = [curp];
     let paramIndex = 2;
-    
+
     // Add cveper filter if provided
     if (cveper) {
       conditions.push(`"Mes" = $${paramIndex}`);
       params.push(cveper);
       paramIndex++;
     }
-    
-    const whereClause = `WHERE ${conditions.join(' AND ')}`;
-    
+
+    const whereClause = `WHERE ${conditions.join(" AND ")}`;
+
     // Get total count for this CURP
     const countQuery = `SELECT COUNT(*) FROM historico_nominas_gsau ${whereClause}`;
     const countResult = await client.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
-    
-    console.log(`🔍 API /percepciones - CURP: ${curp}, cveper: ${cveper || 'ALL'}, total: ${total}`);
-    
+
+    console.log(
+      `🔍 API /percepciones - CURP: ${curp}, cveper: ${
+        cveper || "ALL"
+      }, total: ${total}`
+    );
+
     // Get paginated results with all payroll fields
     const offset = (validatedPage - 1) * validatedPageSize;
     const dataQuery = `
@@ -1355,11 +1562,15 @@ app.get('/api/percepciones', async (req, res) => {
       ORDER BY "Mes" DESC, "cveper" DESC
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    
-    const dataResult = await client.query(dataQuery, [...params, offset, validatedPageSize]);
-    
+
+    const dataResult = await client.query(dataQuery, [
+      ...params,
+      offset,
+      validatedPageSize,
+    ]);
+
     await client.end();
-    
+
     res.json({
       success: true,
       data: dataResult.rows,
@@ -1367,50 +1578,50 @@ app.get('/api/percepciones', async (req, res) => {
         page: validatedPage,
         pageSize: validatedPageSize,
         total: total,
-        totalPages: Math.ceil(total / validatedPageSize)
-      }
+        totalPages: Math.ceil(total / validatedPageSize),
+      },
     });
-    
   } catch (error) {
-    console.error('Error in /api/percepciones:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error',
-      message: error.message 
+    console.error("Error in /api/percepciones:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: error.message,
     });
   }
 });
 
 // GET /api/payroll/data - Get payroll data for charts and analysis
-app.get('/api/payroll/data', async (req, res) => {
+app.get("/api/payroll/data", verifyToken, async (req, res) => {
   try {
     const { status, cveper, pageSize = 1000, page = 1 } = req.query;
-    
+
     const maxPageSize = 1000;
     const validatedPageSize = Math.min(parseInt(pageSize), maxPageSize);
     const validatedPage = Math.max(1, parseInt(page));
-    
+
     const client = await getHistoricClient();
-    
+
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (status) {
       conditions.push(`"Status" = $${paramIndex}`);
       params.push(status);
       paramIndex++;
     }
-    
+
     if (cveper) {
       conditions.push(`"cveper" = $${paramIndex}`);
       params.push(cveper);
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Get paginated results
     const offset = (validatedPage - 1) * validatedPageSize;
     const dataQuery = `
@@ -1431,19 +1642,22 @@ app.get('/api/payroll/data', async (req, res) => {
       ORDER BY "Nombre completo" ASC
       OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    
-    const dataResult = await client.query(dataQuery, [...params, offset, validatedPageSize]);
-    
+
+    const dataResult = await client.query(dataQuery, [
+      ...params,
+      offset,
+      validatedPageSize,
+    ]);
+
     await client.end();
-    
+
     res.json({
       success: true,
-      data: dataResult.rows
+      data: dataResult.rows,
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/data:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/data:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -1452,76 +1666,76 @@ app.get('/api/payroll/data', async (req, res) => {
 // ============================================================================
 
 // Validar email contra numerica_users
-app.post('/api/auth/validate-email', async (req, res) => {
+app.post("/api/auth/validate-email", async (req, res) => {
   try {
     const { email } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: 'Email es requerido'
+        error: "Email es requerido",
       });
     }
 
-    console.log('🔍 Validando email:', email);
+    console.log("🔍 Validando email:", email);
     const result = await authService.validateEmail(email);
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
-    console.error('❌ Error validando email:', error);
+    console.error("❌ Error validando email:", error);
     res.status(400).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // Confirmar registro en backend
-app.post('/api/auth/confirm-registration', async (req, res) => {
+app.post("/api/auth/confirm-registration", async (req, res) => {
   try {
     const { email, firstName, lastName, phoneNumber } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: 'Email es requerido'
+        error: "Email es requerido",
       });
     }
 
-    console.log('✅ Confirmando registro para:', email);
+    console.log("✅ Confirmando registro para:", email);
     const result = await authService.confirmRegistration(
       email,
-      firstName || '',
-      lastName || '',
-      phoneNumber || ''
+      firstName || "",
+      lastName || "",
+      phoneNumber || ""
     );
 
     res.json(result);
   } catch (error) {
-    console.error('❌ Error confirmando registro:', error);
+    console.error("❌ Error confirmando registro:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // Verificar usuario con código manual
-app.post('/api/auth/verify-code', async (req, res) => {
+app.post("/api/auth/verify-code", async (req, res) => {
   try {
     const { username, code } = req.body;
 
     if (!username || !code) {
       return res.status(400).json({
         success: false,
-        error: 'Username y código son requeridos'
+        error: "Username y código son requeridos",
       });
     }
 
-    console.log('🔐 Verificando código para usuario:', username);
+    console.log("🔐 Verificando código para usuario:", username);
     const result = await authService.confirmUserWithCode(username, code);
 
     // Si la verificación fue exitosa, activar usuario en BD
@@ -1531,72 +1745,72 @@ app.post('/api/auth/verify-code', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('❌ Error verificando código:', error);
+    console.error("❌ Error verificando código:", error);
     res.status(400).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // Activar usuario (después de verificación exitosa)
-app.post('/api/auth/activate-user', async (req, res) => {
+app.post("/api/auth/activate-user", async (req, res) => {
   try {
     const { email } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: 'Email es requerido'
+        error: "Email es requerido",
       });
     }
 
-    console.log('✅ Activando usuario:', email);
+    console.log("✅ Activando usuario:", email);
     const result = await authService.activateUser(email);
 
     res.json(result);
   } catch (error) {
-    console.error('❌ Error activando usuario:', error);
+    console.error("❌ Error activando usuario:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Local API server running' });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", message: "Local API server running" });
 });
 
 // Debug endpoint to list all registered routes
-app.get('/api/debug/routes', (req, res) => {
+app.get("/api/debug/routes", (req, res) => {
   const routes = [];
   app._router.stack.forEach((middleware) => {
     if (middleware.route) {
       routes.push({
         path: middleware.route.path,
-        methods: Object.keys(middleware.route.methods)
+        methods: Object.keys(middleware.route.methods),
       });
-    } else if (middleware.name === 'router') {
+    } else if (middleware.name === "router") {
       middleware.handle.stack.forEach((handler) => {
         if (handler.route) {
           routes.push({
             path: handler.route.path,
-            methods: Object.keys(handler.route.methods)
+            methods: Object.keys(handler.route.methods),
           });
         }
       });
     }
   });
-  
-  const payrollRoutes = routes.filter(r => r.path.includes('/api/payroll'));
-  
+
+  const payrollRoutes = routes.filter((r) => r.path.includes("/api/payroll"));
+
   res.json({
     success: true,
     totalRoutes: routes.length,
     payrollRoutes: payrollRoutes,
-    allRoutes: routes
+    allRoutes: routes,
   });
 });
 
@@ -1609,33 +1823,56 @@ app.get('/api/debug/routes', (req, res) => {
 
 // GET /api/payroll/rfc-from-curp - Get RFC from CURP
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get('/api/payroll/rfc-from-curp', async (req, res) => {
+app.get("/api/payroll/rfc-from-curp", verifyToken, async (req, res) => {
   const requestId = Date.now();
-  console.log(`\n[RFC-FROM-CURP API] [${requestId}] ==========================================`);
-  console.log(`[RFC-FROM-CURP API] [${requestId}] Endpoint: GET /api/payroll/rfc-from-curp`);
-  console.log(`[RFC-FROM-CURP API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
-  console.log(`[RFC-FROM-CURP API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log(`[RFC-FROM-CURP API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
-  
+  console.log(
+    `\n[RFC-FROM-CURP API] [${requestId}] ==========================================`
+  );
+  console.log(
+    `[RFC-FROM-CURP API] [${requestId}] Endpoint: GET /api/payroll/rfc-from-curp`
+  );
+  console.log(
+    `[RFC-FROM-CURP API] [${requestId}] Timestamp: ${new Date().toISOString()}`
+  );
+  console.log(
+    `[RFC-FROM-CURP API] [${requestId}] Full URL: ${req.protocol}://${req.get(
+      "host"
+    )}${req.originalUrl}`
+  );
+  console.log(
+    `[RFC-FROM-CURP API] [${requestId}] Query Parameters:`,
+    JSON.stringify(req.query, null, 2)
+  );
+
   try {
     const { curp } = req.query;
-    
-    console.log(`[RFC-FROM-CURP API] [${requestId}] Processing request - CURP: ${curp || 'MISSING'}`);
-    
+
+    console.log(
+      `[RFC-FROM-CURP API] [${requestId}] Processing request - CURP: ${
+        curp || "MISSING"
+      }`
+    );
+
     if (!curp) {
-      console.log(`[RFC-FROM-CURP API] [${requestId}] ERROR: CURP parameter is required`);
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] ERROR: CURP parameter is required`
+      );
       return res.status(400).json({
         success: false,
-        error: 'CURP parameter is required'
+        error: "CURP parameter is required",
       });
     }
-    
+
     const cleanedCurp = String(curp).trim();
-    console.log(`[RFC-FROM-CURP API] [${requestId}] Searching RFC for CURP: ${cleanedCurp}`);
-    
-    console.log(`[RFC-FROM-CURP API] [${requestId}] Connecting to Historic database...`);
+    console.log(
+      `[RFC-FROM-CURP API] [${requestId}] Searching RFC for CURP: ${cleanedCurp}`
+    );
+
+    console.log(
+      `[RFC-FROM-CURP API] [${requestId}] Connecting to Historic database...`
+    );
     const client = await getHistoricClient();
-    
+
     try {
       const query = `
         SELECT DISTINCT "RFC"
@@ -1645,86 +1882,140 @@ app.get('/api/payroll/rfc-from-curp', async (req, res) => {
         AND TRIM("RFC") != ''
         LIMIT 1
       `;
-      
+
       console.log(`[RFC-FROM-CURP API] [${requestId}] Executing query...`);
       console.log(`[RFC-FROM-CURP API] [${requestId}] SQL Query: ${query}`);
-      console.log(`[RFC-FROM-CURP API] [${requestId}] Query Parameters: [${cleanedCurp}]`);
-      
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] Query Parameters: [${cleanedCurp}]`
+      );
+
       const result = await client.query(query, [cleanedCurp]);
-      
-      console.log(`[RFC-FROM-CURP API] [${requestId}] Query executed successfully`);
-      console.log(`[RFC-FROM-CURP API] [${requestId}] Records found: ${result.rows.length}`);
-      
+
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] Query executed successfully`
+      );
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] Records found: ${result.rows.length}`
+      );
+
       if (result.rows.length === 0) {
-        console.log(`[RFC-FROM-CURP API] [${requestId}] No RFC found for CURP: ${cleanedCurp}`);
-        console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
+        console.log(
+          `[RFC-FROM-CURP API] [${requestId}] No RFC found for CURP: ${cleanedCurp}`
+        );
+        console.log(
+          `[RFC-FROM-CURP API] [${requestId}] ==========================================\n`
+        );
         return res.status(404).json({
           success: false,
-          error: `RFC not found for CURP: ${cleanedCurp}`
+          error: `RFC not found for CURP: ${cleanedCurp}`,
         });
       }
-      
+
       const rfc = result.rows[0].RFC;
-      console.log(`[RFC-FROM-CURP API] [${requestId}] RFC found for CURP ${cleanedCurp}: ${rfc}`);
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] RFC found for CURP ${cleanedCurp}: ${rfc}`
+      );
       console.log(`[RFC-FROM-CURP API] [${requestId}] Sending response`);
-      console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
-      
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] ==========================================\n`
+      );
+
       res.json({
         success: true,
         data: {
           curp: cleanedCurp,
-          rfc: rfc
-        }
+          rfc: rfc,
+        },
       });
     } catch (dbError) {
-      console.error(`[RFC-FROM-CURP API] [${requestId}] Database error:`, dbError);
-      console.error(`[RFC-FROM-CURP API] [${requestId}] Error message:`, dbError.message);
-      console.error(`[RFC-FROM-CURP API] [${requestId}] Error stack:`, dbError.stack);
+      console.error(
+        `[RFC-FROM-CURP API] [${requestId}] Database error:`,
+        dbError
+      );
+      console.error(
+        `[RFC-FROM-CURP API] [${requestId}] Error message:`,
+        dbError.message
+      );
+      console.error(
+        `[RFC-FROM-CURP API] [${requestId}] Error stack:`,
+        dbError.stack
+      );
       throw dbError;
     } finally {
       client.end();
-      console.log(`[RFC-FROM-CURP API] [${requestId}] Database connection closed`);
+      console.log(
+        `[RFC-FROM-CURP API] [${requestId}] Database connection closed`
+      );
     }
   } catch (error) {
-    console.error(`[RFC-FROM-CURP API] [${requestId}] ERROR: Failed to get RFC from CURP`);
-    console.error(`[RFC-FROM-CURP API] [${requestId}] Error message:`, error.message);
-    console.error(`[RFC-FROM-CURP API] [${requestId}] Error stack:`, error.stack);
-    console.log(`[RFC-FROM-CURP API] [${requestId}] ==========================================\n`);
-    
+    console.error(
+      `[RFC-FROM-CURP API] [${requestId}] ERROR: Failed to get RFC from CURP`
+    );
+    console.error(
+      `[RFC-FROM-CURP API] [${requestId}] Error message:`,
+      error.message
+    );
+    console.error(
+      `[RFC-FROM-CURP API] [${requestId}] Error stack:`,
+      error.stack
+    );
+    console.log(
+      `[RFC-FROM-CURP API] [${requestId}] ==========================================\n`
+    );
+
     res.status(500).json({
       success: false,
       error: error.message,
-      details: 'Error retrieving RFC from CURP'
+      details: "Error retrieving RFC from CURP",
     });
   }
 });
 
 // GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates from RFC
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
+app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
   const requestId = Date.now();
-  console.log(`\n[FECPLA API] [${requestId}] ==========================================`);
-  console.log(`[FECPLA API] [${requestId}] Endpoint: GET /api/payroll/fecpla-from-rfc`);
-  console.log(`[FECPLA API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
-  console.log(`[FECPLA API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log(`[FECPLA API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
-  
+  console.log(
+    `\n[FECPLA API] [${requestId}] ==========================================`
+  );
+  console.log(
+    `[FECPLA API] [${requestId}] Endpoint: GET /api/payroll/fecpla-from-rfc`
+  );
+  console.log(
+    `[FECPLA API] [${requestId}] Timestamp: ${new Date().toISOString()}`
+  );
+  console.log(
+    `[FECPLA API] [${requestId}] Full URL: ${req.protocol}://${req.get(
+      "host"
+    )}${req.originalUrl}`
+  );
+  console.log(
+    `[FECPLA API] [${requestId}] Query Parameters:`,
+    JSON.stringify(req.query, null, 2)
+  );
+
   try {
     const { rfc } = req.query;
-    
-    console.log(`[FECPLA API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}`);
-    
+
+    console.log(
+      `[FECPLA API] [${requestId}] Processing request - RFC: ${
+        rfc || "MISSING"
+      }`
+    );
+
     if (!rfc) {
-      console.log(`[FECPLA API] [${requestId}] ERROR: RFC parameter is required`);
+      console.log(
+        `[FECPLA API] [${requestId}] ERROR: RFC parameter is required`
+      );
       return res.status(400).json({
         success: false,
-        error: 'RFC parameter is required'
+        error: "RFC parameter is required",
       });
     }
-    
+
     console.log(`[FECPLA API] [${requestId}] Connecting to Fondos database...`);
     const client = await getFondosClient();
-    
+
     try {
       // First, identify all columns in the table
       console.log(`[FECPLA API] [${requestId}] Analyzing table structure...`);
@@ -1734,58 +2025,79 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
         WHERE table_name = 'historico_fondos_gsau'
         ORDER BY ordinal_position
       `;
-      
+
       const allColumnsResult = await client.query(allColumnsQuery);
-      console.log(`[FECPLA API] [${requestId}] Available columns:`, allColumnsResult.rows.map(r => r.column_name).join(', '));
-      
+      console.log(
+        `[FECPLA API] [${requestId}] Available columns:`,
+        allColumnsResult.rows.map((r) => r.column_name).join(", ")
+      );
+
       // Find Antigüedad en Fondo column with multiple strategies
       let antiguedadColumn = null;
-      
+
       // Strategy 1: Search by exact name
       const exactNames = [
-        'Antiguedad en Fondo',
-        'ANTIGUEDAD EN FONDO', 
-        'antiguedad_en_fondo',
-        'AntiguedadEnFondo',
-        'antiguedad_fondo',
-        'AntiguedadFondo',
-        'ant_fondo',
-        'Ant Fondo',
-        'ANT FONDO'
+        "Antiguedad en Fondo",
+        "ANTIGUEDAD EN FONDO",
+        "antiguedad_en_fondo",
+        "AntiguedadEnFondo",
+        "antiguedad_fondo",
+        "AntiguedadFondo",
+        "ant_fondo",
+        "Ant Fondo",
+        "ANT FONDO",
       ];
-      
+
       for (const exactName of exactNames) {
-        const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+        const found = allColumnsResult.rows.find(
+          (row) => row.column_name === exactName
+        );
         if (found) {
           antiguedadColumn = found.column_name;
-          console.log(`[FECPLA API] [${requestId}] Found column by exact name: "${antiguedadColumn}"`);
+          console.log(
+            `[FECPLA API] [${requestId}] Found column by exact name: "${antiguedadColumn}"`
+          );
           break;
         }
       }
-      
+
       // Strategy 2: Search by keywords
       if (!antiguedadColumn) {
-        const keywordMatches = allColumnsResult.rows.filter(row => {
+        const keywordMatches = allColumnsResult.rows.filter((row) => {
           const colLower = row.column_name.toLowerCase();
-          return colLower.includes('antiguedad') || 
-                 colLower.includes('fondo') ||
-                 (colLower.includes('ant') && colLower.includes('fondo'));
+          return (
+            colLower.includes("antiguedad") ||
+            colLower.includes("fondo") ||
+            (colLower.includes("ant") && colLower.includes("fondo"))
+          );
         });
-        
+
         if (keywordMatches.length > 0) {
           antiguedadColumn = keywordMatches[0].column_name;
-          console.log(`[FECPLA API] [${requestId}] Found column by keyword: "${antiguedadColumn}"`);
+          console.log(
+            `[FECPLA API] [${requestId}] Found column by keyword: "${antiguedadColumn}"`
+          );
         }
       }
-      
+
       // Strategy 3: Analyze numeric columns by content
       if (!antiguedadColumn) {
-        console.log(`[FECPLA API] [${requestId}] Analyzing numeric columns by content...`);
-        const numericColumns = allColumnsResult.rows.filter(row => 
-          ['numeric', 'double precision', 'real', 'integer', 'smallint', 'bigint'].includes(row.data_type) &&
-          !['numrfc', 'fecpla'].includes(row.column_name.toLowerCase())
+        console.log(
+          `[FECPLA API] [${requestId}] Analyzing numeric columns by content...`
         );
-        
+        const numericColumns = allColumnsResult.rows.filter(
+          (row) =>
+            [
+              "numeric",
+              "double precision",
+              "real",
+              "integer",
+              "smallint",
+              "bigint",
+            ].includes(row.data_type) &&
+            !["numrfc", "fecpla"].includes(row.column_name.toLowerCase())
+        );
+
         for (const numCol of numericColumns.slice(0, 10)) {
           try {
             const analysisQuery = `
@@ -1797,14 +2109,21 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
               FROM historico_fondos_gsau
               WHERE "${numCol.column_name}" IS NOT NULL
             `;
-            
+
             const analysisResult = await client.query(analysisQuery);
             const stats = analysisResult.rows[0];
-            
+
             // If it looks like years data (range 0-50, reasonable average)
-            if (stats.positivos > 0 && stats.min_val >= 0 && stats.max_val <= 50 && stats.avg_val <= 15) {
+            if (
+              stats.positivos > 0 &&
+              stats.min_val >= 0 &&
+              stats.max_val <= 50 &&
+              stats.avg_val <= 15
+            ) {
               antiguedadColumn = numCol.column_name;
-              console.log(`[FECPLA API] [${requestId}] Detected column by content analysis: "${antiguedadColumn}"`);
+              console.log(
+                `[FECPLA API] [${requestId}] Detected column by content analysis: "${antiguedadColumn}"`
+              );
               break;
             }
           } catch (e) {
@@ -1812,17 +2131,19 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
           }
         }
       }
-      
+
       if (!antiguedadColumn) {
-        console.log(`[FECPLA API] [${requestId}] ERROR: Could not identify Antigüedad en Fondo column`);
+        console.log(
+          `[FECPLA API] [${requestId}] ERROR: Could not identify Antigüedad en Fondo column`
+        );
         return res.json({
           success: false,
-          error: 'Could not find Antigüedad en Fondo column',
-          availableColumns: allColumnsResult.rows.map(r => r.column_name),
-          message: 'Please specify the column name manually'
+          error: "Could not find Antigüedad en Fondo column",
+          availableColumns: allColumnsResult.rows.map((r) => r.column_name),
+          message: "Please specify the column name manually",
         });
       }
-      
+
       // Main query with FPL date calculation
       const query = `
         SELECT 
@@ -1844,95 +2165,133 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
           AND CAST("${antiguedadColumn}" AS NUMERIC) >= 0
         ORDER BY CAST("${antiguedadColumn}" AS NUMERIC) ASC, fecha_fpl_calculada DESC
       `;
-      
-      console.log(`[FECPLA API] [${requestId}] Executing query with FPL calculation for RFC: ${rfc}`);
-      console.log(`[FECPLA API] [${requestId}] Antigüedad column: ${antiguedadColumn}`);
+
+      console.log(
+        `[FECPLA API] [${requestId}] Executing query with FPL calculation for RFC: ${rfc}`
+      );
+      console.log(
+        `[FECPLA API] [${requestId}] Antigüedad column: ${antiguedadColumn}`
+      );
       console.log(`[FECPLA API] [${requestId}] SQL Query: ${query}`);
-      
+
       const result = await client.query(query, [rfc]);
-      
+
       console.log(`[FECPLA API] [${requestId}] Query executed successfully`);
-      console.log(`[FECPLA API] [${requestId}] Total records found: ${result.rows.length}`);
-      
+      console.log(
+        `[FECPLA API] [${requestId}] Total records found: ${result.rows.length}`
+      );
+
       if (result.rows.length === 0) {
-        console.log(`[FECPLA API] [${requestId}] No FPL dates found for RFC: ${rfc}`);
-        console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
+        console.log(
+          `[FECPLA API] [${requestId}] No FPL dates found for RFC: ${rfc}`
+        );
+        console.log(
+          `[FECPLA API] [${requestId}] ==========================================\n`
+        );
         return res.json({
           success: true,
           data: [],
           total: 0,
           rfc: rfc,
-          message: `No FPL dates calculated for RFC: ${rfc}`
+          message: `No FPL dates calculated for RFC: ${rfc}`,
         });
       }
-      
+
       // Process and format calculated dates
       const fecplasCalculadas = new Map();
       const allCalculatedDates = [];
-      
+
       result.rows.forEach((row, index) => {
         const fechaBase = row.fecpla;
         const antiguedadAnos = parseFloat(row.antiguedad_anos) || 0;
         const fechaCalculada = row.fecha_fpl_calculada;
-        
-        console.log(`[FECPLA API] [${requestId}] Record ${index + 1}: Base: ${fechaBase}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculada}`);
-        
+
+        console.log(
+          `[FECPLA API] [${requestId}] Record ${
+            index + 1
+          }: Base: ${fechaBase}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculada}`
+        );
+
         // Use calculated date as unique key
-        const fechaKey = fechaCalculada.toISOString().split('T')[0];
-        
+        const fechaKey = fechaCalculada.toISOString().split("T")[0];
+
         if (!fecplasCalculadas.has(fechaKey)) {
           fecplasCalculadas.set(fechaKey, {
             fechaCalculada: fechaCalculada,
             fechaBase: fechaBase,
             antiguedadAnos: antiguedadAnos,
-            count: 0
+            count: 0,
           });
         }
-        
+
         fecplasCalculadas.get(fechaKey).count++;
         allCalculatedDates.push(fechaCalculada);
       });
-      
+
       // Convert to array and sort from most recent to oldest
-      const uniqueFecplasFPL = Array.from(fecplasCalculadas.values())
-        .sort((a, b) => new Date(b.fechaCalculada) - new Date(a.fechaCalculada));
-      
-      console.log(`[FECPLA API] [${requestId}] Unique FPL dates calculated (${uniqueFecplasFPL.length} dates):`);
+      const uniqueFecplasFPL = Array.from(fecplasCalculadas.values()).sort(
+        (a, b) => new Date(b.fechaCalculada) - new Date(a.fechaCalculada)
+      );
+
+      console.log(
+        `[FECPLA API] [${requestId}] Unique FPL dates calculated (${uniqueFecplasFPL.length} dates):`
+      );
       uniqueFecplasFPL.forEach((item, index) => {
-        console.log(`[FECPLA API] [${requestId}]   ${index + 1}: ${item.fechaCalculada.toISOString().split('T')[0]} (Base: ${item.fechaBase}, +${item.antiguedadAnos} years)`);
+        console.log(
+          `[FECPLA API] [${requestId}]   ${index + 1}: ${
+            item.fechaCalculada.toISOString().split("T")[0]
+          } (Base: ${item.fechaBase}, +${item.antiguedadAnos} years)`
+        );
       });
-      
+
       // Format for dropdown - WITHOUT TIMESTAMP, only dates
       // INCLUDE METADATA FROM ORIGINAL DATAPOINT for reverse lookup
-      const formattedDates = uniqueFecplasFPL.map(item => {
+      const formattedDates = uniqueFecplasFPL.map((item) => {
         const fechaFPL = item.fechaCalculada;
-        let displayValue = fechaFPL.toISOString().split('T')[0]; // Format YYYY-MM-DD
-        
+        let displayValue = fechaFPL.toISOString().split("T")[0]; // Format YYYY-MM-DD
+
         return {
           value: displayValue, // Only date WITHOUT timestamp for backend
           label: displayValue, // Only date for display
           count: item.count,
           metadata: {
-            fechaBase: item.fechaBase.toISOString().split('T')[0], // Also without timestamp
+            fechaBase: item.fechaBase.toISOString().split("T")[0], // Also without timestamp
             antiguedadAnos: item.antiguedadAnos,
-            calculoAplicado: `${item.fechaBase.toISOString().split('T')[0]} + ${item.antiguedadAnos} years = ${displayValue}`,
-            ajusteAplicado: fechaFPL.getDate() >= 28 ? 'Moved to 1st of next month' : 'Original date maintained',
+            calculoAplicado: `${item.fechaBase.toISOString().split("T")[0]} + ${
+              item.antiguedadAnos
+            } years = ${displayValue}`,
+            ajusteAplicado:
+              fechaFPL.getDate() >= 28
+                ? "Moved to 1st of next month"
+                : "Original date maintained",
             // CRITICAL DATA for reverse lookup
-            originalFecpla: item.fechaBase.toISOString().split('T')[0], // Original fecpla date
-            originalAntiguedad: item.antiguedadAnos // Exact antigüedad used
-          }
+            originalFecpla: item.fechaBase.toISOString().split("T")[0], // Original fecpla date
+            originalAntiguedad: item.antiguedadAnos, // Exact antigüedad used
+          },
         };
       });
-      
+
       console.log(`[FECPLA API] [${requestId}] FPL methodology applied:`);
-      console.log(`[FECPLA API] [${requestId}]   1. Searched RFC ${rfc} in historico_fondos_gsau`);
-      console.log(`[FECPLA API] [${requestId}]   2. Extracted ${result.rows.length} records with fecpla and antigüedad`);
-      console.log(`[FECPLA API] [${requestId}]   3. Calculated FPL dates: fecpla + (antiguedad_anos * 365.25 days)`);
-      console.log(`[FECPLA API] [${requestId}]   4. Identified ${uniqueFecplasFPL.length} unique FPL dates`);
+      console.log(
+        `[FECPLA API] [${requestId}]   1. Searched RFC ${rfc} in historico_fondos_gsau`
+      );
+      console.log(
+        `[FECPLA API] [${requestId}]   2. Extracted ${result.rows.length} records with fecpla and antigüedad`
+      );
+      console.log(
+        `[FECPLA API] [${requestId}]   3. Calculated FPL dates: fecpla + (antiguedad_anos * 365.25 days)`
+      );
+      console.log(
+        `[FECPLA API] [${requestId}]   4. Identified ${uniqueFecplasFPL.length} unique FPL dates`
+      );
       console.log(`[FECPLA API] [${requestId}]   5. Formatted for dropdown`);
-      console.log(`[FECPLA API] [${requestId}] Sending response with ${formattedDates.length} dates`);
-      console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
-      
+      console.log(
+        `[FECPLA API] [${requestId}] Sending response with ${formattedDates.length} dates`
+      );
+      console.log(
+        `[FECPLA API] [${requestId}] ==========================================\n`
+      );
+
       res.json({
         success: true,
         data: formattedDates,
@@ -1940,18 +2299,21 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
         datapoints: result.rows.length,
         rfc: rfc,
         antiguedadColumn: antiguedadColumn,
-        calculation: 'fecpla + (antiguedad_anos * 365.25 days)',
+        calculation: "fecpla + (antiguedad_anos * 365.25 days)",
         methodology: {
           step1: `Search RFC ${rfc} in historico_fondos_gsau`,
           step2: `${result.rows.length} records found with complete data`,
           step3: `Applied calculation: fecpla + (${antiguedadColumn} * 365.25 days)`,
           step4: `${uniqueFecplasFPL.length} unique FPL dates calculated`,
-          step5: 'Formatted and sorted for dropdown'
-        }
+          step5: "Formatted and sorted for dropdown",
+        },
       });
     } catch (dbError) {
       console.error(`[FECPLA API] [${requestId}] Database error:`, dbError);
-      console.error(`[FECPLA API] [${requestId}] Error message:`, dbError.message);
+      console.error(
+        `[FECPLA API] [${requestId}] Error message:`,
+        dbError.message
+      );
       console.error(`[FECPLA API] [${requestId}] Error stack:`, dbError.stack);
       throw dbError;
     } finally {
@@ -1962,24 +2324,27 @@ app.get('/api/payroll/fecpla-from-rfc', async (req, res) => {
     console.error(`[FECPLA API] [${requestId}] ERROR: Failed to get FPL dates`);
     console.error(`[FECPLA API] [${requestId}] Error message:`, error.message);
     console.error(`[FECPLA API] [${requestId}] Error stack:`, error.stack);
-    console.log(`[FECPLA API] [${requestId}] ==========================================\n`);
-    
+    console.log(
+      `[FECPLA API] [${requestId}] ==========================================\n`
+    );
+
     res.status(500).json({
       success: false,
       error: error.message,
-      details: 'Error calculating FPL dates with Antigüedad en Fondo'
+      details: "Error calculating FPL dates with Antigüedad en Fondo",
     });
   }
 });
 
 // GET /api/payroll/:rfc - Get specific employee from payroll
 // NOTE: This route MUST be AFTER all specific routes like /api/payroll/rfc-from-curp and /api/payroll/fecpla-from-rfc
-app.get('/api/payroll/:rfc', async (req, res) => {
+app.get("/api/payroll/:rfc", verifyToken, async (req, res) => {
   try {
     const { rfc } = req.params;
     const client = await getHistoricClient();
-    
-    const result = await client.query(`
+
+    const result = await client.query(
+      `
       SELECT 
         "RFC" as rfc,
         "Nombre completo" as nombre,
@@ -1996,14 +2361,16 @@ app.get('/api/payroll/:rfc', async (req, res) => {
         " TOTAL DEDUCCIONES " as totalDeducciones
       FROM historico_nominas_gsau 
       WHERE "RFC" = $1
-    `, [rfc]);
-    
+    `,
+      [rfc]
+    );
+
     await client.end();
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Employee not found' });
+      return res.status(404).json({ error: "Employee not found" });
     }
-    
+
     const row = result.rows[0];
     res.json({
       rfc: row.rfc,
@@ -2014,26 +2381,27 @@ app.get('/api/payroll/:rfc', async (req, res) => {
       fecha: row.fecha,
       sueldo: parseFloat(row.sueldo || 0),
       comisiones: parseFloat(row.comisiones || 0),
-      totalPercepciones: parseFloat(row.sueldo || 0) + parseFloat(row.comisiones || 0),
+      totalPercepciones:
+        parseFloat(row.sueldo || 0) + parseFloat(row.comisiones || 0),
       status: row.status,
-      mes: 'Enero 2024',
+      mes: "Enero 2024",
       estado: row.status,
-      perfilUrl: null
+      perfilUrl: null,
     });
-    
   } catch (error) {
-    console.error('Error in /api/payroll/:rfc:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/payroll/:rfc:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/employees/:id - Get specific employee
-app.get('/api/employees/:id', async (req, res) => {
+app.get("/api/employees/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const client = await getClient();
-    
-    const result = await client.query(`
+
+    const result = await client.query(
+      `
       SELECT 
         id,
         first_name,
@@ -2050,14 +2418,16 @@ app.get('/api/employees/:id', async (req, res) => {
         avatar_url
       FROM employees 
       WHERE id = $1
-    `, [id]);
-    
+    `,
+      [id]
+    );
+
     await client.end();
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Employee not found' });
+      return res.status(404).json({ error: "Employee not found" });
     }
-    
+
     const row = result.rows[0];
     res.json({
       id: row.id,
@@ -2072,51 +2442,68 @@ app.get('/api/employees/:id', async (req, res) => {
       status: row.status,
       hireDate: row.hire_date,
       tags: row.tags,
-      avatarUrl: row.avatar_url
+      avatarUrl: row.avatar_url,
     });
-    
   } catch (error) {
-    console.error('Error in /api/employees/:id:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in /api/employees/:id:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // ============================================================================
 // FONDOS ENDPOINTS - Detailed logging in English
 // ============================================================================
 
 // GET /api/fondos - Get fondos data by RFC
-app.get('/api/fondos', async (req, res) => {
+app.get("/api/fondos", verifyToken, async (req, res) => {
   const requestId = Date.now();
-  console.log(`\n[FONDOS API] [${requestId}] ==========================================`);
+  console.log(
+    `\n[FONDOS API] [${requestId}] ==========================================`
+  );
   console.log(`[FONDOS API] [${requestId}] Endpoint: GET /api/fondos`);
-  console.log(`[FONDOS API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
-  console.log(`[FONDOS API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log(`[FONDOS API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
-  
+  console.log(
+    `[FONDOS API] [${requestId}] Timestamp: ${new Date().toISOString()}`
+  );
+  console.log(
+    `[FONDOS API] [${requestId}] Full URL: ${req.protocol}://${req.get(
+      "host"
+    )}${req.originalUrl}`
+  );
+  console.log(
+    `[FONDOS API] [${requestId}] Query Parameters:`,
+    JSON.stringify(req.query, null, 2)
+  );
+
   try {
     const { rfc, pageSize = 1, page = 1 } = req.query;
-    
-    console.log(`[FONDOS API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}, pageSize: ${pageSize}, page: ${page}`);
-    
+
+    console.log(
+      `[FONDOS API] [${requestId}] Processing request - RFC: ${
+        rfc || "MISSING"
+      }, pageSize: ${pageSize}, page: ${page}`
+    );
+
     if (!rfc) {
-      console.log(`[FONDOS API] [${requestId}] ERROR: RFC parameter is required`);
+      console.log(
+        `[FONDOS API] [${requestId}] ERROR: RFC parameter is required`
+      );
       return res.status(400).json({
         success: false,
-        error: 'RFC parameter is required'
+        error: "RFC parameter is required",
       });
     }
-    
+
     console.log(`[FONDOS API] [${requestId}] Connecting to Fondos database...`);
     const client = await getFondosClient();
-    
+
     try {
       const limit = parseInt(pageSize) || 1;
       const offset = (parseInt(page) - 1) * limit;
-      
-      console.log(`[FONDOS API] [${requestId}] Query parameters - limit: ${limit}, offset: ${offset}`);
-      
+
+      console.log(
+        `[FONDOS API] [${requestId}] Query parameters - limit: ${limit}, offset: ${offset}`
+      );
+
       const query = `
         SELECT *
         FROM historico_fondos_gsau
@@ -2124,36 +2511,47 @@ app.get('/api/fondos', async (req, res) => {
         ORDER BY fecpla DESC
         LIMIT $2 OFFSET $3
       `;
-      
+
       const countQuery = `
         SELECT COUNT(*) as total
         FROM historico_fondos_gsau
         WHERE numrfc = $1
       `;
-      
-      console.log(`[FONDOS API] [${requestId}] Executing data query with RFC: ${rfc}`);
+
+      console.log(
+        `[FONDOS API] [${requestId}] Executing data query with RFC: ${rfc}`
+      );
       console.log(`[FONDOS API] [${requestId}] SQL Query: ${query}`);
-      console.log(`[FONDOS API] [${requestId}] Query Parameters: [${rfc}, ${limit}, ${offset}]`);
-      
+      console.log(
+        `[FONDOS API] [${requestId}] Query Parameters: [${rfc}, ${limit}, ${offset}]`
+      );
+
       const [result, countResult] = await Promise.all([
         client.query(query, [rfc, limit, offset]),
-        client.query(countQuery, [rfc])
+        client.query(countQuery, [rfc]),
       ]);
-      
+
       const total = parseInt(countResult.rows[0].total);
       const dataCount = result.rows.length;
-      
+
       console.log(`[FONDOS API] [${requestId}] Query executed successfully`);
       console.log(`[FONDOS API] [${requestId}] Total records found: ${total}`);
       console.log(`[FONDOS API] [${requestId}] Records returned: ${dataCount}`);
-      
+
       if (dataCount > 0) {
-        console.log(`[FONDOS API] [${requestId}] Sample record keys:`, Object.keys(result.rows[0]));
+        console.log(
+          `[FONDOS API] [${requestId}] Sample record keys:`,
+          Object.keys(result.rows[0])
+        );
       }
-      
-      console.log(`[FONDOS API] [${requestId}] Sending response with ${dataCount} records`);
-      console.log(`[FONDOS API] [${requestId}] ==========================================\n`);
-      
+
+      console.log(
+        `[FONDOS API] [${requestId}] Sending response with ${dataCount} records`
+      );
+      console.log(
+        `[FONDOS API] [${requestId}] ==========================================\n`
+      );
+
       res.json({
         success: true,
         data: result.rows,
@@ -2161,12 +2559,15 @@ app.get('/api/fondos', async (req, res) => {
           page: parseInt(page),
           pageSize: limit,
           total: total,
-          totalPages: Math.ceil(total / limit)
-        }
+          totalPages: Math.ceil(total / limit),
+        },
       });
     } catch (dbError) {
       console.error(`[FONDOS API] [${requestId}] Database error:`, dbError);
-      console.error(`[FONDOS API] [${requestId}] Error message:`, dbError.message);
+      console.error(
+        `[FONDOS API] [${requestId}] Error message:`,
+        dbError.message
+      );
       console.error(`[FONDOS API] [${requestId}] Error stack:`, dbError.stack);
       throw dbError;
     } finally {
@@ -2174,55 +2575,86 @@ app.get('/api/fondos', async (req, res) => {
       console.log(`[FONDOS API] [${requestId}] Database connection closed`);
     }
   } catch (error) {
-    console.error(`[FONDOS API] [${requestId}] ERROR: Failed to get fondos data`);
+    console.error(
+      `[FONDOS API] [${requestId}] ERROR: Failed to get fondos data`
+    );
     console.error(`[FONDOS API] [${requestId}] Error message:`, error.message);
     console.error(`[FONDOS API] [${requestId}] Error stack:`, error.stack);
-    console.log(`[FONDOS API] [${requestId}] ==========================================\n`);
-    
+    console.log(
+      `[FONDOS API] [${requestId}] ==========================================\n`
+    );
+
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // GET /api/fpl/data-from-rfc - Get FPL data by RFC and optional date
-app.get('/api/fpl/data-from-rfc', async (req, res) => {
+app.get("/api/fpl/data-from-rfc", verifyToken, async (req, res) => {
   const requestId = Date.now();
-  console.log(`\n[FPL API] [${requestId}] ==========================================`);
+  console.log(
+    `\n[FPL API] [${requestId}] ==========================================`
+  );
   console.log(`[FPL API] [${requestId}] Endpoint: GET /api/fpl/data-from-rfc`);
-  console.log(`[FPL API] [${requestId}] Timestamp: ${new Date().toISOString()}`);
-  console.log(`[FPL API] [${requestId}] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log(`[FPL API] [${requestId}] Query Parameters:`, JSON.stringify(req.query, null, 2));
-  
+  console.log(
+    `[FPL API] [${requestId}] Timestamp: ${new Date().toISOString()}`
+  );
+  console.log(
+    `[FPL API] [${requestId}] Full URL: ${req.protocol}://${req.get("host")}${
+      req.originalUrl
+    }`
+  );
+  console.log(
+    `[FPL API] [${requestId}] Query Parameters:`,
+    JSON.stringify(req.query, null, 2)
+  );
+
   try {
     const { rfc, fechaFPL, originalFecpla, originalAntiguedad } = req.query;
-    
-    console.log(`[FPL API] [${requestId}] Processing request - RFC: ${rfc || 'MISSING'}`);
-    console.log(`[FPL API] [${requestId}] fechaFPL: ${fechaFPL || 'NOT PROVIDED'}`);
-    console.log(`[FPL API] [${requestId}] originalFecpla: ${originalFecpla || 'NOT PROVIDED'}`);
-    console.log(`[FPL API] [${requestId}] originalAntiguedad: ${originalAntiguedad || 'NOT PROVIDED'}`);
-    
+
+    console.log(
+      `[FPL API] [${requestId}] Processing request - RFC: ${rfc || "MISSING"}`
+    );
+    console.log(
+      `[FPL API] [${requestId}] fechaFPL: ${fechaFPL || "NOT PROVIDED"}`
+    );
+    console.log(
+      `[FPL API] [${requestId}] originalFecpla: ${
+        originalFecpla || "NOT PROVIDED"
+      }`
+    );
+    console.log(
+      `[FPL API] [${requestId}] originalAntiguedad: ${
+        originalAntiguedad || "NOT PROVIDED"
+      }`
+    );
+
     if (!rfc) {
       console.log(`[FPL API] [${requestId}] ERROR: RFC parameter is required`);
       return res.status(400).json({
         success: false,
-        error: 'RFC parameter is required'
+        error: "RFC parameter is required",
       });
     }
-    
+
     console.log(`[FPL API] [${requestId}] Connecting to Fondos database...`);
     const client = await getFondosClient();
-    
+
     try {
       let query, params;
       let antiguedadColumn = null; // Declare at higher scope for use in fallback/debug
-      
+
       // Check if we have original metadata for precise lookup
       if (originalFecpla && originalAntiguedad) {
-        console.log(`[FPL API] [${requestId}] Using precise lookup with original metadata`);
-        console.log(`[FPL API] [${requestId}] originalFecpla: ${originalFecpla}, originalAntiguedad: ${originalAntiguedad}`);
-        
+        console.log(
+          `[FPL API] [${requestId}] Using precise lookup with original metadata`
+        );
+        console.log(
+          `[FPL API] [${requestId}] originalFecpla: ${originalFecpla}, originalAntiguedad: ${originalAntiguedad}`
+        );
+
         // First, find the antiguedad column name
         const allColumnsQuery = `
           SELECT column_name, data_type
@@ -2230,43 +2662,61 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           WHERE table_name = 'historico_fondos_gsau'
           ORDER BY ordinal_position
         `;
-        
+
         console.log(`[FPL API] [${requestId}] Querying column information...`);
         const allColumnsResult = await client.query(allColumnsQuery);
         const exactNames = [
-          'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
-          'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
-          'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+          "Antiguedad en Fondo",
+          "ANTIGUEDAD EN FONDO",
+          "antiguedad_en_fondo",
+          "AntiguedadEnFondo",
+          "antiguedad_fondo",
+          "AntiguedadFondo",
+          "ant_fondo",
+          "Ant Fondo",
+          "ANT FONDO",
         ];
-        
+
         for (const exactName of exactNames) {
-          const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+          const found = allColumnsResult.rows.find(
+            (row) => row.column_name === exactName
+          );
           if (found) {
             antiguedadColumn = found.column_name;
-            console.log(`[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`);
+            console.log(
+              `[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`
+            );
             break;
           }
         }
-        
+
         if (!antiguedadColumn) {
-          const keywordMatches = allColumnsResult.rows.filter(row => {
+          const keywordMatches = allColumnsResult.rows.filter((row) => {
             const colLower = row.column_name.toLowerCase();
-            return colLower.includes('antiguedad') || colLower.includes('fondo');
+            return (
+              colLower.includes("antiguedad") || colLower.includes("fondo")
+            );
           });
-          
+
           if (keywordMatches.length > 0) {
             antiguedadColumn = keywordMatches[0].column_name;
-            console.log(`[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`);
+            console.log(
+              `[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`
+            );
           }
         }
-        
+
         if (antiguedadColumn) {
           const antiguedadValue = parseFloat(originalAntiguedad);
           const tolerance = 0.0001; // Small tolerance for floating point comparison
-          
-          console.log(`[FPL API] [${requestId}] Using precise query with antiguedad column`);
-          console.log(`[FPL API] [${requestId}] Antigüedad value: ${antiguedadValue}, tolerance: ±${tolerance}`);
-          
+
+          console.log(
+            `[FPL API] [${requestId}] Using precise query with antiguedad column`
+          );
+          console.log(
+            `[FPL API] [${requestId}] Antigüedad value: ${antiguedadValue}, tolerance: ±${tolerance}`
+          );
+
           // Use range-based comparison for floating point numbers to handle precision issues
           query = `
             SELECT *
@@ -2278,11 +2728,19 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
             LIMIT 1
           `;
           params = [rfc, originalFecpla, antiguedadValue, tolerance];
-          
-          console.log(`[FPL API] [${requestId}] Query with range-based antigüedad comparison`);
-          console.log(`[FPL API] [${requestId}] Looking for antigüedad between ${antiguedadValue - tolerance} and ${antiguedadValue + tolerance}`);
+
+          console.log(
+            `[FPL API] [${requestId}] Query with range-based antigüedad comparison`
+          );
+          console.log(
+            `[FPL API] [${requestId}] Looking for antigüedad between ${
+              antiguedadValue - tolerance
+            } and ${antiguedadValue + tolerance}`
+          );
         } else {
-          console.log(`[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using fallback query`);
+          console.log(
+            `[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using fallback query`
+          );
           query = `
             SELECT *
             FROM historico_fondos_gsau
@@ -2294,9 +2752,13 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           params = [rfc, originalFecpla];
         }
       } else if (fechaFPL) {
-        console.log(`[FPL API] [${requestId}] Using calculated FPL date lookup with fechaFPL: ${fechaFPL}`);
-        console.log(`[FPL API] [${requestId}] NOTE: fechaFPL is a calculated date, not fecpla. Need to find records where fecpla + antigüedad = fechaFPL`);
-        
+        console.log(
+          `[FPL API] [${requestId}] Using calculated FPL date lookup with fechaFPL: ${fechaFPL}`
+        );
+        console.log(
+          `[FPL API] [${requestId}] NOTE: fechaFPL is a calculated date, not fecpla. Need to find records where fecpla + antigüedad = fechaFPL`
+        );
+
         // First, find the antiguedad column
         const allColumnsQuery = `
           SELECT column_name, data_type
@@ -2304,35 +2766,49 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           WHERE table_name = 'historico_fondos_gsau'
           ORDER BY ordinal_position
         `;
-        
+
         const allColumnsResult = await client.query(allColumnsQuery);
-        
+
         const exactNames = [
-          'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
-          'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
-          'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+          "Antiguedad en Fondo",
+          "ANTIGUEDAD EN FONDO",
+          "antiguedad_en_fondo",
+          "AntiguedadEnFondo",
+          "antiguedad_fondo",
+          "AntiguedadFondo",
+          "ant_fondo",
+          "Ant Fondo",
+          "ANT FONDO",
         ];
-        
+
         for (const exactName of exactNames) {
-          const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+          const found = allColumnsResult.rows.find(
+            (row) => row.column_name === exactName
+          );
           if (found) {
             antiguedadColumn = found.column_name;
-            console.log(`[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`);
+            console.log(
+              `[FPL API] [${requestId}] Found antiguedad column: ${antiguedadColumn}`
+            );
             break;
           }
         }
-        
+
         if (!antiguedadColumn) {
-          const keywordMatches = allColumnsResult.rows.filter(row => {
+          const keywordMatches = allColumnsResult.rows.filter((row) => {
             const colLower = row.column_name.toLowerCase();
-            return colLower.includes('antiguedad') || colLower.includes('fondo');
+            return (
+              colLower.includes("antiguedad") || colLower.includes("fondo")
+            );
           });
           if (keywordMatches.length > 0) {
             antiguedadColumn = keywordMatches[0].column_name;
-            console.log(`[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`);
+            console.log(
+              `[FPL API] [${requestId}] Found antiguedad column by keyword: ${antiguedadColumn}`
+            );
           }
         }
-        
+
         if (antiguedadColumn) {
           // Search by calculating FPL date: fecpla + (antigüedad * 365.25 days) = fechaFPL
           // Also handle the adjustment: if calculated date falls on days 28-31, it's moved to day 1 of next month
@@ -2340,10 +2816,14 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           const targetYear = targetDate.getFullYear();
           const targetMonth = targetDate.getMonth() + 1; // JavaScript months are 0-indexed
           const targetDay = targetDate.getDate();
-          
-          console.log(`[FPL API] [${requestId}] Searching for records where calculated FPL date matches: ${fechaFPL}`);
-          console.log(`[FPL API] [${requestId}] Target date components: year=${targetYear}, month=${targetMonth}, day=${targetDay}`);
-          
+
+          console.log(
+            `[FPL API] [${requestId}] Searching for records where calculated FPL date matches: ${fechaFPL}`
+          );
+          console.log(
+            `[FPL API] [${requestId}] Target date components: year=${targetYear}, month=${targetMonth}, day=${targetDay}`
+          );
+
           // Query: Find records where the calculated FPL date matches fechaFPL
           // The calculation is: fecpla + (antigüedad * 365.25 days)
           // With adjustment: if day >= 28, move to 1st of next month
@@ -2375,10 +2855,14 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
             LIMIT 1
           `;
           params = [rfc, fechaFPL];
-          console.log(`[FPL API] [${requestId}] Using calculated FPL date matching query`);
+          console.log(
+            `[FPL API] [${requestId}] Using calculated FPL date matching query`
+          );
         } else {
           // Fallback: if we can't find antiguedad column, just search by fecpla (won't work for calculated dates)
-          console.log(`[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using simple fecpla lookup (may not work for calculated FPL dates)`);
+          console.log(
+            `[FPL API] [${requestId}] WARNING: Could not find antiguedad column, using simple fecpla lookup (may not work for calculated FPL dates)`
+          );
           query = `
             SELECT *
             FROM historico_fondos_gsau
@@ -2390,7 +2874,9 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           params = [rfc, fechaFPL];
         }
       } else {
-        console.log(`[FPL API] [${requestId}] Using general lookup (most recent record)`);
+        console.log(
+          `[FPL API] [${requestId}] Using general lookup (most recent record)`
+        );
         query = `
           SELECT *
           FROM historico_fondos_gsau
@@ -2400,22 +2886,26 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
         `;
         params = [rfc];
       }
-      
+
       console.log(`[FPL API] [${requestId}] Executing query...`);
       console.log(`[FPL API] [${requestId}] SQL Query: ${query}`);
       console.log(`[FPL API] [${requestId}] Query Parameters:`, params);
-      
+
       let result = await client.query(query, params);
-      
+
       console.log(`[FPL API] [${requestId}] Query executed successfully`);
-      console.log(`[FPL API] [${requestId}] Records found: ${result.rows.length}`);
-      
+      console.log(
+        `[FPL API] [${requestId}] Records found: ${result.rows.length}`
+      );
+
       // FALLBACK STRATEGY: If precise match fails, try fallback queries
       // Note: antiguedadColumn is declared at higher scope, so it's available here
       if (result.rows.length === 0 && originalFecpla && originalAntiguedad) {
         // Ensure antiguedadColumn is available for fallback
         if (!antiguedadColumn) {
-          console.log(`[FPL API] [${requestId}] antiguedadColumn not found, trying to find it for fallback...`);
+          console.log(
+            `[FPL API] [${requestId}] antiguedadColumn not found, trying to find it for fallback...`
+          );
           try {
             const allColumnsQuery = `
               SELECT column_name, data_type
@@ -2424,42 +2914,59 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
               ORDER BY ordinal_position
             `;
             const allColumnsResult = await client.query(allColumnsQuery);
-            
+
             const exactNames = [
-              'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
-              'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
-              'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+              "Antiguedad en Fondo",
+              "ANTIGUEDAD EN FONDO",
+              "antiguedad_en_fondo",
+              "AntiguedadEnFondo",
+              "antiguedad_fondo",
+              "AntiguedadFondo",
+              "ant_fondo",
+              "Ant Fondo",
+              "ANT FONDO",
             ];
-            
+
             for (const exactName of exactNames) {
-              const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+              const found = allColumnsResult.rows.find(
+                (row) => row.column_name === exactName
+              );
               if (found) {
                 antiguedadColumn = found.column_name;
                 break;
               }
             }
-            
+
             if (!antiguedadColumn) {
-              const keywordMatches = allColumnsResult.rows.filter(row => {
+              const keywordMatches = allColumnsResult.rows.filter((row) => {
                 const colLower = row.column_name.toLowerCase();
-                return colLower.includes('antiguedad') || colLower.includes('fondo');
+                return (
+                  colLower.includes("antiguedad") || colLower.includes("fondo")
+                );
               });
               if (keywordMatches.length > 0) {
                 antiguedadColumn = keywordMatches[0].column_name;
               }
             }
           } catch (e) {
-            console.log(`[FPL API] [${requestId}] Could not find antiguedad column for fallback:`, e.message);
+            console.log(
+              `[FPL API] [${requestId}] Could not find antiguedad column for fallback:`,
+              e.message
+            );
           }
         }
-        
+
         if (antiguedadColumn) {
-        console.log(`[FPL API] [${requestId}] Precise match failed, trying fallback strategies...`);
-        
-        // Fallback 1: Try with wider tolerance (0.01 instead of 0.0001)
-        const widerTolerance = 0.01;
-        console.log(`[FPL API] [${requestId}] Fallback 1: Trying with wider tolerance: ±${widerTolerance}`);
-        const fallbackQuery1 = `
+          console.log(
+            `[FPL API] [${requestId}] Precise match failed, trying fallback strategies...`
+          );
+
+          // Fallback 1: Try with wider tolerance (0.01 instead of 0.0001)
+          const widerTolerance = 0.01;
+          console.log(
+            `[FPL API] [${requestId}] Fallback 1: Trying with wider tolerance: ±${widerTolerance}`
+          );
+          const fallbackQuery1 = `
           SELECT *
           FROM historico_fondos_gsau
           WHERE numrfc = $1
@@ -2468,13 +2975,22 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
           ORDER BY fecpla DESC
           LIMIT 1
         `;
-        result = await client.query(fallbackQuery1, [rfc, originalFecpla, parseFloat(originalAntiguedad), widerTolerance]);
-        console.log(`[FPL API] [${requestId}] Fallback 1 result: ${result.rows.length} records`);
-        
-        // Fallback 2: Try by date only (ignore antigüedad)
-        if (result.rows.length === 0) {
-          console.log(`[FPL API] [${requestId}] Fallback 2: Trying by date only (ignoring antigüedad)`);
-          const fallbackQuery2 = `
+          result = await client.query(fallbackQuery1, [
+            rfc,
+            originalFecpla,
+            parseFloat(originalAntiguedad),
+            widerTolerance,
+          ]);
+          console.log(
+            `[FPL API] [${requestId}] Fallback 1 result: ${result.rows.length} records`
+          );
+
+          // Fallback 2: Try by date only (ignore antigüedad)
+          if (result.rows.length === 0) {
+            console.log(
+              `[FPL API] [${requestId}] Fallback 2: Trying by date only (ignoring antigüedad)`
+            );
+            const fallbackQuery2 = `
             SELECT *
             FROM historico_fondos_gsau
             WHERE numrfc = $1
@@ -2482,19 +2998,23 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
             ORDER BY fecpla DESC
             LIMIT 1
           `;
-          result = await client.query(fallbackQuery2, [rfc, originalFecpla]);
-          console.log(`[FPL API] [${requestId}] Fallback 2 result: ${result.rows.length} records`);
-          
-          // Fallback 3: Try with date range (±1 day) to handle timezone/date conversion issues
-          if (result.rows.length === 0) {
-            console.log(`[FPL API] [${requestId}] Fallback 3: Trying with date range ±1 day`);
-            const originalDate = new Date(originalFecpla);
-            const dayBefore = new Date(originalDate);
-            dayBefore.setDate(dayBefore.getDate() - 1);
-            const dayAfter = new Date(originalDate);
-            dayAfter.setDate(dayAfter.getDate() + 1);
-            
-            const fallbackQuery3 = `
+            result = await client.query(fallbackQuery2, [rfc, originalFecpla]);
+            console.log(
+              `[FPL API] [${requestId}] Fallback 2 result: ${result.rows.length} records`
+            );
+
+            // Fallback 3: Try with date range (±1 day) to handle timezone/date conversion issues
+            if (result.rows.length === 0) {
+              console.log(
+                `[FPL API] [${requestId}] Fallback 3: Trying with date range ±1 day`
+              );
+              const originalDate = new Date(originalFecpla);
+              const dayBefore = new Date(originalDate);
+              dayBefore.setDate(dayBefore.getDate() - 1);
+              const dayAfter = new Date(originalDate);
+              dayAfter.setDate(dayAfter.getDate() + 1);
+
+              const fallbackQuery3 = `
               SELECT *
               FROM historico_fondos_gsau
               WHERE numrfc = $1
@@ -2502,40 +3022,67 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
               ORDER BY fecpla DESC
               LIMIT 1
             `;
-            result = await client.query(fallbackQuery3, [
-              rfc, 
-              dayBefore.toISOString().split('T')[0], 
-              dayAfter.toISOString().split('T')[0]
-            ]);
-            console.log(`[FPL API] [${requestId}] Fallback 3 result: ${result.rows.length} records`);
-            
-            if (result.rows.length > 0) {
-              const foundDate = result.rows[0].fecpla;
+              result = await client.query(fallbackQuery3, [
+                rfc,
+                dayBefore.toISOString().split("T")[0],
+                dayAfter.toISOString().split("T")[0],
+              ]);
+              console.log(
+                `[FPL API] [${requestId}] Fallback 3 result: ${result.rows.length} records`
+              );
+
+              if (result.rows.length > 0) {
+                const foundDate = result.rows[0].fecpla;
+                const foundAntiguedad = result.rows[0][antiguedadColumn];
+                console.log(
+                  `[FPL API] [${requestId}] Found record with date range:`
+                );
+                console.log(
+                  `[FPL API] [${requestId}]   Expected date: ${originalFecpla}, Found: ${foundDate}`
+                );
+                console.log(
+                  `[FPL API] [${requestId}]   Expected antigüedad: ${originalAntiguedad}, Found: ${foundAntiguedad}`
+                );
+              }
+            } else {
               const foundAntiguedad = result.rows[0][antiguedadColumn];
-              console.log(`[FPL API] [${requestId}] Found record with date range:`);
-              console.log(`[FPL API] [${requestId}]   Expected date: ${originalFecpla}, Found: ${foundDate}`);
-              console.log(`[FPL API] [${requestId}]   Expected antigüedad: ${originalAntiguedad}, Found: ${foundAntiguedad}`);
+              console.log(
+                `[FPL API] [${requestId}] Found record by date, but antigüedad mismatch:`
+              );
+              console.log(
+                `[FPL API] [${requestId}]   Expected: ${originalAntiguedad}, Found: ${foundAntiguedad}`
+              );
+              console.log(
+                `[FPL API] [${requestId}]   Difference: ${Math.abs(
+                  parseFloat(foundAntiguedad) - parseFloat(originalAntiguedad)
+                )}`
+              );
             }
-          } else {
-            const foundAntiguedad = result.rows[0][antiguedadColumn];
-            console.log(`[FPL API] [${requestId}] Found record by date, but antigüedad mismatch:`);
-            console.log(`[FPL API] [${requestId}]   Expected: ${originalAntiguedad}, Found: ${foundAntiguedad}`);
-            console.log(`[FPL API] [${requestId}]   Difference: ${Math.abs(parseFloat(foundAntiguedad) - parseFloat(originalAntiguedad))}`);
           }
-        }
         } else {
-          console.log(`[FPL API] [${requestId}] Cannot use fallback - antiguedad column not found`);
+          console.log(
+            `[FPL API] [${requestId}] Cannot use fallback - antiguedad column not found`
+          );
         }
       }
-      
+
       if (result.rows.length === 0) {
-        console.log(`[FPL API] [${requestId}] No FPL data found for RFC: ${rfc} after all fallback attempts`);
+        console.log(
+          `[FPL API] [${requestId}] No FPL data found for RFC: ${rfc} after all fallback attempts`
+        );
         console.log(`[FPL API] [${requestId}] Search parameters used:`);
         console.log(`[FPL API] [${requestId}]   - RFC: ${rfc}`);
-        if (originalFecpla) console.log(`[FPL API] [${requestId}]   - originalFecpla: ${originalFecpla}`);
-        if (originalAntiguedad) console.log(`[FPL API] [${requestId}]   - originalAntiguedad: ${originalAntiguedad}`);
-        if (fechaFPL) console.log(`[FPL API] [${requestId}]   - fechaFPL: ${fechaFPL}`);
-        
+        if (originalFecpla)
+          console.log(
+            `[FPL API] [${requestId}]   - originalFecpla: ${originalFecpla}`
+          );
+        if (originalAntiguedad)
+          console.log(
+            `[FPL API] [${requestId}]   - originalAntiguedad: ${originalAntiguedad}`
+          );
+        if (fechaFPL)
+          console.log(`[FPL API] [${requestId}]   - fechaFPL: ${fechaFPL}`);
+
         // Debug: Check what records exist for this RFC
         // First, try to find antiguedad column if not already found
         if (!antiguedadColumn) {
@@ -2547,41 +3094,56 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
               ORDER BY ordinal_position
             `;
             const allColumnsResult = await client.query(allColumnsQuery);
-            
+
             const exactNames = [
-              'Antiguedad en Fondo', 'ANTIGUEDAD EN FONDO', 'antiguedad_en_fondo',
-              'AntiguedadEnFondo', 'antiguedad_fondo', 'AntiguedadFondo',
-              'ant_fondo', 'Ant Fondo', 'ANT FONDO'
+              "Antiguedad en Fondo",
+              "ANTIGUEDAD EN FONDO",
+              "antiguedad_en_fondo",
+              "AntiguedadEnFondo",
+              "antiguedad_fondo",
+              "AntiguedadFondo",
+              "ant_fondo",
+              "Ant Fondo",
+              "ANT FONDO",
             ];
-            
+
             for (const exactName of exactNames) {
-              const found = allColumnsResult.rows.find(row => row.column_name === exactName);
+              const found = allColumnsResult.rows.find(
+                (row) => row.column_name === exactName
+              );
               if (found) {
                 antiguedadColumn = found.column_name;
                 break;
               }
             }
-            
+
             if (!antiguedadColumn) {
-              const keywordMatches = allColumnsResult.rows.filter(row => {
+              const keywordMatches = allColumnsResult.rows.filter((row) => {
                 const colLower = row.column_name.toLowerCase();
-                return colLower.includes('antiguedad') || colLower.includes('fondo');
+                return (
+                  colLower.includes("antiguedad") || colLower.includes("fondo")
+                );
               });
               if (keywordMatches.length > 0) {
                 antiguedadColumn = keywordMatches[0].column_name;
               }
             }
           } catch (e) {
-            console.log(`[FPL API] [${requestId}] Could not find antiguedad column:`, e.message);
+            console.log(
+              `[FPL API] [${requestId}] Could not find antiguedad column:`,
+              e.message
+            );
           }
         }
-        
-        console.log(`[FPL API] [${requestId}] Checking available records for RFC: ${rfc}...`);
+
+        console.log(
+          `[FPL API] [${requestId}] Checking available records for RFC: ${rfc}...`
+        );
         const debugQuery = `
           SELECT 
             numrfc,
             fecpla,
-            "${antiguedadColumn || 'antiguedad_en_fondo'}" as antiguedad,
+            "${antiguedadColumn || "antiguedad_en_fondo"}" as antiguedad,
             nombre
           FROM historico_fondos_gsau
           WHERE numrfc = $1
@@ -2590,39 +3152,59 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
         `;
         try {
           const debugResult = await client.query(debugQuery, [rfc]);
-          console.log(`[FPL API] [${requestId}] Available records for RFC ${rfc}: ${debugResult.rows.length}`);
+          console.log(
+            `[FPL API] [${requestId}] Available records for RFC ${rfc}: ${debugResult.rows.length}`
+          );
           if (debugResult.rows.length > 0) {
             console.log(`[FPL API] [${requestId}] Sample records:`);
             debugResult.rows.slice(0, 5).forEach((row, idx) => {
-              console.log(`[FPL API] [${requestId}]   ${idx + 1}. fecpla: ${row.fecpla}, antigüedad: ${row.antiguedad}`);
+              console.log(
+                `[FPL API] [${requestId}]   ${idx + 1}. fecpla: ${
+                  row.fecpla
+                }, antigüedad: ${row.antiguedad}`
+              );
             });
           }
         } catch (debugError) {
-          console.log(`[FPL API] [${requestId}] Could not execute debug query:`, debugError.message);
+          console.log(
+            `[FPL API] [${requestId}] Could not execute debug query:`,
+            debugError.message
+          );
         }
-        
-        console.log(`[FPL API] [${requestId}] ==========================================\n`);
+
+        console.log(
+          `[FPL API] [${requestId}] ==========================================\n`
+        );
         return res.json({
           success: true,
           data: null,
           rfc: rfc,
           fechaFPL: fechaFPL,
-          message: `No FPL data found for RFC: ${rfc} with the provided parameters`
+          message: `No FPL data found for RFC: ${rfc} with the provided parameters`,
         });
       }
-      
+
       const fplData = result.rows[0];
       console.log(`[FPL API] [${requestId}] FPL data retrieved successfully`);
-      console.log(`[FPL API] [${requestId}] Record keys:`, Object.keys(fplData));
-      console.log(`[FPL API] [${requestId}] Sample fields - RFC: ${fplData.numrfc || fplData.rfc || 'N/A'}, fecpla: ${fplData.fecpla || 'N/A'}`);
-      console.log(`[FPL API] [${requestId}] ==========================================\n`);
-      
+      console.log(
+        `[FPL API] [${requestId}] Record keys:`,
+        Object.keys(fplData)
+      );
+      console.log(
+        `[FPL API] [${requestId}] Sample fields - RFC: ${
+          fplData.numrfc || fplData.rfc || "N/A"
+        }, fecpla: ${fplData.fecpla || "N/A"}`
+      );
+      console.log(
+        `[FPL API] [${requestId}] ==========================================\n`
+      );
+
       res.json({
         success: true,
         data: fplData,
         rfc: rfc,
         fechaFPL: fechaFPL,
-        message: 'FPL data retrieved successfully'
+        message: "FPL data retrieved successfully",
       });
     } catch (dbError) {
       console.error(`[FPL API] [${requestId}] Database error:`, dbError);
@@ -2637,29 +3219,51 @@ app.get('/api/fpl/data-from-rfc', async (req, res) => {
     console.error(`[FPL API] [${requestId}] ERROR: Failed to get FPL data`);
     console.error(`[FPL API] [${requestId}] Error message:`, error.message);
     console.error(`[FPL API] [${requestId}] Error stack:`, error.stack);
-    console.log(`[FPL API] [${requestId}] ==========================================\n`);
-    
+    console.log(
+      `[FPL API] [${requestId}] ==========================================\n`
+    );
+
     res.status(500).json({
       success: false,
       error: error.message,
-      details: 'Error retrieving FPL data'
+      details: "Error retrieving FPL data",
     });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Local API Server running on http://localhost:${PORT}`);
-  console.log(`📊 Database Main: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
-  console.log(`📊 Database Historic: ${gsauDbConfig.host}:${gsauDbConfig.port}/${gsauDbConfig.database}`);
-  console.log(`📊 Database Fondos: ${fondosDbConfig.host}:${fondosDbConfig.port}/${fondosDbConfig.database}`);
+  console.log(
+    `📊 Database Main: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`
+  );
+  console.log(
+    `📊 Database Historic: ${gsauDbConfig.host}:${gsauDbConfig.port}/${gsauDbConfig.database}`
+  );
+  console.log(
+    `📊 Database Fondos: ${fondosDbConfig.host}:${fondosDbConfig.port}/${fondosDbConfig.database}`
+  );
   console.log(`🔗 Endpoints:`);
-  console.log(`   GET /api/employees - List employees with filters (from postgres)`);
-  console.log(`   GET /api/employees/:id - Get employee details (from postgres)`);
-  console.log(`   GET /api/payroll - List mapped payroll employees (from Historic)`);
-  console.log(`   GET /api/payroll/rfc-from-curp - Get RFC from CURP (from Historic)`);
-  console.log(`   GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates by RFC (from Fondos)`);
-  console.log(`   GET /api/payroll/:rfc - Get payroll employee details (from Historic)`);
+  console.log(
+    `   GET /api/employees - List employees with filters (from postgres)`
+  );
+  console.log(
+    `   GET /api/employees/:id - Get employee details (from postgres)`
+  );
+  console.log(
+    `   GET /api/payroll - List mapped payroll employees (from Historic)`
+  );
+  console.log(
+    `   GET /api/payroll/rfc-from-curp - Get RFC from CURP (from Historic)`
+  );
+  console.log(
+    `   GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates by RFC (from Fondos)`
+  );
+  console.log(
+    `   GET /api/payroll/:rfc - Get payroll employee details (from Historic)`
+  );
   console.log(`   GET /api/fondos - Get fondos data by RFC (from Fondos)`);
-  console.log(`   GET /api/fpl/data-from-rfc - Get FPL data by RFC and date (from Fondos)`);
+  console.log(
+    `   GET /api/fpl/data-from-rfc - Get FPL data by RFC and date (from Fondos)`
+  );
   console.log(`   GET /health - Health check`);
 });
