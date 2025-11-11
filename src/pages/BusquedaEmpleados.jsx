@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled, { ThemeProvider as StyledThemeProvider } from "styled-components";
 import { useTheme } from "../contexts/ThemeContext";
+import { useNavigate } from "react-router-dom";
 import {
   FaUsers,
   FaFilter,
@@ -589,6 +590,7 @@ const CollapseButton = styled.button`
 
 const BusquedaEmpleados = () => {
   const { theme } = useTheme(); // Obtener el theme del context
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(true);
@@ -1460,8 +1462,30 @@ const BusquedaEmpleados = () => {
     document.body.removeChild(link);
   };
 
-  const viewEmployee = (employee) => {
-    alert(`Ver detalles de ${employee.name}\nCurve: ${employee.curve}\nPuesto: ${employee.position}`);
+  // Function to navigate to employee profile (same logic as EmployeeTable)
+  const handleViewEmployee = (employee) => {
+    // Check all possible field names for CURP (same logic as EmployeeTable)
+    const identifier = (employee.rfc?.trim()) || 
+                       (employee.curp?.trim()) || 
+                       (employee.RFC?.trim()) || 
+                       null;
+    
+    let navigationPath;
+    
+    if (identifier) {
+      navigationPath = `/perfil/${encodeURIComponent(identifier)}`;
+      console.log('🔗 Navigating to profile:', { identifier, path: navigationPath });
+      navigate(navigationPath);
+    } else {
+      // Fallback: use cleaned name
+      const cleanedName = (employee.name || employee.nombre)
+        ?.replace(/\s+/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase() || 'unknown';
+      navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`;
+      console.warn('⚠️ No CURP found, using name fallback:', { nombre: employee.name || employee.nombre, path: navigationPath });
+      navigate(navigationPath);
+    }
   };
 
   const editEmployee = (employee) => {
@@ -2153,7 +2177,6 @@ const BusquedaEmpleados = () => {
                         key="employee-table"
                         employees={sortedEmployees}
                         loading={loading}
-                        onViewEmployee={viewEmployee}
                         onEditEmployee={editEmployee}
                         pagination={pagination}
                         onPageChange={handlePageChange}
@@ -2228,7 +2251,7 @@ const BusquedaEmpleados = () => {
                           </EmployeeDetails>
 
                           <EmployeeActions>
-                            <ActionButton primary onClick={() => viewEmployee(employee)}>
+                            <ActionButton primary onClick={() => handleViewEmployee(employee)}>
                               <FaEye />
                               Ver
                             </ActionButton>

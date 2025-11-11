@@ -60,16 +60,16 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
   const [isTableCollapsed, setIsTableCollapsed] = useState(false)
   const navigate = useNavigate()
-  
+
   // ✅ FIXED: Use props if provided, otherwise use useServerPagination (for backward compatibility)
   // Check if props object exists and has employees array (even if empty)
   const useProps = props !== undefined && props !== null && 'employees' in props
-  
+
   // ✅ CRITICAL FIX: Use a special disabled endpoint when props are provided
   // This prevents double API calls when BusquedaEmpleados passes data via props
   // Using '__DISABLED__' instead of empty string to avoid URL building issues
   const endpointToUse = useProps ? '__DISABLED__' : '/api/payroll'
-  
+
   console.log('🔍 [EmployeeTable] Props check:', {
     hasProps: props !== undefined && props !== null,
     hasEmployees: props && 'employees' in props,
@@ -77,14 +77,14 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
     endpoint: endpointToUse,
     employeesCount: props?.employees?.length || 0
   })
-  
+
   const serverPagination = useServerPagination(
     endpointToUse, // Special value disables fetch when using props
-    100, 
-    'nombre', 
+    100,
+    'nombre',
     'asc'
   )
-  
+
   // Use props if provided, otherwise use serverPagination
   const data = useProps ? (props.employees || []) : serverPagination.data
   const pagination = useProps ? (props.pagination || { page: 1, pageSize: 100, total: 0, totalPages: 0 }) : serverPagination.pagination
@@ -92,15 +92,15 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
   const error = useProps ? (props.error || null) : serverPagination.error
   const sortBy = useProps ? (props.sortBy || 'nombre') : serverPagination.sortBy
   const sortDir = useProps ? (props.sortDir || 'asc') : serverPagination.sortDir
-  const setPage = useProps ? (props.onPageChange || (() => {})) : serverPagination.setPage
-  const setPageSize = useProps ? (props.onPageSizeChange || (() => {})) : serverPagination.setPageSize
-  const handleSortChange = useProps ? (props.onSortChange || (() => {})) : serverPagination.handleSortChange
-  const refresh = useProps ? (() => {}) : serverPagination.refresh
+  const setPage = useProps ? (props.onPageChange || (() => { })) : serverPagination.setPage
+  const setPageSize = useProps ? (props.onPageSizeChange || (() => { })) : serverPagination.setPageSize
+  const handleSortChange = useProps ? (props.onSortChange || (() => { })) : serverPagination.handleSortChange
+  const refresh = useProps ? (() => { }) : serverPagination.refresh
 
   // Calculate display range
   const from = pagination.total > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0
   const to = Math.min(pagination.page * pagination.pageSize, pagination.total)
-  
+
   // Function to navigate to employee profile
   const handleViewEmployee = (employee: PayrollData) => {
     // ✅ FIXED: Use onViewEmployee prop if provided, otherwise navigate
@@ -108,12 +108,20 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
       props.onViewEmployee(employee)
       return
     }
-    
-    const identifier = (employee.rfc?.trim()) || null
+
+    // ✅ FIXED: Check all possible field names for CURP (same logic as table rendering)
+    const rAny = employee as any
+    const identifier = (employee.rfc?.trim()) ||
+      (rAny.curp?.trim()) ||
+      (rAny.RFC?.trim()) ||
+      null
+
     let navigationPath: string
-    
+
     if (identifier) {
       navigationPath = `/perfil/${encodeURIComponent(identifier)}`
+      console.log('🔗 Navigating to profile:', { identifier, path: navigationPath })
+      navigate(navigationPath)
     } else {
       // Fallback: use cleaned name
       const cleanedName = employee.nombre
@@ -121,11 +129,11 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         .replace(/[^a-zA-Z0-9]/g, '')
         .toUpperCase() || 'unknown'
       navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`
+      console.warn('⚠️ No CURP found, using name fallback:', { nombre: employee.nombre, path: navigationPath })
+      navigate(navigationPath)
     }
-    
-    navigate(navigationPath)
   }
-  
+
   // Function to export data to CSV
   const exportToCSV = () => {
     const headers = columns.map(col => col.label).join(',')
@@ -142,7 +150,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
       const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
       const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
       const estado = r.estado || rAny.status || rAny.Estado || ''
-      
+
       return [
         nombre,
         rfc,
@@ -155,7 +163,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         estado
       ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
     })
-    
+
     const csvContent = [headers, ...rows].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
@@ -171,11 +179,11 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
   // Sorting functions
   const toggleSort = (key: string) => {
     console.log('🔄 EmployeeTable.toggleSort called:', { key, sortBy, sortDir })
-    
+
     // ✅ MAP frontend column key to backend field name
     const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
     console.log('🔵 Field mapping:', { frontendKey: key, backendField: backendFieldName })
-    
+
     // LOG ESPECIAL PARA PERCEPCIONES TOTALES
     if (key === 'percepcionesTotales' || key === 'totalPercepciones') {
       console.log('💰 PERCEPCIONES TOTALES CLICKED:', {
@@ -186,7 +194,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         willToggle: sortBy === backendFieldName
       })
     }
-    
+
     // ✅ Check if this column is currently sorted (compare backend field names)
     let newDirection: 'asc' | 'desc'
     if (sortBy === backendFieldName) {
@@ -196,13 +204,13 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
       // Different column clicked - start with ascending
       newDirection = 'asc'
     }
-    
-    console.log('📤 EmployeeTable: Sending sort change to backend:', { 
-      frontendKey: key, 
+
+    console.log('📤 EmployeeTable: Sending sort change to backend:', {
+      frontendKey: key,
       backendField: backendFieldName,
-      direction: newDirection 
+      direction: newDirection
     })
-    
+
     // ✅ IMPORTANT: Send backend field name, not frontend key
     handleSortChange(backendFieldName, newDirection)
   }
@@ -212,7 +220,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
     const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
     // Compare with sortBy (which now contains backend field name)
     const isActive = sortBy === backendFieldName
-    
+
     if (!isActive) {
       return (
         <div className="flex flex-col -space-y-1">
@@ -265,7 +273,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <h3 className="text-red-800 font-medium">Error al cargar datos</h3>
         <p className="text-red-600 text-sm mt-1">{error}</p>
-        <button 
+        <button
           onClick={refresh}
           className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
         >
@@ -278,7 +286,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
   return (
     <div className="space-y-4">
       {/* Database Statistics Panel */}
-      
+
 
       {/* Table - Clean white design matching reference image */}
       <div className={`overflow-auto rounded-lg border border-gray-300 bg-white shadow-sm ${isTableCollapsed ? 'max-h-[400px]' : ''}`}>
@@ -286,8 +294,8 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
           <thead className="bg-[#d2d8e8] border-b-2 border-blue-200 text-left sticky top-0 z-10 shadow-sm">
             <tr>
               {columns.map((col, idx) => (
-                <th 
-                  key={col.key} 
+                <th
+                  key={col.key}
                   className={`px-4 py-3 whitespace-nowrap font-semibold text-blue-900 border-r border-blue-200 ${idx === columns.length - 1 ? 'border-r-0' : ''}`}
                 >
                   {col.sortable ? (
@@ -336,13 +344,13 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                 const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
                 const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
                 const estado = r.estado || rAny.status || rAny.Estado || 'N/A'
-                
+
                 // ✅ FRONTEND LOGGING: Log values before display (only for first 5 rows and when sorting by percepciones)
                 if (i < 5 && (sortBy === 'percepcionestotales' || sortBy === 'totalpercepciones')) {
                   const rawValue = totalPercepciones;
                   const parsedValue = parseMoney(rawValue);
                   const formattedValue = formatCurrency(parsedValue);
-                  
+
                   console.log(`🟡 [FRONTEND DISPLAY DEBUG] Row ${i + 1}:`, {
                     nombre: nombre,
                     rawTotalPercepciones: rawValue,
@@ -354,7 +362,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                     allKeys: Object.keys(r).filter(k => k.toLowerCase().includes('percepcion') || k.toLowerCase().includes('total'))
                   });
                 }
-                
+
                 return (
                   <tr key={`${rfc}-${mes}-${i}`} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
                     <td className="px-4 py-3">
