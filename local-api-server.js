@@ -3,7 +3,6 @@ const cors = require("cors");
 const { Client } = require("pg");
 require("dotenv").config({ path: ".env.database" });
 const authService = require("./api-server/services/authService");
-const { authenticate: verifyToken } = require("./middleware/auth");
 // Try to load payrollFilterService - check both possible paths
 let payrollFilterService;
 try {
@@ -134,7 +133,7 @@ async function getFondosClient() {
 }
 
 // GET /api/employees - List employees with filters, sorting, and pagination
-app.get("/api/employees", verifyToken, async (req, res) => {
+app.get("/api/employees", async (req, res) => {
   try {
     const {
       q,
@@ -273,7 +272,7 @@ app.get("/api/employees", verifyToken, async (req, res) => {
 });
 
 // GET /api/user/profile - Get current user profile from Numerica_Users
-app.get("/api/user/profile", verifyToken, async (req, res) => {
+app.get("/api/user/profile", async (req, res) => {
   try {
     const userEmail = req.headers["x-user-email"]; // Email del usuario logueado
 
@@ -518,7 +517,7 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
 }
 
 // GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
-app.get("/api/payroll", verifyToken, async (req, res) => {
+app.get("/api/payroll", async (req, res) => {
   // COMMENTED OUT: Verbose logging - keeping only FPL/fondos logs active
   // console.error('========================================');
   // console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
@@ -711,7 +710,7 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/stats - Get statistics for payroll data
-app.get("/api/payroll/stats", verifyToken, async (req, res) => {
+app.get("/api/payroll/stats", async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -782,7 +781,7 @@ app.get("/api/payroll/stats", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/filters - Get filter options and counts for the payroll data
-app.get("/api/payroll/filters", verifyToken, async (req, res) => {
+app.get("/api/payroll/filters", async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1051,7 +1050,7 @@ app.get("/api/payroll/filters", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/filter-options - Alias for /api/payroll/filters (compatibility)
-app.get("/api/payroll/filter-options", verifyToken, async (req, res) => {
+app.get("/api/payroll/filter-options", async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1279,7 +1278,7 @@ app.get("/api/payroll/filter-options", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/periodos - Get available periods
-app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
+app.get("/api/payroll/periodos", async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1307,7 +1306,7 @@ app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/demographic - Get demographic data with pagination and filters
-app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
+app.get("/api/payroll/demographic", async (req, res) => {
   try {
     const {
       q,
@@ -1446,7 +1445,7 @@ app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/demographic/unique-count - Get unique CURP count
-app.get("/api/payroll/demographic/unique-count", verifyToken, async (req, res) => {
+app.get("/api/payroll/demographic/unique-count", async (req, res) => {
   try {
     const { status, cveper } = req.query;
 
@@ -1511,7 +1510,7 @@ app.get("/api/payroll/demographic/unique-count", verifyToken, async (req, res) =
 });
 
 // GET /api/percepciones - Get employee payroll data (percepciones) by CURP
-app.get("/api/percepciones", verifyToken, async (req, res) => {
+app.get("/api/percepciones", async (req, res) => {
   try {
     const { curp, cveper, pageSize = 1000, page = 1 } = req.query;
 
@@ -1592,7 +1591,7 @@ app.get("/api/percepciones", verifyToken, async (req, res) => {
 });
 
 // GET /api/payroll/data - Get payroll data for charts and analysis
-app.get("/api/payroll/data", verifyToken, async (req, res) => {
+app.get("/api/payroll/data", async (req, res) => {
   try {
     const { status, cveper, pageSize = 1000, page = 1 } = req.query;
 
@@ -1823,7 +1822,7 @@ app.get("/api/debug/routes", (req, res) => {
 
 // GET /api/payroll/rfc-from-curp - Get RFC from CURP
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get("/api/payroll/rfc-from-curp", verifyToken, async (req, res) => {
+app.get("/api/payroll/rfc-from-curp", async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[RFC-FROM-CURP API] [${requestId}] ==========================================`
@@ -1973,7 +1972,7 @@ app.get("/api/payroll/rfc-from-curp", verifyToken, async (req, res) => {
 
 // GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates from RFC
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
+app.get("/api/payroll/fecpla-from-rfc", async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FECPLA API] [${requestId}] ==========================================`
@@ -2338,7 +2337,7 @@ app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
 
 // GET /api/payroll/:rfc - Get specific employee from payroll
 // NOTE: This route MUST be AFTER all specific routes like /api/payroll/rfc-from-curp and /api/payroll/fecpla-from-rfc
-app.get("/api/payroll/:rfc", verifyToken, async (req, res) => {
+app.get("/api/payroll/:rfc", async (req, res) => {
   try {
     const { rfc } = req.params;
     const client = await getHistoricClient();
@@ -2395,7 +2394,7 @@ app.get("/api/payroll/:rfc", verifyToken, async (req, res) => {
 });
 
 // GET /api/employees/:id - Get specific employee
-app.get("/api/employees/:id", verifyToken, async (req, res) => {
+app.get("/api/employees/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const client = await getClient();
@@ -2455,7 +2454,7 @@ app.get("/api/employees/:id", verifyToken, async (req, res) => {
 // ============================================================================
 
 // GET /api/fondos - Get fondos data by RFC
-app.get("/api/fondos", verifyToken, async (req, res) => {
+app.get("/api/fondos", async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FONDOS API] [${requestId}] ==========================================`
@@ -2592,7 +2591,7 @@ app.get("/api/fondos", verifyToken, async (req, res) => {
 });
 
 // GET /api/fpl/data-from-rfc - Get FPL data by RFC and optional date
-app.get("/api/fpl/data-from-rfc", verifyToken, async (req, res) => {
+app.get("/api/fpl/data-from-rfc", async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FPL API] [${requestId}] ==========================================`
