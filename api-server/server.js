@@ -86,7 +86,8 @@ const originFunction = (origin, callback) => {
 };
 
 const corsOptions = {
-  origin: originFunction,
+  origin: "*",
+  // origin: originFunction,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: [
     "Content-Type",

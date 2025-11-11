@@ -370,27 +370,31 @@ app.get("/api/payroll/categorias-puestos", async (req, res) => {
 });
 
 // Obtener categoría de un puesto específico
-app.get("/api/payroll/puesto-categoria/:puesto", async (req, res) => {
-  try {
-    const { puesto } = req.params;
-    const categoria = nominasService.getPuestoCategorizado(puesto);
+app.get(
+  "/api/payroll/puesto-categoria/:puesto",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { puesto } = req.params;
+      const categoria = nominasService.getPuestoCategorizado(puesto);
 
-    res.json({
-      success: true,
-      puesto: puesto,
-      categoria: categoria,
-    });
-  } catch (error) {
-    console.error("❌ Error obteniendo categoría del puesto:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        puesto: puesto,
+        categoria: categoria,
+      });
+    } catch (error) {
+      console.error("❌ Error obteniendo categoría del puesto:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // Obtener estadísticas completas de payroll
-app.get("/api/payroll/stats", async (req, res) => {
+app.get("/api/payroll/stats", verifyToken, async (req, res) => {
   try {
     const result = await nominasService.getDatasetStats();
     res.json({
@@ -407,7 +411,7 @@ app.get("/api/payroll/stats", async (req, res) => {
 });
 
 // NUEVO: Endpoint de búsqueda de empleados por término (Nombre, CURP, RFC)
-app.get("/api/payroll/search", async (req, res) => {
+app.get("/api/payroll/search", verifyToken, async (req, res) => {
   try {
     const { term } = req.query;
 
@@ -497,7 +501,7 @@ app.get("/api/payroll/search", async (req, res) => {
 });
 
 // Obtener periodos únicos (cveper) desde payroll_data
-app.get("/api/payroll/periodos", async (req, res) => {
+app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
   try {
     const result = await nominasService.getUniquePayrollPeriods();
     res.json(result);
@@ -511,7 +515,7 @@ app.get("/api/payroll/periodos", async (req, res) => {
 });
 
 // NUEVO: Obtener períodos basado en un CURP específico siguiendo la metodología solicitada
-app.get("/api/payroll/periodos-from-curp", async (req, res) => {
+app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
   try {
     const { curp = "AICI710412MHGGHL23" } = req.query;
 
@@ -606,7 +610,7 @@ app.get("/api/payroll/periodos-from-curp", async (req, res) => {
 });
 
 // NUEVO: Obtener RFC basado en CURP desde historico_nominas_gsau
-app.get("/api/payroll/rfc-from-curp", async (req, res) => {
+app.get("/api/payroll/rfc-from-curp", verifyToken, async (req, res) => {
   try {
     const { curp } = req.query;
 
@@ -677,7 +681,7 @@ app.get("/api/payroll/rfc-from-curp", async (req, res) => {
 });
 
 // NUEVO: Obtener nombre completo basado en CURP desde historico_nominas_gsau
-app.get("/api/payroll/name-from-curp", async (req, res) => {
+app.get("/api/payroll/name-from-curp", verifyToken, async (req, res) => {
   try {
     const { curp } = req.query;
 
@@ -746,7 +750,7 @@ app.get("/api/payroll/name-from-curp", async (req, res) => {
 });
 
 // NUEVO: Obtener datos completos de FPL por RFC
-app.get("/api/fpl/data-from-rfc", async (req, res) => {
+app.get("/api/fpl/data-from-rfc", verifyToken, async (req, res) => {
   try {
     const { rfc, fechaFPL } = req.query;
 
@@ -909,7 +913,7 @@ app.get("/api/fpl/data-from-rfc", async (req, res) => {
 });
 
 // NUEVO: Obtener fechas FPL calculadas basado en RFC (fecpla + Antigüedad en Fondo)
-app.get("/api/payroll/fecpla-from-rfc", async (req, res) => {
+app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
   try {
     const { rfc } = req.query;
 
@@ -1223,7 +1227,7 @@ app.get("/api/payroll/fecpla-from-rfc", async (req, res) => {
 });
 
 // NUEVO: Endpoint para opciones de filtros demográficos
-app.get("/api/payroll/filter-options", async (req, res) => {
+app.get("/api/payroll/filter-options", verifyToken, async (req, res) => {
   console.log("🔍 DEBUG: Accediendo a /api/payroll/filter-options");
   console.log("🔍 DEBUG: Query params:", req.query);
 
@@ -1295,7 +1299,7 @@ app.get("/api/payroll/filter-options", async (req, res) => {
 });
 
 // NUEVO: Obtener filtros con cardinalidad en tiempo real
-app.get("/api/payroll/filters", async (req, res) => {
+app.get("/api/payroll/filters", verifyToken, async (req, res) => {
   console.log("🔍 DEBUG: Accediendo a /api/payroll/filters");
   console.log("🔍 DEBUG: Query params:", req.query);
 
@@ -1352,7 +1356,7 @@ app.get("/api/payroll/filters", async (req, res) => {
 });
 
 // Endpoint específico para tabla demográfica con server-side sorting
-app.get("/api/payroll/demographic", async (req, res) => {
+app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
   try {
     const {
       page,
@@ -1426,60 +1430,64 @@ app.get("/api/payroll/demographic", async (req, res) => {
 });
 
 // NUEVO: Obtener conteo de empleados únicos (CURPs únicos) con filtros
-app.get("/api/payroll/demographic/unique-count", async (req, res) => {
-  try {
-    const { search, puesto, sucursal, status, puestoCategorizado, cveper } =
-      req.query;
+app.get(
+  "/api/payroll/demographic/unique-count",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { search, puesto, sucursal, status, puestoCategorizado, cveper } =
+        req.query;
 
-    console.log(
-      "🔢 /api/payroll/demographic/unique-count: Parámetros recibidos:",
-      {
+      console.log(
+        "🔢 /api/payroll/demographic/unique-count: Parámetros recibidos:",
+        {
+          search,
+          puesto,
+          sucursal,
+          status,
+          puestoCategorizado,
+          cveper,
+        }
+      );
+
+      // Usar el service existente que ya maneja correctamente los filtros y parámetros
+      const result = await payrollFilterService.getUniqueCurpCount({
         search,
         puesto,
         sucursal,
         status,
         puestoCategorizado,
         cveper,
-      }
-    );
+      });
 
-    // Usar el service existente que ya maneja correctamente los filtros y parámetros
-    const result = await payrollFilterService.getUniqueCurpCount({
-      search,
-      puesto,
-      sucursal,
-      status,
-      puestoCategorizado,
-      cveper,
-    });
+      console.log("✅ Conteo CURPs únicos:", {
+        total: result.uniqueCurpCount,
+        hombres: result.uniqueMaleCount,
+        mujeres: result.uniqueFemaleCount,
+      });
 
-    console.log("✅ Conteo CURPs únicos:", {
-      total: result.uniqueCurpCount,
-      hombres: result.uniqueMaleCount,
-      mujeres: result.uniqueFemaleCount,
-    });
-
-    res.json({
-      success: true,
-      uniqueCurpCount: result.uniqueCurpCount,
-      uniqueMaleCount: result.uniqueMaleCount,
-      uniqueFemaleCount: result.uniqueFemaleCount,
-    });
-  } catch (error) {
-    console.error("❌ Error obteniendo conteo de CURPs únicos:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        uniqueCurpCount: result.uniqueCurpCount,
+        uniqueMaleCount: result.uniqueMaleCount,
+        uniqueFemaleCount: result.uniqueFemaleCount,
+      });
+    } catch (error) {
+      console.error("❌ Error obteniendo conteo de CURPs únicos:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // ============================================================================
 // RUTAS DE DOCUMENTOS DE GOOGLE DRIVE
 // ============================================================================
 
 // NUEVO: Buscar documentos PDF por nombre de empleado en Google Drive
-app.get("/api/documents/search-by-name", async (req, res) => {
+app.get("/api/documents/search-by-name", verifyToken, async (req, res) => {
   try {
     const { employeeName } = req.query;
 
@@ -1527,7 +1535,7 @@ app.get("/api/documents/search-by-name", async (req, res) => {
 });
 
 // NUEVO: Obtener URL de descarga directa para un documento
-app.get("/api/documents/download/:fileId", async (req, res) => {
+app.get("/api/documents/download/:fileId", verifyToken, async (req, res) => {
   try {
     const { fileId } = req.params;
 
@@ -1559,7 +1567,7 @@ app.get("/api/documents/download/:fileId", async (req, res) => {
 });
 
 // NUEVO: Obtener metadatos de un documento específico
-app.get("/api/documents/metadata/:fileId", async (req, res) => {
+app.get("/api/documents/metadata/:fileId", verifyToken, async (req, res) => {
   try {
     const { fileId } = req.params;
 
@@ -1590,7 +1598,7 @@ app.get("/api/documents/metadata/:fileId", async (req, res) => {
 });
 
 // NUEVO: Endpoint para búsqueda en subcarpetas de Google Drive
-app.get("/api/documents/search-subfolders", async (req, res) => {
+app.get("/api/documents/search-subfolders", verifyToken, async (req, res) => {
   try {
     const { employeeName } = req.query;
 
@@ -1638,7 +1646,7 @@ app.get("/api/documents/search-subfolders", async (req, res) => {
 // ============================================================================
 
 // TEMPORAL: Endpoint para debug - ver datos raw de historico_fondos_gsau
-app.get("/api/debug/fondos-raw", async (req, res) => {
+app.get("/api/debug/fondos-raw", verifyToken, async (req, res) => {
   try {
     const { rfc = "AICI7104122N7", limit = 5 } = req.query;
 
@@ -1763,7 +1771,7 @@ app.get("/api/debug/fondos-raw", async (req, res) => {
 });
 
 // TEMPORAL: Endpoint para debug - ver todos los campos disponibles
-app.get("/api/debug/employee-fields", async (req, res) => {
+app.get("/api/debug/employee-fields", verifyToken, async (req, res) => {
   try {
     const { curp = "AOMS920731HGTCRL07", cveper = "2025-06-25" } = req.query;
 
@@ -1890,7 +1898,7 @@ app.get("/api/debug/employee-fields", async (req, res) => {
 // ============================================================================
 
 // Obtener datos completos de nómina de un empleado específico por CURP y CVEPER
-app.get("/api/payroll/employee-data", async (req, res) => {
+app.get("/api/payroll/employee-data", verifyToken, async (req, res) => {
   try {
     const { curp, cveper } = req.query;
 
@@ -2180,7 +2188,7 @@ app.get("/api/payroll/employee-data", async (req, res) => {
 // ============================================================================
 
 // Obtener datos de percepciones de un empleado específico por CURP y CVEPER
-app.get("/api/percepciones", async (req, res) => {
+app.get("/api/percepciones", verifyToken, async (req, res) => {
   try {
     const { curp, cveper, pageSize = "10", page = "1" } = req.query;
 
@@ -2263,7 +2271,7 @@ app.get("/api/percepciones", async (req, res) => {
 });
 
 // NUEVO: Endpoint adicional /api/payroll/data para compatibilidad
-app.get("/api/payroll/data", async (req, res) => {
+app.get("/api/payroll/data", verifyToken, async (req, res) => {
   try {
     const {
       pageSize,
@@ -3299,7 +3307,7 @@ app.patch(
 // ============================================================================
 
 // Obtener perfil del usuario actual
-app.get("/api/user/profile", async (req, res) => {
+app.get("/api/user/profile", verifyToken, async (req, res) => {
   try {
     const userEmail = req.headers["x-user-email"];
 
@@ -3366,7 +3374,7 @@ app.get("/api/user/profile", async (req, res) => {
 });
 
 // Actualizar perfil del usuario actual
-app.put("/api/user/profile", async (req, res) => {
+app.put("/api/user/profile", verifyToken, async (req, res) => {
   try {
     const userEmail = req.headers["x-user-email"];
     const { firstName, lastName, phoneNumber } = req.body;
