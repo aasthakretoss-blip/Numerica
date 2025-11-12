@@ -493,32 +493,39 @@ class PayrollFilterService {
       // Query base para obtener datos de la tabla historico_nominas_gsau
       // MAPEO CORRECTO: usando los nombres exactos de las columnas como aparecen en la BD
       let query = `
-        SELECT 
-  "CURP" AS curp,
-  "Nombre completo" AS nombre,
-  "RFC" AS rfc,
-  "Puesto" AS puesto,
-  "Compañía" AS sucursal,
-  DATE(cveper)::text AS mes,
-  cveper AS periodo,
-  cveper AS cveper,
-  TO_CHAR(COALESCE(" SUELDO CLIENTE "::NUMERIC, 0), 'FM999999990.00') AS salario,
-  TO_CHAR((COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0)), 'FM999999990.00') AS comisiones,
-  TO_CHAR(COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0), 'FM999999990.00') AS totalpercepciones,
-  "Status" AS status,
+        SELECT
+  "cvecia" AS "cvecia",
+  "Compañía" AS "compania",
+  "cvetno" AS "cvetno",
+  "Sucursal" AS "sucursal",
+  "Localidad" AS "localidad",
+  "Periodicidad" AS "periodicidad",
+  "Clave trabajador" AS "claveTrabajador",
+  "Nombre completo" AS "nombreCompleto",
+  "Puesto" AS "puesto",
+  "RFC" AS "rfc",
+  "CURP" AS "curp",
+  "Sexo" AS "sexo",
+  "Número IMSS" AS "numeroIMSS",
+  "Antigüedad en FPL" AS "antiguedadFPL",
+  "Fecha antigüedad" AS "fechaAntiguedad",
+  "Fecha baja" AS "fechaBaja",
+  "Status" AS "status",
+  DATE(cveper)::text AS "mes",
+  cveper AS "periodo",
+  cveper AS "cveper",
+  TO_CHAR(COALESCE(" SUELDO CLIENTE "::NUMERIC, 0), 'FM999999990.00') AS "salario",
+  TO_CHAR((COALESCE(" COMISIONES CLIENTE "::NUMERIC,0)+COALESCE(" COMISIONES FACTURADAS "::NUMERIC,0)),'FM999999990.00') AS "comisiones",
+  TO_CHAR(COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC,0),'FM999999990.00') AS "totalpercepciones",
   CASE 
     WHEN "Status" = 'A' THEN 'Activo'
     WHEN "Status" = 'B' THEN 'Baja'
     WHEN "Status" = 'F' THEN 'Finiquito'
     ELSE 'N/A'
-  END AS estado,
-  "Periodicidad" AS periodicidad,
-  "Clave trabajador" AS "claveTrabajador",
-  "Número IMSS" AS "numeroIMSS",
-  "Fecha antigüedad" AS "fechaAntiguedad",
-  "Antigüedad en FPL" AS "antiguedadFPL"
+  END AS "estado"
 FROM historico_nominas_gsau
 WHERE 1=1
+
       `;
       let countQuery = `SELECT COUNT(*) as total FROM historico_nominas_gsau WHERE 1=1`;
       let queryParams = [];
