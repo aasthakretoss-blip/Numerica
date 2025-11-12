@@ -589,7 +589,18 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       puesto,
       sucursal,
       status,
-      cveper: cveper ? decodeURIComponent(cveper) : null,
+      cveper: (() => {
+        if (!cveper) return null;
+        try {
+          const decoded = decodeURIComponent(cveper);
+          const parsedDate = new Date(decoded);
+          if (isNaN(parsedDate)) return null;
+          // Normalize to YYYY-MM-DD (local or UTC safe)
+          return parsedDate.toISOString().split("T")[0];
+        } catch {
+          return null;
+        }
+      })(),
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
       fullData: fullData === "true" || fullData === true,
