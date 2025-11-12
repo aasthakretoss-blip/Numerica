@@ -24,7 +24,7 @@ export function useServerPagination(
     setError(null)
     
     try {
-      const baseUrl = isProduction ? 'https://numerica-2.onrender.com' : 'http://localhost:3001'
+      const baseUrl = isProduction ? 'http://numericaapi.kretosstechnology.com' : 'http://numericaapi.kretosstechnology.com'
       const url = `${baseUrl}${endpoint}?page=${page}&pageSize=${pageSize}&sortBy=${sortByParam}&sortDir=${sortDirParam}`
       console.log('📡 useServerPagination: Fetching with sorting:', { sortBy: sortByParam, sortDir: sortDirParam, url, isProduction })
       const response = await fetch(url)

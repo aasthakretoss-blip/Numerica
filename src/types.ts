@@ -1,6 +1,7 @@
 // Tipos para datos de nómina basados en la tabla historico_nominas_gsau
 export interface PayrollData {
-  rfc: string;
+  curp?: string;
+  rfc?: string;
   nombre: string;
   puesto: string;
   sucursal: string;

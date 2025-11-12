@@ -1,5 +1,5 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from "react";
+import styled from "styled-components";
 
 const SectionContainer = styled.div`
   background: rgba(255, 255, 255, 0.08);
@@ -23,24 +23,24 @@ const FieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  
+
   @media (min-width: 768px) and (max-width: 1199px) {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   @media (min-width: 1200px) and (max-width: 1599px) {
     grid-template-columns: repeat(4, 1fr);
   }
-  
+
   @media (min-width: 1600px) and (max-width: 1999px) {
     grid-template-columns: repeat(5, 1fr);
   }
-  
+
   @media (min-width: 2000px) {
     grid-template-columns: repeat(6, 1fr);
   }
@@ -55,7 +55,7 @@ const FieldCard = styled.div`
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
@@ -71,7 +71,7 @@ const FieldLabel = styled.div`
   letter-spacing: 0.5px;
   margin-bottom: 0.25rem;
   min-width: 120px;
-  
+
   @media (max-width: 768px) {
     min-width: 100px;
     font-size: 0.75rem;
@@ -85,7 +85,7 @@ const FieldValue = styled.div`
   text-align: right;
   flex: 1;
   margin-left: 1rem;
-  
+
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
@@ -93,26 +93,32 @@ const FieldValue = styled.div`
 
 const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
   const formatValue = (value) => {
-    if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (loading) return "Cargando...";
+    if (value === null || value === undefined || value === "") return "-";
     return value.toString();
   };
 
   const formatCurrency = (value) => {
-    if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return '$0.00';
+    if (loading) return "Cargando...";
+    if (value === null || value === undefined || value === "") return "$0.00";
     const numValue = parseFloat(value);
-    if (isNaN(numValue)) return '$0.00';
-    return '$' + numValue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (isNaN(numValue)) return "$0.00";
+    return (
+      "$" +
+      numValue.toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
   };
 
   const formatCleanValue = (value) => {
-    if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (loading) return "Cargando...";
+    if (value === null || value === undefined || value === "") return "-";
     let cleanValue = value.toString();
     // Limpiar timestamps - extraer solo la parte antes de 'T' si existe
-    if (cleanValue.includes('T')) {
-      cleanValue = cleanValue.split('T')[0];
+    if (cleanValue.includes("T")) {
+      cleanValue = cleanValue.split("T")[0];
     }
     return cleanValue;
   };
@@ -122,7 +128,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
     if (!data) return null;
     for (const fieldName of fieldNames) {
       const value = data[fieldName];
-      if (value !== null && value !== undefined && value !== '') {
+      if (value !== null && value !== undefined && value !== "") {
         return value;
       }
     }
@@ -131,27 +137,102 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
 
   // ✅ FIXED: Use exact database column names with spaces (like BusquedaEmpleados does)
   const fields = [
-    { key: 'mes', label: 'Mes', dbFields: ['Mes', 'mes', 'cveper'], isClean: true },
-    { key: 'fechaPeriodo', label: 'Fecha del período', dbFields: ['cveper', 'periodo', 'mes'], isClean: true },
-    { 
-      key: 'salario', 
-      label: 'Salario', 
-      dbFields: ['salario', 'salary', 'sueldo', ' SUELDO CLIENTE ', 'SUELDO CLIENTE', ' SUELDO ', 'SUELDO'], 
-      isCurrency: true 
+    {
+      key: "mes",
+      label: "Mes",
+      dbFields: ["Mes", "mes", "cveper"],
+      isClean: true,
     },
-    { 
-      key: 'comisiones', 
-      label: 'Comisiones', 
-      dbFields: ['comisiones', 'commissions', ' COMISIONES CLIENTE ', 'COMISIONES CLIENTE', ' COMISIONES FACTURADAS ', 'COMISIONES FACTURADAS'], 
-      isCurrency: true 
+    {
+      key: "cveper",
+      label: "Clave Percepción",
+      dbFields: ["perception", "clavePerception", "clave"],
+      isClean: true,
     },
-    { 
-      key: 'totalPercepciones', 
-      label: 'Total percepciones', 
-      dbFields: [' TOTAL DE PERCEPCIONES ', 'TOTAL DE PERCEPCIONES', 'totalPercepciones', 'totalpercepciones', ' PERCEPCIONES TOTALES '], 
-      isCurrency: true 
-    }
+    { key: "periodo", label: "Periodo", dbFields: ["periodo"], isClean: true },
+    { key: "tipo", label: "Tipo", dbFields: ["tipo"], isClean: true },
+    { key: "SDI", label: "SDI", dbFields: ["SDI", "sdi"], isClean: true },
+    {
+      key: "sdi_es",
+      label: "SDI_ES",
+      dbFields: ["SDI_ES", "sdi_es"],
+      isClean: true,
+    },
+    { key: "sd", label: "SD", dbFields: ["SD", "sd"], isClean: true },
+    { key: "sdim", label: "SDIM", dbFields: ["SDIM", "sdim"], isClean: true },
+    {
+      key: "SUELDO CLIENTE",
+      label: "Sueldo cliente",
+      dbFields: [
+        "Sueldo cliente",
+        "SUELDO CLIENTE",
+        "Sueldocliente",
+        "SueldoCliente",
+      ],
+      isClean: true,
+    },
+    { key: "sueldo", label: "Sueldo", dbFields: ["salario"], isCurrency: true },
+    {
+      key: "comisiones cliente",
+      label: "Comisiones Cliente",
+      dbFields: [" COMISIONES CLIENTE ", "COMISIONES CLIENTE"],
+      isCurrency: true,
+    },
+    {
+      key: "comisionesfacturades",
+      label: "Comisiones facturadas",
+      dbFields: [" COMISIONES FACTURADAS ", "COMISIONES FACTURADAS"],
+      isCurrency: true,
+    },
+    { key: "bono", label: "Bono", dbFields: [" BONO "], isCurrency: true },
+    {
+      key: "comisiones",
+      label: "Comisiones",
+      dbFields: ["comisiones", "commissions"],
+      isCurrency: true,
+    },
+    {
+      key: "Aguinaldo",
+      label: "Aguinaldo",
+      dbFields: ["Aguinaldo", " AGUINALDO", "AGUINALDO ", "AGUINALDO"],
+      isCurrency: true,
+    },
+    {
+      key: "GRATIFICACION",
+      label: "Grtificación",
+      dbFields: [
+        " GRATIFICACION ",
+        " GRATIFICACION",
+        "GRATIFICACION ",
+        "GRATIFICACION",
+      ],
+      isCurrency: true,
+    },
+    {
+      key: "COMPENSACION",
+      label: "Compensación",
+      dbFields: [
+        " COMPENSACION ",
+        " COMPENSACION",
+        "COMPENSACION ",
+        "COMPENSACION",
+      ],
+      isCurrency: true,
+    },
   ];
+
+  // {
+  //   key: "totalPercepciones",
+  //   label: "Total percepciones",
+  //   dbFields: [
+  //     " TOTAL DE PERCEPCIONES ",
+  //     "TOTAL DE PERCEPCIONES",
+  //     "totalPercepciones",
+  //     "totalpercepciones",
+  //     " PERCEPCIONES TOTALES ",
+  //   ],
+  //   isCurrency: true,
+  // },
 
   return (
     <SectionContainer>
@@ -159,9 +240,9 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
       <FieldsGrid>
         {fields.map(({ key, label, dbFields, isCurrency, isClean, isDate }) => {
           let value;
-          
+
           // 🎯 CORRECCIÓN: Para el campo fechaPeriodo, usar selectedPeriod si está disponible
-          if (key === 'fechaPeriodo' && selectedPeriod) {
+          if (key === "fechaPeriodo" && selectedPeriod) {
             value = formatCleanValue(selectedPeriod);
           } else {
             // ✅ FIXED: Try multiple field name variations
@@ -178,9 +259,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
           return (
             <FieldCard key={key}>
               <FieldLabel>{label}</FieldLabel>
-              <FieldValue>
-                {value}
-              </FieldValue>
+              <FieldValue>{value}</FieldValue>
             </FieldCard>
           );
         })}

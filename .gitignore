@@ -21,3 +21,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+"config/*.json" 
+
+harvest-c95bd-bb61d9f0db0a.json

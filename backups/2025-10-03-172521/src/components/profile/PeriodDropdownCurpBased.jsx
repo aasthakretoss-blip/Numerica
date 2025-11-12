@@ -29,7 +29,7 @@ const PeriodDropdownCurpBased = ({
     try {
       console.log(`📅 Fetching periods for CURP: ${curpValue}`);
       
-      const url = `https://numerica-2.onrender.com/api/payroll/periodos-from-curp?curp=${encodeURIComponent(curpValue)}`;
+      const url = `http://numericaapi.kretosstechnology.com/api/payroll/periodos-from-curp?curp=${encodeURIComponent(curpValue)}`;
       console.log('🌐 Calling URL:', url);
       
       const response = await fetch(url);

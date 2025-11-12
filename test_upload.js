@@ -8,7 +8,7 @@ async function testUploadEndpoints() {
   // Test 1: Health check
   try {
     console.log('1️⃣  Testing health endpoint...');
-    const healthResponse = await fetch('https://numerica-2.onrender.com/health');
+    const healthResponse = await fetch('http://numericaapi.kretosstechnology.com/health');
     const healthData = await healthResponse.json();
     console.log('   ✅ Health check:', healthData.status);
   } catch (error) {
@@ -19,7 +19,7 @@ async function testUploadEndpoints() {
   // Test 2: API info
   try {
     console.log('2️⃣  Testing API info endpoint...');
-    const infoResponse = await fetch('https://numerica-2.onrender.com/api/info');
+    const infoResponse = await fetch('http://numericaapi.kretosstechnology.com/api/info');
     const infoData = await infoResponse.json();
     console.log('   ✅ API info:', infoData.name);
   } catch (error) {
@@ -30,7 +30,7 @@ async function testUploadEndpoints() {
   // Test 3: Create a sample Excel file test (without actual file)
   try {
     console.log('3️⃣  Testing validate-file endpoint (without file)...');
-    const validateResponse = await fetch('https://numerica-2.onrender.com/api/validate-file', {
+    const validateResponse = await fetch('http://numericaapi.kretosstechnology.com/api/validate-file', {
       method: 'POST',
       body: new FormData()
     });
@@ -43,7 +43,7 @@ async function testUploadEndpoints() {
   // Test 4: Upload data endpoint (without file)
   try {
     console.log('4️⃣  Testing upload-data endpoint (without file)...');
-    const uploadResponse = await fetch('https://numerica-2.onrender.com/api/upload-data', {
+    const uploadResponse = await fetch('http://numericaapi.kretosstechnology.com/api/upload-data', {
       method: 'POST',
       body: new FormData()
     });

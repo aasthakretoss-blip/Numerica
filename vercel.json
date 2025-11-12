@@ -6,7 +6,7 @@
     "rewrites":  [
                      {
                          "source":  "/api/:path*",
-                         "destination":  "https://numerica-2.onrender.com/api/:path*"
+                         "destination":  "http://numericaapi.kretosstechnology.com/api/:path*"
                      },
                      {
                          "source":  "/:path*",

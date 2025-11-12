@@ -4,7 +4,7 @@ async function testPeriodsEndpoint() {
   try {
     console.log('🧪 Probando endpoint de períodos...');
     
-    const response = await fetch('https://numerica-2.onrender.com/api/payroll/periodos');
+    const response = await fetch('http://numericaapi.kretosstechnology.com/api/payroll/periodos');
     
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
@@ -33,14 +33,14 @@ async function testPayrollWithPeriodFilter() {
     console.log('\n🧪 Probando filtro de período en endpoint /api/payroll...');
     
     // Primero obtener un período válido
-    const periodsResponse = await fetch('https://numerica-2.onrender.com/api/payroll/periodos');
+    const periodsResponse = await fetch('http://numericaapi.kretosstechnology.com/api/payroll/periodos');
     const periodsResult = await periodsResponse.json();
     
     if (periodsResult.success && periodsResult.data.length > 0) {
       const testPeriod = periodsResult.data[0].value;
       console.log(`🔍 Probando con período: ${testPeriod}`);
       
-      const response = await fetch(`https://numerica-2.onrender.com/api/payroll?cveper=${encodeURIComponent(testPeriod)}&pageSize=5`);
+      const response = await fetch(`http://numericaapi.kretosstechnology.com/api/payroll?cveper=${encodeURIComponent(testPeriod)}&pageSize=5`);
       const result = await response.json();
       
       console.log('✅ Respuesta con filtro de período:');

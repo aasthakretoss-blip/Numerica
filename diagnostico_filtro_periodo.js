@@ -3,7 +3,7 @@
  */
 
 const API_CONFIG = {
-  BASE_URL: 'https://numerica-2.onrender.com'
+  BASE_URL: 'http://numericaapi.kretosstechnology.com'
 };
 
 const buildApiUrl = (endpoint) => {

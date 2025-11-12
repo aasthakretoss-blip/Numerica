@@ -145,7 +145,7 @@ async function fetchTotalFondosRecords(statsApiUrl, fetchFn = fetch) {
     // Extract base URL from stats API URL
     // Examples:
     // - https://n4xman7i5l.execute-api.us-east-1.amazonaws.com/prod/api/payroll/stats
-    // - https://numerica-2.onrender.com/api/payroll/stats
+    // - http://numericaapi.kretosstechnology.com/api/payroll/stats
     const urlObj = new URL(statsApiUrl);
     const baseApiUrl = `${urlObj.protocol}//${urlObj.host}`;
 
@@ -227,7 +227,7 @@ async function fetchTotalFondosRecords(statsApiUrl, fetchFn = fetch) {
  * @returns {Promise<Object>} Normalized response in old format
  */
 export async function fetchPayrollStats(apiUrl, fetchFn = fetch) {
-  const url = apiUrl || "http://localhost:3001/api/payroll/stats";
+  const url = apiUrl || "http://numericaapi.kretosstechnology.com/api/payroll/stats";
 
   console.log(
     `[PAYROLL STATS NORMALIZER] ==========================================`

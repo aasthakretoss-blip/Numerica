@@ -15,7 +15,14 @@ import { parseMoney, formatCurrency, formatPeriod } from "../utils/data.js";
 import { formatCveperForTable } from "../utils/periodUtils";
 import { useServerPagination } from "../hooks/useServerPagination.js";
 import { buildApiUrl } from "../config/apiConfig.js";
-import { surfaces, textColors, effects, brandColors, semanticColors } from "../styles/ColorTokens";
+import {
+  surfaces,
+  textColors,
+  effects,
+  brandColors,
+  semanticColors,
+} from "../styles/ColorTokens";
+import { authenticatedFetch } from "../services/authenticatedFetch";
 
 // Styled Components
 const TableContainer = styled.div`
@@ -198,8 +205,11 @@ const PageSizeSelect = styled.select`
 `;
 
 const PaginationButton = styled.button`
-  background: ${(props) => (props.$active ? brandColors.primary : surfaces.glass.strong)};
-  border: 1px solid ${(props) => (props.$active ? brandColors.primary : surfaces.borders.medium)};
+  background: ${(props) =>
+    props.$active ? brandColors.primary : surfaces.glass.strong};
+  border: 1px solid
+    ${(props) =>
+      props.$active ? brandColors.primary : surfaces.borders.medium};
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   color: ${(props) => (props.$active ? "white" : textColors.primary)};
@@ -212,7 +222,8 @@ const PaginationButton = styled.button`
   }
 
   &:hover:not(:disabled) {
-    background: ${(props) => (props.$active ? brandColors.primary : surfaces.buttons.filter)};
+    background: ${(props) =>
+      props.$active ? brandColors.primary : surfaces.buttons.filter};
     color: ${(props) => (props.$active ? "white" : brandColors.primary)};
     border-color: ${brandColors.primary};
   }
@@ -239,7 +250,9 @@ export default function EmployeeTable({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch(buildApiUrl('/api/payroll/stats'))
+        const response = await authenticatedFetch(
+          buildApiUrl("/api/payroll/stats")
+        );
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
@@ -258,22 +271,24 @@ export default function EmployeeTable({
   // ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
   // IMPORTANT: These are the field names the BACKEND expects in the orderBy parameter
   const FRONTEND_TO_BACKEND_FIELD_MAP = {
-    'nombre': 'nombre',
-    'curp': 'curp',
-    'puesto': 'puesto',
-    'sucursal': 'sucursal',
-    'periodo': 'periodo',        // Backend expects 'periodo' (maps to cveper internally)
-    'mes': 'periodo',             // Frontend uses 'mes', backend expects 'periodo'
-    'salario': 'salario',         // Backend expects 'salario' (maps to SUELDO CLIENTE internally)
-    'sueldo': 'salario',          // Frontend uses 'sueldo', backend expects 'salario'
-    'comisiones': 'comisiones',    // Backend expects 'comisiones' (sums both commission types)
-    'percepcionesTotales': 'percepcionestotales',  // Backend expects 'percepcionestotales'
-    'totalPercepciones': 'totalpercepciones',      // Backend expects 'totalpercepciones'
-    'estado': 'estado'
+    nombre: "nombre",
+    curp: "curp",
+    puesto: "puesto",
+    sucursal: "sucursal",
+    periodo: "periodo", // Backend expects 'periodo' (maps to cveper internally)
+    mes: "periodo", // Frontend uses 'mes', backend expects 'periodo'
+    salario: "salario", // Backend expects 'salario' (maps to SUELDO CLIENTE internally)
+    sueldo: "salario", // Frontend uses 'sueldo', backend expects 'salario'
+    comisiones: "comisiones", // Backend expects 'comisiones' (sums both commission types)
+    percepcionesTotales: "percepcionestotales", // Backend expects 'percepcionestotales'
+    totalPercepciones: "totalpercepciones", // Backend expects 'totalpercepciones'
+    estado: "estado",
   };
 
   const getMappedFieldName = (frontendFieldName) => {
-    return FRONTEND_TO_BACKEND_FIELD_MAP[frontendFieldName] || frontendFieldName;
+    return (
+      FRONTEND_TO_BACKEND_FIELD_MAP[frontendFieldName] || frontendFieldName
+    );
   };
 
   const getSortIcon = (key) => {
@@ -281,7 +296,7 @@ export default function EmployeeTable({
     const backendFieldName = getMappedFieldName(key);
     // Compare with sortBy (which now contains backend field name)
     const isActive = sortBy === backendFieldName || sortBy === key;
-    
+
     if (!isActive) return <FaSort />;
     return sortDir === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
@@ -294,7 +309,10 @@ export default function EmployeeTable({
 
     // ✅ MAP frontend column key to backend field name
     const backendFieldName = getMappedFieldName(key);
-    console.log('🔵 EmployeeTable.jsx: Field mapping:', { frontendKey: key, backendField: backendFieldName });
+    console.log("🔵 EmployeeTable.jsx: Field mapping:", {
+      frontendKey: key,
+      backendField: backendFieldName,
+    });
 
     // ✅ Check if this column is currently sorted (compare backend field names)
     let newDirection;
@@ -306,10 +324,10 @@ export default function EmployeeTable({
       newDirection = "asc";
     }
 
-    console.log('📤 EmployeeTable.jsx: Sending sort change to backend:', { 
-      frontendKey: key, 
+    console.log("📤 EmployeeTable.jsx: Sending sort change to backend:", {
+      frontendKey: key,
       backendField: backendFieldName,
-      direction: newDirection 
+      direction: newDirection,
     });
 
     // ✅ IMPORTANT: Send backend field name, not frontend key
@@ -324,7 +342,11 @@ export default function EmployeeTable({
     { key: "periodo", label: "Período", sortable: true },
     { key: "salario", label: "Salario", sortable: true },
     { key: "comisiones", label: "Comisiones", sortable: true },
-    { key: "percepcionesTotales", label: "Percepciones totales", sortable: true },
+    {
+      key: "percepcionesTotales",
+      label: "Percepciones totales",
+      sortable: true,
+    },
     { key: "estado", label: "Estado", sortable: true },
   ];
 
@@ -336,12 +358,15 @@ export default function EmployeeTable({
         curp: emp.curp || emp.curve || emp.rfc || "N/A",
         puesto: emp.position || emp.puesto || "N/A",
         sucursal: emp.department || emp.sucursal || "N/A",
-        periodo: formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || "N/A",
+        periodo:
+          formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || "N/A",
         salario: parseFloat(emp.salary || emp.sueldo) || 0,
         comisiones: parseFloat(emp.commissions || emp.comisiones) || 0,
         comisionesCliente: parseFloat(emp.comisionesCliente || 0),
         comisionesFacturadas: parseFloat(emp.comisionesFacturadas || 0),
-        percepcionesTotales: parseFloat(emp[" TOTAL DE PERCEPCIONES "] || emp.totalPercepciones) || 0,
+        percepcionesTotales:
+          parseFloat(emp[" TOTAL DE PERCEPCIONES "] || emp.totalPercepciones) ||
+          0,
         estado: emp.status || emp.estado || "N/A",
         perfilUrl: null,
       };
@@ -356,7 +381,10 @@ export default function EmployeeTable({
     return (
       <TableContainer>
         <LoadingContainer>
-          <FaSpinner size={32} style={{ animation: "spin 1s linear infinite" }} />
+          <FaSpinner
+            size={32}
+            style={{ animation: "spin 1s linear infinite" }}
+          />
           <p style={{ marginTop: "1rem" }}>Cargando datos de empleados...</p>
         </LoadingContainer>
       </TableContainer>
@@ -379,7 +407,15 @@ export default function EmployeeTable({
       if (page <= 4) {
         pages.push(1, 2, 3, 4, 5, "...", totalPages);
       } else if (page >= totalPages - 3) {
-        pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        pages.push(
+          1,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages
+        );
       } else {
         pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
       }
@@ -413,7 +449,9 @@ export default function EmployeeTable({
     }
 
     // Construir URL completa para abrir en nueva pestaña
-    const fullUrl = `${window.location.origin}/perfil/${encodeURIComponent(identifier)}`;
+    const fullUrl = `${window.location.origin}/perfil/${encodeURIComponent(
+      identifier
+    )}`;
 
     // Abrir en nueva pestaña
     window.open(fullUrl, "_blank", "noopener,noreferrer");
@@ -441,59 +479,79 @@ export default function EmployeeTable({
           </TableHeader>
           <TableBody>
             {displayData.map((employee, index) => {
-              const rowKey = `${(employee.curp || employee.rfc || employee.nombre || 'noid')}-${(employee.periodo || employee.mes || 'noperiod')}`;
+              const rowKey = `${
+                employee.curp || employee.rfc || employee.nombre || "noid"
+              }-${employee.periodo || employee.mes || "noperiod"}`;
               return (
-              <TableRow key={rowKey}>
-                <TableCell>
-                  <EmployeeNameButton
-                    onClick={() => handleViewEmployee(employee)}
-                    title={`Ver perfil de ${employee.nombre}`}
-                  >
-                    {employee.nombre}
-                  </EmployeeNameButton>
-                </TableCell>
-                <TableCell>
-                  <code
+                <TableRow key={rowKey}>
+                  <TableCell>
+                    <EmployeeNameButton
+                      onClick={() => handleViewEmployee(employee)}
+                      title={`Ver perfil de ${employee.nombre}`}
+                    >
+                      {employee.nombre}
+                    </EmployeeNameButton>
+                  </TableCell>
+                  <TableCell>
+                    <code
+                      style={{
+                        background: surfaces.buttons.filter,
+                        padding: "0.25rem 0.5rem",
+                        borderRadius: "4px",
+                        color: brandColors.primary,
+                      }}
+                    >
+                      {employee.curp}
+                    </code>
+                  </TableCell>
+                  <TableCell>{employee.puesto}</TableCell>
+                  <TableCell>{employee.sucursal}</TableCell>
+                  <TableCell
                     style={{
-                      background: surfaces.buttons.filter,
-                      padding: "0.25rem 0.5rem",
-                      borderRadius: "4px",
-                      color: brandColors.primary,
+                      fontFamily: "monospace",
+                      fontSize: "0.85rem",
+                      color: brandColors.primaryDark,
                     }}
                   >
-                    {employee.curp}
-                  </code>
-                </TableCell>
-                <TableCell>{employee.puesto}</TableCell>
-                <TableCell>{employee.sucursal}</TableCell>
-                <TableCell style={{ fontFamily: "monospace", fontSize: "0.85rem", color: brandColors.primaryDark }}>
-                  {employee.periodo || "N/A"}
-                </TableCell>
-                <TableCell>
-                  <strong>
-                    {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(employee.salario)}
-                  </strong>
-                </TableCell>
-                <TableCell>
-                  {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(employee.comisiones)}
-                </TableCell>
-                <TableCell>
-                  <strong style={{ color: brandColors.primary }}>
-                    {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
-                      employee.percepcionesTotales
-                    )}
-                  </strong>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge $status={employee.estado}>{employee.estado}</StatusBadge>
-                </TableCell>
-              </TableRow>
-            );})}
+                    {employee.periodo || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <strong>
+                      {new Intl.NumberFormat("es-MX", {
+                        style: "currency",
+                        currency: "MXN",
+                      }).format(employee.salario)}
+                    </strong>
+                  </TableCell>
+                  <TableCell>
+                    {new Intl.NumberFormat("es-MX", {
+                      style: "currency",
+                      currency: "MXN",
+                    }).format(employee.comisiones)}
+                  </TableCell>
+                  <TableCell>
+                    <strong style={{ color: brandColors.primary }}>
+                      {new Intl.NumberFormat("es-MX", {
+                        style: "currency",
+                        currency: "MXN",
+                      }).format(employee.percepcionesTotales)}
+                    </strong>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge $status={employee.estado}>
+                      {employee.estado}
+                    </StatusBadge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {displayData.length === 0 && !loading && (
               <tr>
                 <TableCell colSpan={columns.length}>
                   <NoResultsContainer>
-                    <h3 style={{ marginBottom: "0.5rem" }}>No se encontraron empleados</h3>
+                    <h3 style={{ marginBottom: "0.5rem" }}>
+                      No se encontraron empleados
+                    </h3>
                     <p>Ajusta los filtros o términos de búsqueda</p>
                   </NoResultsContainer>
                 </TableCell>
@@ -507,7 +565,8 @@ export default function EmployeeTable({
         <PaginationContainer>
           <PaginationInfo>
             Mostrando {(pagination.page - 1) * pagination.pageSize + 1} -{" "}
-            {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total} empleados
+            {Math.min(pagination.page * pagination.pageSize, pagination.total)}{" "}
+            de {pagination.total} empleados
             {stats && (
               <span style={{ marginLeft: "1rem", color: brandColors.primary }}>
                 Total en BD: {stats.totalRecords?.toLocaleString()}
@@ -515,7 +574,10 @@ export default function EmployeeTable({
             )}
           </PaginationInfo>
           <PaginationControls>
-            <PageSizeSelect value={pagination.pageSize} onChange={(e) => handlePageSizeChange(Number(e.target.value))}>
+            <PageSizeSelect
+              value={pagination.pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            >
               {PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size} value={size}>
                   {size} por página
@@ -541,7 +603,10 @@ export default function EmployeeTable({
 
             {generatePageNumbers().map((pageNum, index) =>
               pageNum === "..." ? (
-                <span key={`ellipsis-${index}`} style={{ padding: "0.5rem", color: textColors.muted }}>
+                <span
+                  key={`ellipsis-${index}`}
+                  style={{ padding: "0.5rem", color: textColors.muted }}
+                >
                   ...
                 </span>
               ) : (

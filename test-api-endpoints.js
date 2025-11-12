@@ -47,7 +47,7 @@ async function testEndpoint(url, description) {
 async function main() {
   console.log('🚀 Testing API Endpoints...\n');
   
-  const baseUrl = 'https://numerica-2.onrender.com';
+  const baseUrl = 'http://numericaapi.kretosstechnology.com';
   
   const endpoints = [
     { url: `${baseUrl}/health`, desc: 'Health Check' },

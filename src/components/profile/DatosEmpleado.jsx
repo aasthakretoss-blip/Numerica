@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaUser, FaSpinner, FaCalendarAlt, FaBuilding, FaIdCard, FaUserTie, FaClock } from 'react-icons/fa';
 import { buildApiUrl } from '../../config/apiConfig';
+import authenticatedFetch from '../../services/authenticatedFetch';
 
 const DatosContainer = styled.div`
   width: 100%;
@@ -263,7 +264,7 @@ const DatosEmpleado = ({ rfc, selectedCveper, onEmployeeDataLoaded }) => {
           params.append('cveper', cveperValue);
         }
         
-        const response = await fetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
+        const response = await authenticatedFetch(`${buildApiUrl('/api/percepciones')}?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar datos del empleado');

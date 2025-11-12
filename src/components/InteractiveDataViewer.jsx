@@ -1,16 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
-import styled from 'styled-components';
-import { 
-  FaTable, FaUsers, FaChartBar, FaBriefcase, 
-  FaSpinner, FaTimes, FaInfoCircle, FaExpand,
-  FaSort, FaSortUp, FaSortDown,
-  FaAngleDoubleLeft, FaAngleDoubleRight, 
-  FaChevronLeft, FaChevronRight
-} from 'react-icons/fa';
-import { useChartEvents, SELECTION_TYPES } from '../hooks/useChartEvents';
-import { buildDemographicFilterParams } from '../services/demographicFiltersApi';
-import { formatCveperForTable } from '../utils/periodUtils';
-import { buildApiUrl } from '../config/apiConfig';
+import { useState, useEffect, useMemo } from "react";
+import styled from "styled-components";
+import {
+  FaTable,
+  FaUsers,
+  FaChartBar,
+  FaBriefcase,
+  FaSpinner,
+  FaTimes,
+  FaInfoCircle,
+  FaExpand,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaAngleDoubleLeft,
+  FaAngleDoubleRight,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
+import { useChartEvents, SELECTION_TYPES } from "../hooks/useChartEvents";
+import { buildDemographicFilterParams } from "../services/demographicFiltersApi";
+import { formatCveperForTable } from "../utils/periodUtils";
+import { buildApiUrl } from "../config/apiConfig";
+import authenticatedFetch from "../services/authenticatedFetch";
 
 // Styled Components para diseño horizontal y ancho completo
 const ViewerContainer = styled.div`
@@ -30,7 +41,11 @@ const ViewerHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(37, 99, 235, 0.05)
+  );
   border-bottom: 1px solid rgba(59, 130, 246, 0.2);
 `;
 
@@ -69,23 +84,30 @@ const HeaderRight = styled.div`
 `;
 
 const ActionButton = styled.button`
-  background: ${props => props.$variant === 'close' ? 
-    'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)'};
-  border: 1px solid ${props => props.$variant === 'close' ? 
-    'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'};
+  background: ${(props) =>
+    props.$variant === "close"
+      ? "rgba(239, 68, 68, 0.1)"
+      : "rgba(59, 130, 246, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.$variant === "close"
+        ? "rgba(239, 68, 68, 0.3)"
+        : "rgba(59, 130, 246, 0.3)"};
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
-  color: ${props => props.$variant === 'close' ? '#dc2626' : '#1e3a8a'};
+  color: ${(props) => (props.$variant === "close" ? "#dc2626" : "#1e3a8a")};
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  
+
   &:hover {
-    background: ${props => props.$variant === 'close' ? 
-      'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'};
+    background: ${(props) =>
+      props.$variant === "close"
+        ? "rgba(239, 68, 68, 0.2)"
+        : "rgba(59, 130, 246, 0.2)"};
     transform: translateY(-1px);
   }
 `;
@@ -180,7 +202,7 @@ const SortButton = styled.button`
   gap: 0.5rem;
   font-weight: inherit;
   font-size: inherit;
-  
+
   &:hover {
     color: #2563eb;
   }
@@ -193,7 +215,7 @@ const TableBody = styled.tbody`
 const TableRow = styled.tr`
   border-bottom: 1px solid rgba(229, 231, 235, 0.5);
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(59, 130, 246, 0.05);
   }
@@ -215,7 +237,7 @@ const EmployeeNameButton = styled.button`
   cursor: pointer;
   text-decoration: underline;
   font-size: inherit;
-  
+
   &:hover {
     color: #1d4ed8;
   }
@@ -226,30 +248,43 @@ const StatusBadge = styled.span`
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
-  background: ${props => {
+  background: ${(props) => {
     switch (props.$status) {
-      case 'Activo': return 'rgba(34, 197, 94, 0.2)';
-      case 'Baja': return 'rgba(239, 68, 68, 0.2)';
-      case 'Finiquitado': return 'rgba(245, 158, 11, 0.2)';
-      default: return 'rgba(156, 163, 175, 0.2)';
+      case "Activo":
+        return "rgba(34, 197, 94, 0.2)";
+      case "Baja":
+        return "rgba(239, 68, 68, 0.2)";
+      case "Finiquitado":
+        return "rgba(245, 158, 11, 0.2)";
+      default:
+        return "rgba(156, 163, 175, 0.2)";
     }
   }};
-  color: ${props => {
+  color: ${(props) => {
     switch (props.$status) {
-      case 'Activo': return '#059669';
-      case 'Baja': return '#dc2626';
-      case 'Finiquitado': return '#d97706';
-      default: return '#6b7280';
+      case "Activo":
+        return "#059669";
+      case "Baja":
+        return "#dc2626";
+      case "Finiquitado":
+        return "#d97706";
+      default:
+        return "#6b7280";
     }
   }};
-  border: 1px solid ${props => {
-    switch (props.$status) {
-      case 'Activo': return 'rgba(34, 197, 94, 0.3)';
-      case 'Baja': return 'rgba(239, 68, 68, 0.3)';
-      case 'Finiquitado': return 'rgba(245, 158, 11, 0.3)';
-      default: return 'rgba(156, 163, 175, 0.3)';
-    }
-  }};
+  border: 1px solid
+    ${(props) => {
+      switch (props.$status) {
+        case "Activo":
+          return "rgba(34, 197, 94, 0.3)";
+        case "Baja":
+          return "rgba(239, 68, 68, 0.3)";
+        case "Finiquitado":
+          return "rgba(245, 158, 11, 0.3)";
+        default:
+          return "rgba(156, 163, 175, 0.3)";
+      }
+    }};
 `;
 
 const LoadingContainer = styled.div`
@@ -300,7 +335,7 @@ const PageSizeSelect = styled.select`
   color: #374151;
   font-size: 0.9rem;
   margin-right: 1rem;
-  
+
   option {
     background: white;
     color: #374151;
@@ -308,19 +343,21 @@ const PageSizeSelect = styled.select`
 `;
 
 const PaginationButton = styled.button`
-  background: ${props => props.$active ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.9)'};
-  border: 1px solid ${props => props.$active ? '#3b82f6' : 'rgba(229, 231, 235, 0.8)'};
+  background: ${(props) =>
+    props.$active ? "rgba(59, 130, 246, 0.2)" : "rgba(255, 255, 255, 0.9)"};
+  border: 1px solid
+    ${(props) => (props.$active ? "#3b82f6" : "rgba(229, 231, 235, 0.8)")};
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
-  color: ${props => props.$active ? '#1e3a8a' : '#6b7280'};
+  color: ${(props) => (props.$active ? "#1e3a8a" : "#6b7280")};
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   &:hover:not(:disabled) {
     background: rgba(59, 130, 246, 0.1);
     color: #1e3a8a;
@@ -345,20 +382,26 @@ const getSelectionIcon = (type) => {
 
 // Función para obtener descripción legible de la selección
 const getSelectionDescription = (selection) => {
-  if (!selection) return 'Sin selección';
+  if (!selection) return "Sin selección";
 
   const { type, data, source } = selection;
 
   switch (type) {
     case SELECTION_TYPES.PYRAMID_AGE_GENDER:
-      return `${data.gender === 'male' ? 'Hombres' : 'Mujeres'} de ${data.age} años`;
-    
+      return `${data.gender === "male" ? "Hombres" : "Mujeres"} de ${
+        data.age
+      } años`;
+
     case SELECTION_TYPES.SALARY_AGE_GENDER_BAND:
-      return `${data.gender === 'male' ? 'Hombres' : 'Mujeres'} de ${data.age} años - ${data.salaryBand?.label || 'Banda salarial'}`;
-    
+      return `${data.gender === "male" ? "Hombres" : "Mujeres"} de ${
+        data.age
+      } años - ${data.salaryBand?.label || "Banda salarial"}`;
+
     case SELECTION_TYPES.POSITION_GENDER:
-      return `${data.gender === 'male' ? 'Hombres' : 'Mujeres'} - ${data.position}`;
-    
+      return `${data.gender === "male" ? "Hombres" : "Mujeres"} - ${
+        data.position
+      }`;
+
     default:
       return `Selección de ${source}`;
   }
@@ -366,39 +409,39 @@ const getSelectionDescription = (selection) => {
 
 export default function InteractiveDataViewer() {
   const { currentSelection, clearSelection } = useChartEvents();
-  
+
   // Estado para datos
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     shown: 0,
-    uniqueEmployees: 0
+    uniqueEmployees: 0,
   });
-  
+
   // Estado para paginación
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 50,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   });
-  
+
   // Estado para sorting
-  const [sortBy, setSortBy] = useState('nombre');
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortBy, setSortBy] = useState("nombre");
+  const [sortDir, setSortDir] = useState("asc");
 
   // Definir columnas de la tabla
   const columns = [
-    { key: 'nombre', label: 'Empleado', sortable: true },
-    { key: 'curp', label: 'CURP', sortable: true },
-    { key: 'puesto', label: 'Puesto', sortable: true },
-    { key: 'sucursal', label: 'Sucursal', sortable: true },
-    { key: 'periodo', label: 'Período', sortable: true },
-    { key: 'salario', label: 'Salario', sortable: true },
-    { key: 'comisiones', label: 'Comisiones', sortable: true },
-    { key: 'total', label: 'Total', sortable: true },
-    { key: 'estado', label: 'Estado', sortable: true }
+    { key: "nombre", label: "Empleado", sortable: true },
+    { key: "curp", label: "CURP", sortable: true },
+    { key: "puesto", label: "Puesto", sortable: true },
+    { key: "sucursal", label: "Sucursal", sortable: true },
+    { key: "periodo", label: "Período", sortable: true },
+    { key: "salario", label: "Salario", sortable: true },
+    { key: "comisiones", label: "Comisiones", sortable: true },
+    { key: "total", label: "Total", sortable: true },
+    { key: "estado", label: "Estado", sortable: true },
   ];
 
   // Construir filtros basados en la selección actual
@@ -407,7 +450,7 @@ export default function InteractiveDataViewer() {
 
     const { type, data } = currentSelection;
     const filters = {
-      status: 'A' // Solo empleados activos
+      status: "A", // Solo empleados activos
     };
 
     switch (type) {
@@ -415,11 +458,11 @@ export default function InteractiveDataViewer() {
         // No podemos filtrar por edad exacta en el backend actual
         // Mostraremos todos los empleados con explicación
         break;
-      
+
       case SELECTION_TYPES.SALARY_AGE_GENDER_BAND:
         // Similar al anterior, no podemos filtrar por edad/salario exacto
         break;
-      
+
       case SELECTION_TYPES.POSITION_GENDER:
         if (data.position) {
           filters.puesto = data.position;
@@ -443,30 +486,35 @@ export default function InteractiveDataViewer() {
     try {
       // Construir parámetros para la API
       const filterParams = buildFiltersFromSelection;
-      
+
       const additionalParams = {
         page: pagination.page,
         pageSize: pagination.pageSize,
         sortBy,
-        sortDir
+        sortDir,
       };
-      
-      const params = buildDemographicFilterParams(filterParams, additionalParams);
-      
-      console.log('📊 InteractiveDataViewer: Cargando datos con selección:', {
+
+      const params = buildDemographicFilterParams(
+        filterParams,
+        additionalParams
+      );
+
+      console.log("📊 InteractiveDataViewer: Cargando datos con selección:", {
         selection: currentSelection,
         filters: filterParams,
-        params: params.toString()
+        params: params.toString(),
       });
 
-      const response = await fetch(`${buildApiUrl('/api/payroll/demographic')}?${params}`);
-      
+      const response = await authenticatedFetch(
+        `${buildApiUrl("/api/payroll/demographic")}?${params}`
+      );
+
       if (response.ok) {
         const result = await response.json();
-        
+
         if (result.success) {
           // Transformar datos para la tabla
-          const transformedData = result.data.map(emp => ({
+          const transformedData = result.data.map((emp) => ({
             nombre: emp.nombre,
             curp: emp.curp,
             puesto: emp.puesto,
@@ -475,25 +523,30 @@ export default function InteractiveDataViewer() {
             salario: emp.sueldo || 0,
             comisiones: emp.comisiones || 0,
             total: emp.totalPercepciones || 0,
-            estado: emp.status === 'A' ? 'Activo' : emp.status === 'B' ? 'Baja' : 'Finiquitado'
+            estado:
+              emp.status === "A"
+                ? "Activo"
+                : emp.status === "B"
+                ? "Baja"
+                : "Finiquitado",
           }));
 
           setData(transformedData);
-          setPagination(prev => ({
+          setPagination((prev) => ({
             ...prev,
             total: result.total || 0,
-            totalPages: Math.ceil((result.total || 0) / prev.pageSize)
+            totalPages: Math.ceil((result.total || 0) / prev.pageSize),
           }));
-          
+
           setStats({
             total: result.total || 0,
             shown: transformedData.length,
-            uniqueEmployees: result.total || 0 // Asumiendo que son únicos
+            uniqueEmployees: result.total || 0, // Asumiendo que son únicos
           });
         }
       }
     } catch (error) {
-      console.error('❌ Error cargando datos:', error);
+      console.error("❌ Error cargando datos:", error);
     } finally {
       setLoading(false);
     }
@@ -507,30 +560,30 @@ export default function InteractiveDataViewer() {
   // Manejadores de eventos
   const handleSort = (key) => {
     if (key === sortBy) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortBy(key);
-      setSortDir('asc');
+      setSortDir("asc");
     }
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const getSortIcon = (key) => {
     if (sortBy !== key) return <FaSort />;
-    return sortDir === 'asc' ? <FaSortUp /> : <FaSortDown />;
+    return sortDir === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination((prev) => ({ ...prev, page: newPage }));
     }
   };
 
   const handlePageSizeChange = (newPageSize) => {
-    setPagination(prev => ({ 
-      ...prev, 
-      pageSize: newPageSize, 
-      page: 1 
+    setPagination((prev) => ({
+      ...prev,
+      pageSize: newPageSize,
+      page: 1,
     }));
   };
 
@@ -538,7 +591,7 @@ export default function InteractiveDataViewer() {
     const identifier = employee.curp?.trim();
     if (identifier) {
       const fullUrl = `${window.location.origin}/perfil/${identifier}`;
-      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -547,18 +600,26 @@ export default function InteractiveDataViewer() {
     const { page, totalPages } = pagination;
     const pages = [];
     const maxVisible = 7;
-    
+
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
       if (page <= 4) {
-        pages.push(1, 2, 3, 4, 5, '...', totalPages);
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
       } else if (page >= totalPages - 3) {
-        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        pages.push(
+          1,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages
+        );
       } else {
-        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+        pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
       }
     }
     return pages;
@@ -611,14 +672,17 @@ export default function InteractiveDataViewer() {
         <TableContainer>
           {loading ? (
             <LoadingContainer>
-              <FaSpinner size={32} style={{ animation: 'spin 1s linear infinite' }} />
+              <FaSpinner
+                size={32}
+                style={{ animation: "spin 1s linear infinite" }}
+              />
               <p>Cargando datos de selección...</p>
             </LoadingContainer>
           ) : data.length === 0 ? (
             <EmptyContainer>
               <FaInfoCircle size={32} />
               <p>No hay datos disponibles para esta selección</p>
-              <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>
+              <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
                 Intenta hacer clic en una barra diferente del gráfico
               </p>
             </EmptyContainer>
@@ -627,7 +691,7 @@ export default function InteractiveDataViewer() {
               <Table>
                 <TableHeaderRow>
                   <tr>
-                    {columns.map(col => (
+                    {columns.map((col) => (
                       <HeaderCell key={col.key}>
                         {col.sortable ? (
                           <SortButton onClick={() => handleSort(col.key)}>
@@ -645,7 +709,7 @@ export default function InteractiveDataViewer() {
                   {data.map((employee, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        <EmployeeNameButton 
+                        <EmployeeNameButton
                           onClick={() => handleViewEmployee(employee)}
                           title={`Ver perfil de ${employee.nombre}`}
                         >
@@ -653,26 +717,43 @@ export default function InteractiveDataViewer() {
                         </EmployeeNameButton>
                       </TableCell>
                       <TableCell>
-                        <code style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                        <code
+                          style={{
+                            background: "rgba(59, 130, 246, 0.1)",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                          }}
+                        >
                           {employee.curp}
                         </code>
                       </TableCell>
                       <TableCell>{employee.puesto}</TableCell>
                       <TableCell>{employee.sucursal}</TableCell>
-                      <TableCell style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                      <TableCell
+                        style={{ fontFamily: "monospace", fontSize: "0.85rem" }}
+                      >
                         {employee.periodo}
                       </TableCell>
                       <TableCell>
                         <strong>
-                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.salario)}
+                          {new Intl.NumberFormat("es-MX", {
+                            style: "currency",
+                            currency: "MXN",
+                          }).format(employee.salario)}
                         </strong>
                       </TableCell>
                       <TableCell>
-                        {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.comisiones)}
+                        {new Intl.NumberFormat("es-MX", {
+                          style: "currency",
+                          currency: "MXN",
+                        }).format(employee.comisiones)}
                       </TableCell>
                       <TableCell>
-                        <strong style={{ color: '#1e3a8a' }}>
-                          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(employee.total)}
+                        <strong style={{ color: "#1e3a8a" }}>
+                          {new Intl.NumberFormat("es-MX", {
+                            style: "currency",
+                            currency: "MXN",
+                          }).format(employee.total)}
                         </strong>
                       </TableCell>
                       <TableCell>
@@ -691,35 +772,47 @@ export default function InteractiveDataViewer() {
         {!loading && data.length > 0 && (
           <PaginationContainer>
             <PaginationInfo>
-              Mostrando {Math.min(pagination.pageSize * (pagination.page - 1) + 1, pagination.total)} - {Math.min(pagination.pageSize * pagination.page, pagination.total)} de {pagination.total} registros
+              Mostrando{" "}
+              {Math.min(
+                pagination.pageSize * (pagination.page - 1) + 1,
+                pagination.total
+              )}{" "}
+              -{" "}
+              {Math.min(
+                pagination.pageSize * pagination.page,
+                pagination.total
+              )}{" "}
+              de {pagination.total} registros
             </PaginationInfo>
-            
+
             <PaginationControls>
-              <PageSizeSelect 
-                value={pagination.pageSize} 
+              <PageSizeSelect
+                value={pagination.pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               >
-                {PAGE_SIZE_OPTIONS.map(size => (
-                  <option key={size} value={size}>{size} por página</option>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size} por página
+                  </option>
                 ))}
               </PageSizeSelect>
 
-              <PaginationButton 
+              <PaginationButton
                 onClick={() => handlePageChange(1)}
                 disabled={pagination.page === 1}
               >
                 <FaAngleDoubleLeft />
               </PaginationButton>
-              
-              <PaginationButton 
+
+              <PaginationButton
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page === 1}
               >
                 <FaChevronLeft />
               </PaginationButton>
 
-              {generatePageNumbers().map((pageNum, index) => (
-                typeof pageNum === 'number' ? (
+              {generatePageNumbers().map((pageNum, index) =>
+                typeof pageNum === "number" ? (
                   <PaginationButton
                     key={pageNum}
                     $active={pageNum === pagination.page}
@@ -728,20 +821,23 @@ export default function InteractiveDataViewer() {
                     {pageNum}
                   </PaginationButton>
                 ) : (
-                  <span key={index} style={{ color: '#9ca3af', padding: '0 0.5rem' }}>
+                  <span
+                    key={index}
+                    style={{ color: "#9ca3af", padding: "0 0.5rem" }}
+                  >
                     {pageNum}
                   </span>
                 )
-              ))}
+              )}
 
-              <PaginationButton 
+              <PaginationButton
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={pagination.page === pagination.totalPages}
               >
                 <FaChevronRight />
               </PaginationButton>
-              
-              <PaginationButton 
+
+              <PaginationButton
                 onClick={() => handlePageChange(pagination.totalPages)}
                 disabled={pagination.page === pagination.totalPages}
               >

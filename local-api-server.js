@@ -3,6 +3,8 @@ const cors = require("cors");
 const { Client } = require("pg");
 require("dotenv").config({ path: ".env.database" });
 const authService = require("./api-server/services/authService");
+const googleDriveService = require("./services/googleDriveService");
+const { authenticate: verifyToken } = require("./middleware/auth");
 // Try to load payrollFilterService - check both possible paths
 let payrollFilterService;
 try {
@@ -133,7 +135,7 @@ async function getFondosClient() {
 }
 
 // GET /api/employees - List employees with filters, sorting, and pagination
-app.get("/api/employees", async (req, res) => {
+app.get("/api/employees", verifyToken, async (req, res) => {
   try {
     const {
       q,
@@ -272,7 +274,7 @@ app.get("/api/employees", async (req, res) => {
 });
 
 // GET /api/user/profile - Get current user profile from Numerica_Users
-app.get("/api/user/profile", async (req, res) => {
+app.get("/api/user/profile", verifyToken, async (req, res) => {
   try {
     const userEmail = req.headers["x-user-email"]; // Email del usuario logueado
 
@@ -329,7 +331,7 @@ app.get("/api/user/profile", async (req, res) => {
 });
 
 // PUT /api/user/profile - Update current user profile
-app.put("/api/user/profile", async (req, res) => {
+app.put("/api/user/profile", verifyToken, async (req, res) => {
   try {
     const userEmail = req.headers["x-user-email"];
     const { firstName, lastName, phoneNumber } = req.body;
@@ -517,7 +519,7 @@ async function fallbackSimpleQuery(req, res, serviceOptions) {
 }
 
 // GET /api/payroll - List mapped employees from historico_nominas_gsau with new structure
-app.get("/api/payroll", async (req, res) => {
+app.get("/api/payroll", verifyToken, async (req, res) => {
   // COMMENTED OUT: Verbose logging - keeping only FPL/fondos logs active
   // console.error('========================================');
   // console.error('PAYROLL ENDPOINT CALLED - ' + new Date().toISOString());
@@ -587,7 +589,7 @@ app.get("/api/payroll", async (req, res) => {
       puesto,
       sucursal,
       status,
-      cveper,
+      cveper: cveper ? decodeURIComponent(cveper) : null,
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
       fullData: fullData === "true" || fullData === true,
@@ -710,7 +712,7 @@ app.get("/api/payroll", async (req, res) => {
 });
 
 // GET /api/payroll/stats - Get statistics for payroll data
-app.get("/api/payroll/stats", async (req, res) => {
+app.get("/api/payroll/stats", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -781,7 +783,7 @@ app.get("/api/payroll/stats", async (req, res) => {
 });
 
 // GET /api/payroll/filters - Get filter options and counts for the payroll data
-app.get("/api/payroll/filters", async (req, res) => {
+app.get("/api/payroll/filters", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1050,7 +1052,7 @@ app.get("/api/payroll/filters", async (req, res) => {
 });
 
 // GET /api/payroll/filter-options - Alias for /api/payroll/filters (compatibility)
-app.get("/api/payroll/filter-options", async (req, res) => {
+app.get("/api/payroll/filter-options", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1278,7 +1280,7 @@ app.get("/api/payroll/filter-options", async (req, res) => {
 });
 
 // GET /api/payroll/periodos - Get available periods
-app.get("/api/payroll/periodos", async (req, res) => {
+app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
   try {
     const client = await getHistoricClient();
 
@@ -1306,7 +1308,7 @@ app.get("/api/payroll/periodos", async (req, res) => {
 });
 
 // GET /api/payroll/demographic - Get demographic data with pagination and filters
-app.get("/api/payroll/demographic", async (req, res) => {
+app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
   try {
     const {
       q,
@@ -1445,72 +1447,76 @@ app.get("/api/payroll/demographic", async (req, res) => {
 });
 
 // GET /api/payroll/demographic/unique-count - Get unique CURP count
-app.get("/api/payroll/demographic/unique-count", async (req, res) => {
-  try {
-    const { status, cveper } = req.query;
+app.get(
+  "/api/payroll/demographic/unique-count",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { status, cveper } = req.query;
 
-    const client = await getHistoricClient();
+      const client = await getHistoricClient();
 
-    // Build WHERE clause
-    const conditions = [];
-    const params = [];
-    let paramIndex = 1;
+      // Build WHERE clause
+      const conditions = [];
+      const params = [];
+      let paramIndex = 1;
 
-    if (status) {
-      conditions.push(`"Status" = $${paramIndex}`);
-      params.push(status);
-      paramIndex++;
-    }
-
-    if (cveper) {
-      // Handle cveper as date range if it's in YYYY-MM format
-      if (/^\d{4}-\d{2}$/.test(cveper)) {
-        // Convert 2025-06 to a date range for the entire month
-        const startDate = `${cveper}-01`;
-        const endDate = `${cveper}-31`; // Using 31 to cover all possible days in month
-        conditions.push(
-          `"cveper" >= $${paramIndex} AND "cveper" < ($${
-            paramIndex + 1
-          }::date + INTERVAL '1 month')`
-        );
-        params.push(startDate, startDate);
-        paramIndex += 2;
-      } else {
-        // Handle as exact date if it's in a different format
-        conditions.push(`"cveper" = $${paramIndex}`);
-        params.push(cveper);
+      if (status) {
+        conditions.push(`"Status" = $${paramIndex}`);
+        params.push(status);
         paramIndex++;
       }
-    }
 
-    // Build complete WHERE clause including CURP conditions
-    const curpConditions = ['"CURP" IS NOT NULL', "\"CURP\" != ''"];
-    const allConditions = [...conditions, ...curpConditions];
-    const whereClause = `WHERE ${allConditions.join(" AND ")}`;
+      if (cveper) {
+        // Handle cveper as date range if it's in YYYY-MM format
+        if (/^\d{4}-\d{2}$/.test(cveper)) {
+          // Convert 2025-06 to a date range for the entire month
+          const startDate = `${cveper}-01`;
+          const endDate = `${cveper}-31`; // Using 31 to cover all possible days in month
+          conditions.push(
+            `"cveper" >= $${paramIndex} AND "cveper" < ($${
+              paramIndex + 1
+            }::date + INTERVAL '1 month')`
+          );
+          params.push(startDate, startDate);
+          paramIndex += 2;
+        } else {
+          // Handle as exact date if it's in a different format
+          conditions.push(`"cveper" = $${paramIndex}`);
+          params.push(cveper);
+          paramIndex++;
+        }
+      }
 
-    const result = await client.query(
-      `
+      // Build complete WHERE clause including CURP conditions
+      const curpConditions = ['"CURP" IS NOT NULL', "\"CURP\" != ''"];
+      const allConditions = [...conditions, ...curpConditions];
+      const whereClause = `WHERE ${allConditions.join(" AND ")}`;
+
+      const result = await client.query(
+        `
       SELECT COUNT(DISTINCT "CURP") as unique_curp_count
       FROM historico_nominas_gsau 
       ${whereClause}
     `,
-      params
-    );
+        params
+      );
 
-    await client.end();
+      await client.end();
 
-    res.json({
-      success: true,
-      uniqueCurpCount: parseInt(result.rows[0].unique_curp_count),
-    });
-  } catch (error) {
-    console.error("Error in /api/payroll/demographic/unique-count:", error);
-    res.status(500).json({ error: "Internal server error" });
+      res.json({
+        success: true,
+        uniqueCurpCount: parseInt(result.rows[0].unique_curp_count),
+      });
+    } catch (error) {
+      console.error("Error in /api/payroll/demographic/unique-count:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
-});
+);
 
 // GET /api/percepciones - Get employee payroll data (percepciones) by CURP
-app.get("/api/percepciones", async (req, res) => {
+app.get("/api/percepciones", verifyToken, async (req, res) => {
   try {
     const { curp, cveper, pageSize = 1000, page = 1 } = req.query;
 
@@ -1591,7 +1597,7 @@ app.get("/api/percepciones", async (req, res) => {
 });
 
 // GET /api/payroll/data - Get payroll data for charts and analysis
-app.get("/api/payroll/data", async (req, res) => {
+app.get("/api/payroll/data", verifyToken, async (req, res) => {
   try {
     const { status, cveper, pageSize = 1000, page = 1 } = req.query;
 
@@ -1753,7 +1759,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
 });
 
 // Activar usuario (después de verificación exitosa)
-app.post("/api/auth/activate-user", async (req, res) => {
+app.post("/api/auth/activate-user", verifyToken, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -1813,6 +1819,100 @@ app.get("/api/debug/routes", (req, res) => {
   });
 });
 
+app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
+  try {
+    const { curp } = req.query;
+
+    console.log(`🔍 Buscando períodos para CURP: ${curp}`);
+
+    // Conectar directamente a la base de datos historico_nominas_gsau
+    const { nominasPool } = require("./config/database");
+    const client = await nominasPool.connect();
+
+    try {
+      // Buscar todos los registros con este CURP específico
+      const query = `
+        SELECT cveper
+        FROM historico_nominas_gsau
+        WHERE "CURP" = $1
+        ORDER BY cveper
+      `;
+
+      console.log(`🔍 Ejecutando query para CURP: ${curp}`);
+      const result = await client.query(query, [curp]);
+
+      console.log(`📈 TOTAL DE DATAPOINTS ENCONTRADOS: ${result.rows.length}`);
+
+      if (result.rows.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+          total: 0,
+          curp: curp,
+          message: `No se encontraron registros para el CURP: ${curp}`,
+        });
+      }
+
+      // Extraer valores únicos de cveper
+      const cveperSet = new Set();
+      const allCvepers = [];
+
+      result.rows.forEach((row, index) => {
+        allCvepers.push(row.cveper);
+        cveperSet.add(row.cveper);
+        console.log(`${index + 1}: ${row.cveper}`);
+      });
+
+      // Convertir a array y ordenar
+      const uniqueCvepers = Array.from(cveperSet).sort();
+
+      console.log(
+        `📅 VALORES ÚNICOS DE CVEPER (${uniqueCvepers.length} períodos):`
+      );
+      uniqueCvepers.forEach((cveper, index) => {
+        console.log(`${index + 1}: ${cveper}`);
+      });
+
+      // Formatear para dropdown (similar a getUniquePayrollPeriods)
+      const formattedPeriods = uniqueCvepers.map((cveper) => ({
+        value: cveper,
+        label: cveper,
+        count: allCvepers.filter((c) => c === cveper).length,
+      }));
+
+      console.log(`🎯 METODOLOGÍA APLICADA:`);
+      console.log(`1. ✅ Buscado CURP ${curp} en historico_nominas_gsau`);
+      console.log(`2. ✅ Extraídos ${result.rows.length} datapoints`);
+      console.log(
+        `3. ✅ Identificados ${uniqueCvepers.length} períodos únicos`
+      );
+      console.log(`4. ✅ Formateados para dropdown`);
+
+      res.json({
+        success: true,
+        data: formattedPeriods,
+        total: uniqueCvepers.length,
+        datapoints: result.rows.length,
+        curp: curp,
+        methodology: {
+          step1: `Búsqueda de CURP ${curp}`,
+          step2: `${result.rows.length} datapoints encontrados`,
+          step3: `${uniqueCvepers.length} períodos únicos extraídos`,
+          step4: "Formateados para dropdown",
+        },
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("❌ Error obteniendo períodos desde CURP:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Catch-all routes - These MUST come after all specific routes to avoid conflicts
 
 // ============================================================================
@@ -1820,9 +1920,231 @@ app.get("/api/debug/routes", (req, res) => {
 // These routes must come BEFORE the parameterized /api/payroll/:rfc route
 // ============================================================================
 
+app.get("/api/payroll/name-from-curp", verifyToken, async (req, res) => {
+  try {
+    const { curp } = req.query;
+
+    if (!curp) {
+      return res.status(400).json({
+        success: false,
+        error: "CURP es requerido",
+      });
+    }
+
+    console.log(`🔍 Buscando nombre completo para CURP: ${curp}`);
+
+    // Conectar directamente a la base de datos historico_nominas_gsau
+    const { nominasPool } = require("./config/database");
+    const client = await nominasPool.connect();
+
+    try {
+      // Buscar nombre completo correspondiente al CURP específico
+      const query = `
+        SELECT DISTINCT "Nombre completo"
+        FROM historico_nominas_gsau
+        WHERE "CURP" = $1
+        AND "Nombre completo" IS NOT NULL
+        AND "Nombre completo" != ''
+        LIMIT 1
+      `;
+
+      console.log(
+        `🔍 Ejecutando query para buscar nombre completo de CURP: ${curp}`
+      );
+      const result = await client.query(query, [curp]);
+
+      if (result.rows.length === 0) {
+        console.log(`⚠️ No se encontró nombre completo para CURP: ${curp}`);
+        return res.json({
+          success: true,
+          data: null,
+          curp: curp,
+          message: `No se encontró nombre completo para el CURP: ${curp}`,
+        });
+      }
+
+      const nombreCompleto = result.rows[0]["Nombre completo"];
+      console.log(
+        `✅ Nombre completo encontrado para CURP ${curp}: ${nombreCompleto}`
+      );
+
+      res.json({
+        success: true,
+        data: {
+          curp: curp,
+          nombreCompleto: nombreCompleto,
+        },
+        message: `Nombre completo encontrado exitosamente`,
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("❌ Error obteniendo nombre completo desde CURP:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/documents/search-by-name", verifyToken, async (req, res) => {
+  try {
+    const { employeeName } = req.query;
+
+    if (!employeeName) {
+      return res.status(400).json({
+        success: false,
+        error: "employeeName es requerido",
+      });
+    }
+
+    console.log(`🔍 Buscando documentos para empleado: ${employeeName}`);
+
+    // Usar el servicio de Google Drive para buscar archivos
+    const result = await googleDriveService.searchWithNameVariations(
+      employeeName
+    );
+
+    if (result.success) {
+      console.log(
+        `📁 Encontrados ${result.files.length} documentos para ${employeeName}`
+      );
+
+      res.json({
+        success: true,
+        files: result.files,
+        total: result.files.length,
+        employeeName: employeeName,
+        searchVariations: result.searchVariations,
+        message: `Se encontraron ${result.files.length} documentos para ${employeeName}`,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Error buscando documentos en Google Drive",
+        details: result.error,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Error en búsqueda de documentos:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// NUEVO: Obtener URL de descarga directa para un documento
+app.get("/api/documents/download/:fileId", verifyToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+
+    console.log(`📥 Generando URL de descarga para archivo: ${fileId}`);
+
+    const result = await googleDriveService.generateDownloadUrl(fileId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        downloadUrl: result.downloadUrl,
+        expiresIn: result.expiresIn,
+        fileId: fileId,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Error generando URL de descarga",
+        details: result.error,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Error generando URL de descarga:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// NUEVO: Obtener metadatos de un documento específico
+app.get("/api/documents/metadata/:fileId", verifyToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+
+    console.log(`📋 Obteniendo metadatos para archivo: ${fileId}`);
+
+    const result = await googleDriveService.getFileMetadata(fileId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        file: result.file,
+        fileId: fileId,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Error obteniendo metadatos del archivo",
+        details: result.error,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Error obteniendo metadatos:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// NUEVO: Endpoint para búsqueda en subcarpetas de Google Drive
+app.get("/api/documents/search-subfolders", verifyToken, async (req, res) => {
+  try {
+    const { employeeName } = req.query;
+
+    if (!employeeName) {
+      return res.status(400).json({
+        success: false,
+        error: "employeeName es requerido",
+      });
+    }
+
+    console.log(`🔍 Buscando en subcarpetas para empleado: ${employeeName}`);
+
+    const result = await googleDriveService.searchInSubfolders(employeeName);
+
+    if (result.success) {
+      console.log(
+        `📁 Encontrados ${result.files.length} documentos en subcarpetas`
+      );
+
+      res.json({
+        success: true,
+        files: result.files,
+        total: result.files.length,
+        employeeName: employeeName,
+        message: `Se encontraron ${result.files.length} documentos en subcarpetas para ${employeeName}`,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Error buscando en subcarpetas",
+        details: result.error,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Error en búsqueda de subcarpetas:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/payroll/rfc-from-curp - Get RFC from CURP
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get("/api/payroll/rfc-from-curp", async (req, res) => {
+app.get("/api/payroll/rfc-from-curp", verifyToken, async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[RFC-FROM-CURP API] [${requestId}] ==========================================`
@@ -1972,7 +2294,7 @@ app.get("/api/payroll/rfc-from-curp", async (req, res) => {
 
 // GET /api/payroll/fecpla-from-rfc - Get calculated FPL dates from RFC
 // NOTE: This route MUST be BEFORE /api/payroll/:rfc to avoid route conflicts
-app.get("/api/payroll/fecpla-from-rfc", async (req, res) => {
+app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FECPLA API] [${requestId}] ==========================================`
@@ -2337,7 +2659,7 @@ app.get("/api/payroll/fecpla-from-rfc", async (req, res) => {
 
 // GET /api/payroll/:rfc - Get specific employee from payroll
 // NOTE: This route MUST be AFTER all specific routes like /api/payroll/rfc-from-curp and /api/payroll/fecpla-from-rfc
-app.get("/api/payroll/:rfc", async (req, res) => {
+app.get("/api/payroll/:rfc", verifyToken, async (req, res) => {
   try {
     const { rfc } = req.params;
     const client = await getHistoricClient();
@@ -2394,7 +2716,7 @@ app.get("/api/payroll/:rfc", async (req, res) => {
 });
 
 // GET /api/employees/:id - Get specific employee
-app.get("/api/employees/:id", async (req, res) => {
+app.get("/api/employees/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const client = await getClient();
@@ -2454,7 +2776,7 @@ app.get("/api/employees/:id", async (req, res) => {
 // ============================================================================
 
 // GET /api/fondos - Get fondos data by RFC
-app.get("/api/fondos", async (req, res) => {
+app.get("/api/fondos", verifyToken, async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FONDOS API] [${requestId}] ==========================================`
@@ -2591,7 +2913,7 @@ app.get("/api/fondos", async (req, res) => {
 });
 
 // GET /api/fpl/data-from-rfc - Get FPL data by RFC and optional date
-app.get("/api/fpl/data-from-rfc", async (req, res) => {
+app.get("/api/fpl/data-from-rfc", verifyToken, async (req, res) => {
   const requestId = Date.now();
   console.log(
     `\n[FPL API] [${requestId}] ==========================================`

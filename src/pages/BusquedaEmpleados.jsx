@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import styled, { ThemeProvider as StyledThemeProvider } from "styled-components";
+import styled, {
+  ThemeProvider as StyledThemeProvider,
+} from "styled-components";
 import { useTheme } from "../contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,7 +34,9 @@ import {
 
 const PageContainer = styled.div`
   padding: 2rem 2rem 2rem 2rem;
-  padding-right: calc(2rem - 10px); /* Reducir padding derecho para dar margen */
+  padding-right: calc(
+    2rem - 10px
+  ); /* Reducir padding derecho para dar margen */
   color: ${(props) => props.theme?.text?.primary || "#2c3e50"};
   min-height: calc(100vh - 80px);
   max-width: calc(100vw - 10px); /* Dejar 10px de margen derecho */
@@ -57,13 +61,17 @@ const PageTitle = styled.h1`
 `;
 
 const SearchSection = styled.div`
-  background: ${(props) => props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
-  backdrop-filter: ${(props) => props.theme?.effects?.blur?.strong || "blur(20px)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
+  backdrop-filter: ${(props) =>
+    props.theme?.effects?.blur?.strong || "blur(20px)"};
   border-radius: 20px;
   padding: 2rem;
   margin-bottom: 2rem;
   margin-right: 10px; /* Margen derecho de 10px */
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
   width: calc(100% - 10px); /* Restar el margen del ancho */
   box-sizing: border-box;
   overflow: hidden;
@@ -79,8 +87,11 @@ const SearchForm = styled.form`
 const SearchInput = styled.input`
   flex: 1;
   min-width: 300px;
-  background: ${(props) => props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
   border-radius: 12px;
   padding: 1rem 1rem 1rem 3rem;
   color: ${(props) => props.theme?.text?.primary || "#2c3e50"};
@@ -94,8 +105,11 @@ const SearchInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${(props) => props.theme?.brand?.primary || "#1e3a8a"};
-    background: ${(props) => props.theme?.surfaces?.inputs?.focus || "rgba(255, 255, 255, 0.15)"};
-    box-shadow: ${(props) => props.theme?.effects?.shadows?.focus || "0 0 20px rgba(30, 58, 138, 0.2)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.inputs?.focus || "rgba(255, 255, 255, 0.15)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.shadows?.focus ||
+      "0 0 20px rgba(30, 58, 138, 0.2)"};
   }
 `;
 
@@ -114,27 +128,34 @@ const SearchIcon = styled(FaUsers)`
 `;
 
 const FilterButton = styled.button`
-  background: ${(props) => props.theme?.surfaces?.buttons?.filter || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.buttons?.filter || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
   border-radius: 12px;
   padding: 1rem 1.5rem;
   color: ${(props) => props.theme?.brand?.primary || "#1e3a8a"};
   font-size: 1rem;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.2s ease"};
   display: flex;
   align-items: center;
   gap: 0.5rem;
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.filterHover || "rgba(255, 255, 255, 0.15)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.filterHover ||
+      "rgba(255, 255, 255, 0.15)"};
     transform: translateY(-2px);
   }
 `;
 
 const SearchButton = styled.button`
   background: ${(props) =>
-    props.theme?.gradients?.buttons?.primary || "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"};
+    props.theme?.gradients?.buttons?.primary ||
+    "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"};
   border: none;
   border-radius: 12px;
   padding: 1rem 2rem;
@@ -142,14 +163,17 @@ const SearchButton = styled.button`
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.2s ease"};
   display: flex;
   align-items: center;
   gap: 0.5rem;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: ${(props) => props.theme?.effects?.shadows?.colored || "0 8px 25px rgba(30, 58, 138, 0.3)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.shadows?.colored ||
+      "0 8px 25px rgba(30, 58, 138, 0.3)"};
   }
 `;
 
@@ -169,8 +193,11 @@ const FiltersContainer = styled.div`
 `;
 
 const FilterSelect = styled.select`
-  background: ${(props) => props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.3)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.3)"};
   border-radius: 8px;
   padding: 0.75rem;
   color: ${(props) => props.theme?.text?.primary || "#2c3e50"};
@@ -189,12 +216,16 @@ const FilterSelect = styled.select`
 `;
 
 const ResultsSection = styled.div`
-  background: ${(props) => props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
-  backdrop-filter: ${(props) => props.theme?.effects?.blur?.strong || "blur(20px)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
+  backdrop-filter: ${(props) =>
+    props.theme?.effects?.blur?.strong || "blur(20px)"};
   border-radius: 20px;
   padding: 2rem;
   margin-right: 10px; /* Margen derecho de 10px */
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
   width: calc(100% - 10px); /* Restar el margen del ancho */
   box-sizing: border-box;
   overflow: hidden;
@@ -222,20 +253,25 @@ const ResultsCount = styled.div`
 `;
 
 const ExportButton = styled.button`
-  background: ${(props) => props.theme?.surfaces?.buttons?.success || "rgba(76, 175, 80, 0.2)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.success || "rgba(76, 175, 80, 0.5)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.buttons?.success || "rgba(76, 175, 80, 0.2)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.success || "rgba(76, 175, 80, 0.5)"};
   border-radius: 8px;
   padding: 0.75rem 1rem;
   color: ${(props) => props.theme?.status?.success || "#4caf50"};
   font-size: 0.9rem;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.2s ease"};
   display: flex;
   align-items: center;
   gap: 0.5rem;
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.successHover || "rgba(76, 175, 80, 0.3)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.successHover || "rgba(76, 175, 80, 0.3)"};
     transform: translateY(-2px);
   }
 `;
@@ -247,16 +283,22 @@ const EmployeeGrid = styled.div`
 `;
 
 const EmployeeCard = styled.div`
-  background: ${(props) => props.theme?.surfaces?.glass?.light || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.light || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
   border-radius: 15px;
   padding: 1.5rem;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.2s ease"};
 
   &:hover {
     transform: translateY(-5px);
-    box-shadow: ${(props) => props.theme?.effects?.shadows?.large || "0 10px 30px rgba(0, 0, 0, 0.3)"};
-    background: ${(props) => props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.shadows?.large || "0 10px 30px rgba(0, 0, 0, 0.3)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
   }
 `;
 
@@ -271,7 +313,8 @@ const EmployeeAvatar = styled.div`
   width: 50px;
   height: 50px;
   background: ${(props) =>
-    props.theme?.gradients?.backgrounds?.secondary || "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"};
+    props.theme?.gradients?.backgrounds?.secondary ||
+    "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"};
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -326,23 +369,29 @@ const ActionButton = styled.button.withConfig({
 })`
   background: ${({ primary, theme }) =>
     primary
-      ? theme?.gradients?.buttons?.primary || "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"
+      ? theme?.gradients?.buttons?.primary ||
+        "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)"
       : theme?.surfaces?.glass?.light || "rgba(255, 255, 255, 0.1)"};
   border: 1px solid
-    ${({ primary, theme }) => (primary ? "transparent" : theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)")};
+    ${({ primary, theme }) =>
+      primary
+        ? "transparent"
+        : theme?.surfaces?.borders?.light || "rgba(255, 255, 255, 0.2)"};
   border-radius: 8px;
   padding: 0.5rem 1rem;
   color: ${({ theme }) => theme?.text?.inverted || "white"};
   font-size: 0.8rem;
   cursor: pointer;
-  transition: ${({ theme }) => theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${({ theme }) =>
+    theme?.effects?.states?.transition || "all 0.2s ease"};
   display: flex;
   align-items: center;
   gap: 0.25rem;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: ${({ theme }) => theme?.effects?.shadows?.medium || "0 4px 15px rgba(0, 0, 0, 0.2)"};
+    box-shadow: ${({ theme }) =>
+      theme?.effects?.shadows?.medium || "0 4px 15px rgba(0, 0, 0, 0.2)"};
   }
 `;
 
@@ -353,7 +402,8 @@ const NoResults = styled.div`
 `;
 
 const PeriodBadge = styled.div`
-  background: ${(props) => props.theme?.surfaces?.buttons?.accentMedium || "rgba(30, 58, 138, 0.2)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.buttons?.accentMedium || "rgba(30, 58, 138, 0.2)"};
   padding: 0.5rem 1rem;
   border-radius: 12px;
   font-size: 0.9rem;
@@ -366,9 +416,12 @@ const ControlsContainer = styled.div`
   align-items: center;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: ${(props) => props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.05)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.05)"};
   border-radius: 12px;
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
   flex-wrap: wrap;
   gap: 1rem;
 `;
@@ -380,8 +433,11 @@ const PaginationContainer = styled.div`
 `;
 
 const PageSizeSelect = styled.select`
-  background: ${(props) => props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.3)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.3)"};
   border-radius: 8px;
   padding: 0.5rem;
   color: ${(props) => props.theme?.text?.primary || "#2c3e50"};
@@ -397,23 +453,34 @@ const PaginationButton = styled.button`
   background: ${(props) =>
     props.disabled
       ? props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.1)"
-      : props.theme?.surfaces?.buttons?.accentMedium || "rgba(30, 58, 138, 0.2)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"};
+      : props.theme?.surfaces?.buttons?.accentMedium ||
+        "rgba(30, 58, 138, 0.2)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"};
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   color: ${(props) =>
-    props.disabled ? props.theme?.text?.subtle || "rgba(44, 62, 80, 0.5)" : props.theme?.text?.primary || "#2c3e50"};
+    props.disabled
+      ? props.theme?.text?.subtle || "rgba(44, 62, 80, 0.5)"
+      : props.theme?.text?.primary || "#2c3e50"};
   cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  transition: ${(props) => props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
 `;
 
 const PageNumberButton = styled.button`
   background: ${(props) =>
-    props.$isCurrentPage ? "white" : props.theme?.surfaces?.buttons?.accentMedium || "rgba(30, 58, 138, 0.2)"};
+    props.$isCurrentPage
+      ? "white"
+      : props.theme?.surfaces?.buttons?.accentMedium ||
+        "rgba(30, 58, 138, 0.2)"};
   border: ${(props) =>
     props.$isCurrentPage
       ? `2px solid ${props.theme?.brand?.primary || "#1e3a8a"}`
-      : `1px solid ${props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"}`};
+      : `1px solid ${
+          props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"
+        }`};
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
   color: ${(props) =>
@@ -421,12 +488,16 @@ const PageNumberButton = styled.button`
       ? props.theme?.brand?.primary || "#1e3a8a"
       : props.theme?.text?.secondary || "rgba(44, 62, 80, 0.8)"};
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
   font-weight: ${(props) => (props.$isCurrentPage ? "600" : "400")};
   font-size: 0.9rem;
   min-width: 40px;
   box-shadow: ${(props) =>
-    props.$isCurrentPage ? props.theme?.effects?.shadows?.colored || "0 4px 12px rgba(30, 58, 138, 0.4)" : "none"};
+    props.$isCurrentPage
+      ? props.theme?.effects?.shadows?.colored ||
+        "0 4px 12px rgba(30, 58, 138, 0.4)"
+      : "none"};
 `;
 
 const PageEllipsis = styled.span`
@@ -461,7 +532,8 @@ const ViewModeButton = styled(FilterButton)`
   background: ${(props) =>
     props.$isActive
       ? props.theme?.surfaces?.buttons?.accentStrong || "rgba(30, 58, 138, 0.4)"
-      : props.theme?.surfaces?.buttons?.accentMedium || "rgba(30, 58, 138, 0.2)"};
+      : props.theme?.surfaces?.buttons?.accentMedium ||
+        "rgba(30, 58, 138, 0.2)"};
 `;
 
 const LoadingContainer = styled.div`
@@ -482,9 +554,12 @@ const LoadingText = styled.p`
 const ErrorContainer = styled.div`
   text-align: center;
   padding: 2rem;
-  background: ${(props) => props.theme?.status?.error?.background || "rgba(255, 107, 107, 0.1)"};
+  background: ${(props) =>
+    props.theme?.status?.error?.background || "rgba(255, 107, 107, 0.1)"};
   border-radius: 12px;
-  border: 1px solid ${(props) => props.theme?.status?.error?.border || "rgba(255, 107, 107, 0.3)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.status?.error?.border || "rgba(255, 107, 107, 0.3)"};
   margin-bottom: 1rem;
 `;
 
@@ -508,9 +583,13 @@ const TableContainer = styled.div`
   overflow-x: auto;
   overflow-y: hidden;
   border-radius: 12px;
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
-  background: ${(props) => props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.02)"};
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.3s ease"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.02)"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.3s ease"};
 
   ${(props) =>
     props.$collapsed &&
@@ -530,7 +609,9 @@ const TableContainer = styled.div`
       position: sticky;
       top: 0;
       z-index: 10;
-      background: ${props.theme?.surfaces?.buttons?.filter || "rgba(255, 255, 255, 0.1)"};
+      background: ${
+        props.theme?.surfaces?.buttons?.filter || "rgba(255, 255, 255, 0.1)"
+      };
       backdrop-filter: blur(10px);
     }
     
@@ -542,7 +623,9 @@ const TableContainer = styled.div`
       left: 0;
       right: 0;
       height: 30px;
-      background: linear-gradient(transparent, ${props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"});
+      background: linear-gradient(transparent, ${
+        props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"
+      });
       pointer-events: none;
       z-index: 5;
     }
@@ -558,29 +641,38 @@ const TableContainer = styled.div`
       font-size: 1.2rem;
       font-weight: bold;
       z-index: 6;
-      text-shadow: 0 0 4px ${props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"};
+      text-shadow: 0 0 4px ${
+        props.theme?.surfaces?.glass?.medium || "rgba(255, 255, 255, 0.15)"
+      };
     }
   `}
 `;
 
 const CollapseButton = styled.button`
-  background: ${(props) => props.theme?.surfaces?.buttons?.secondary || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.buttons?.secondary || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.accent || "rgba(30, 58, 138, 0.3)"};
   border-radius: 8px;
   padding: 0.75rem 1rem;
   color: ${(props) => props.theme?.brand?.primary || "#1e3a8a"};
   font-size: 0.9rem;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.2s ease"};
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.secondaryHover || "rgba(255, 255, 255, 0.15)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.secondaryHover ||
+      "rgba(255, 255, 255, 0.15)"};
     transform: translateY(-2px);
-    box-shadow: ${(props) => props.theme?.effects?.shadows?.medium || "0 4px 15px rgba(0, 0, 0, 0.1)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.shadows?.medium || "0 4px 15px rgba(0, 0, 0, 0.1)"};
   }
 
   &:active {
@@ -603,7 +695,9 @@ const BusquedaEmpleados = () => {
   // Estados para los nuevos DropDownMenu (selección múltiple)
   const [selectedSucursales, setSelectedSucursales] = useState([]);
   const [selectedPuestos, setSelectedPuestos] = useState([]);
-  const [selectedPuestosCategorias, setSelectedPuestosCategorias] = useState([]);
+  const [selectedPuestosCategorias, setSelectedPuestosCategorias] = useState(
+    []
+  );
   const [selectedEstados, setSelectedEstados] = useState([]); // SIN FILTRO POR DEFECTO
   const [selectedPeriodos, setSelectedPeriodos] = useState([]); // Se poblará con el último período
 
@@ -700,7 +794,11 @@ const BusquedaEmpleados = () => {
 
   // useEffect para marcar defaults como aplicados cuando las opciones estáticas estén cargadas
   useEffect(() => {
-    if (!initialLoading && staticFilterOptions.status.length > 0 && !defaultsApplied) {
+    if (
+      !initialLoading &&
+      staticFilterOptions.status.length > 0 &&
+      !defaultsApplied
+    ) {
       setDefaultsApplied(true);
     }
   }, [staticFilterOptions.status, defaultsApplied, initialLoading]);
@@ -729,14 +827,21 @@ const BusquedaEmpleados = () => {
   useEffect(() => {
     if (!initialLoading && defaultsApplied) {
       // ✅ FIXED: Reset to page 1 when search term or filters change
-      if (employeeSearchTerm && employeeSearchTerm.trim() !== "" && pagination.page !== 1) {
+      if (
+        employeeSearchTerm &&
+        employeeSearchTerm.trim() !== "" &&
+        pagination.page !== 1
+      ) {
         setPagination((prev) => ({ ...prev, page: 1 }));
         return; // Will trigger again with page 1
       }
 
       // Filter/Sort: Reloading data due to filter/sort changes
       const timeoutId = setTimeout(() => {
-        console.log("🔄 [FILTER EFFECT] Loading with search:", employeeSearchTerm || "NONE");
+        console.log(
+          "🔄 [FILTER EFFECT] Loading with search:",
+          employeeSearchTerm || "NONE"
+        );
         loadEmployeesWithPagination(pagination.page, pagination.pageSize);
         loadUniqueEmployeesCount();
       }, 300);
@@ -805,7 +910,9 @@ const BusquedaEmpleados = () => {
   // Cargar último periodo desde la API
   const loadLatestPeriod = async () => {
     try {
-      const response = await authenticatedFetch(buildApiUrl("/api/payroll/periodos"));
+      const response = await authenticatedFetch(
+        buildApiUrl("/api/payroll/periodos")
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -814,7 +921,11 @@ const BusquedaEmpleados = () => {
           const validPeriods = result.data.filter((p) => {
             const value = p.value || p;
             // Validar formato YYYY-MM-DD o YYYY-MM
-            return value && typeof value === "string" && /^\d{4}-\d{2}(-\d{2})?$/.test(value);
+            return (
+              value &&
+              typeof value === "string" &&
+              /^\d{4}-\d{2}(-\d{2})?$/.test(value)
+            );
           });
 
           if (validPeriods.length === 0) {
@@ -845,10 +956,14 @@ const BusquedaEmpleados = () => {
   // Cargar estadísticas completas del dataset - SOLO Historic
   const loadDatasetStats = async () => {
     try {
-      const response = await authenticatedFetch(`${buildApiUrl("/api/payroll/stats")}`);
+      const response = await authenticatedFetch(
+        `${buildApiUrl("/api/payroll/stats")}`
+      );
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText} - No se puede conectar a Historic`);
+        throw new Error(
+          `Error ${response.status}: ${response.statusText} - No se puede conectar a Historic`
+        );
       }
 
       const result = await response.json();
@@ -881,7 +996,10 @@ const BusquedaEmpleados = () => {
   const loadEmployeesFromPayrollAPI = async () => {
     // ✅ CRITICAL: Don't load if search term exists - let search useEffect handle it
     if (employeeSearchTerm && employeeSearchTerm.trim() !== "") {
-      console.log("⏭️ [INITIAL LOAD] Skipping loadEmployeesFromPayrollAPI - search term exists:", employeeSearchTerm);
+      console.log(
+        "⏭️ [INITIAL LOAD] Skipping loadEmployeesFromPayrollAPI - search term exists:",
+        employeeSearchTerm
+      );
       return;
     }
 
@@ -900,7 +1018,9 @@ const BusquedaEmpleados = () => {
   // Cargar opciones estáticas completas (nunca se filtran)
   const loadStaticFilterOptions = async () => {
     try {
-      const response = await authenticatedFetch(`${buildApiUrl("/api/payroll/filters")}`);
+      const response = await authenticatedFetch(
+        `${buildApiUrl("/api/payroll/filters")}`
+      );
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -924,9 +1044,18 @@ const BusquedaEmpleados = () => {
         const puestosCategorias = result.data.puestosCategorias || [];
 
         // ✅ DEBUG: Log puestosCategorias received from API
-        console.log("🟢 [Frontend] puestosCategorias received from API:", puestosCategorias.length);
-        console.log("🟢 [Frontend] puestosCategorias data:", JSON.stringify(puestosCategorias, null, 2));
-        console.log("🟢 [Frontend] Full API response data keys:", Object.keys(result.data || {}));
+        console.log(
+          "🟢 [Frontend] puestosCategorias received from API:",
+          puestosCategorias.length
+        );
+        console.log(
+          "🟢 [Frontend] puestosCategorias data:",
+          JSON.stringify(puestosCategorias, null, 2)
+        );
+        console.log(
+          "🟢 [Frontend] Full API response data keys:",
+          Object.keys(result.data || {})
+        );
 
         setStaticFilterOptions({
           puestos: puestos,
@@ -936,7 +1065,11 @@ const BusquedaEmpleados = () => {
           periodos: periodOptionsForDropdown,
         });
 
-        console.log("🟢 [Frontend] staticFilterOptions.puestosCategorias set to:", puestosCategorias.length, "items");
+        console.log(
+          "🟢 [Frontend] staticFilterOptions.puestosCategorias set to:",
+          puestosCategorias.length,
+          "items"
+        );
       } else {
         throw new Error("La API devolvió una respuesta no exitosa");
       }
@@ -979,7 +1112,9 @@ const BusquedaEmpleados = () => {
             filterParams.append("cveper", periodo);
           } else {
             const normalizedCveper =
-              periodo.includes("T") || periodo.includes("Z") ? new Date(periodo).toISOString().split("T")[0] : periodo;
+              periodo.includes("T") || periodo.includes("Z")
+                ? new Date(periodo).toISOString().split("T")[0]
+                : periodo;
             filterParams.append("cveper", normalizedCveper);
           }
         });
@@ -992,7 +1127,9 @@ const BusquedaEmpleados = () => {
       }
 
       // Llamar al endpoint de filtros CON parámetros para obtener conteos actualizados
-      const response = await authenticatedFetch(`${buildApiUrl("/api/payroll/filters")}?${filterParams.toString()}`);
+      const response = await authenticatedFetch(
+        `${buildApiUrl("/api/payroll/filters")}?${filterParams.toString()}`
+      );
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -1006,7 +1143,9 @@ const BusquedaEmpleados = () => {
           if (!staticOpts || !dynamicOpts) return staticOpts || [];
 
           return staticOpts.map((staticOption) => {
-            const dynamicOption = dynamicOpts.find((dynOpt) => dynOpt.value === staticOption.value);
+            const dynamicOption = dynamicOpts.find(
+              (dynOpt) => dynOpt.value === staticOption.value
+            );
             return {
               ...staticOption,
               count: dynamicOption ? dynamicOption.count : 0, // Actualizar conteo, mantener opción
@@ -1016,14 +1155,26 @@ const BusquedaEmpleados = () => {
 
         // Actualizar filterOptions manteniendo TODAS las opciones pero con conteos actualizados
         setFilterOptions({
-          puestos: updateOptionsWithDynamicCounts(staticFilterOptions.puestos, result.data.puestos),
-          status: updateOptionsWithDynamicCounts(staticFilterOptions.status, result.data.estados),
-          categorias: updateOptionsWithDynamicCounts(staticFilterOptions.categorias, result.data.sucursales),
+          puestos: updateOptionsWithDynamicCounts(
+            staticFilterOptions.puestos,
+            result.data.puestos
+          ),
+          status: updateOptionsWithDynamicCounts(
+            staticFilterOptions.status,
+            result.data.estados
+          ),
+          categorias: updateOptionsWithDynamicCounts(
+            staticFilterOptions.categorias,
+            result.data.sucursales
+          ),
           puestosCategorias: updateOptionsWithDynamicCounts(
             staticFilterOptions.puestosCategorias,
             result.data.puestosCategorias
           ),
-          periodos: updateOptionsWithDynamicCounts(staticFilterOptions.periodos, result.data.periodos),
+          periodos: updateOptionsWithDynamicCounts(
+            staticFilterOptions.periodos,
+            result.data.periodos
+          ),
         });
       } else {
         throw new Error("La API devolvió una respuesta no exitosa");
@@ -1063,11 +1214,15 @@ const BusquedaEmpleados = () => {
       }
 
       if (selectedSucursales.length > 0) {
-        selectedSucursales.forEach((sucursal) => params.append("sucursal", sucursal));
+        selectedSucursales.forEach((sucursal) =>
+          params.append("sucursal", sucursal)
+        );
       }
 
       if (selectedPuestosCategorias.length > 0) {
-        selectedPuestosCategorias.forEach((categoria) => params.append("puestoCategorizado", categoria));
+        selectedPuestosCategorias.forEach((categoria) =>
+          params.append("puestoCategorizado", categoria)
+        );
       }
 
       if (selectedPeriodos.length > 0) {
@@ -1076,13 +1231,17 @@ const BusquedaEmpleados = () => {
             params.append("cveper", periodo);
           } else {
             const normalizedCveper =
-              periodo.includes("T") || periodo.includes("Z") ? new Date(periodo).toISOString().split("T")[0] : periodo;
+              periodo.includes("T") || periodo.includes("Z")
+                ? new Date(periodo).toISOString().split("T")[0]
+                : periodo;
             params.append("cveper", normalizedCveper);
           }
         });
       }
 
-      const uniqueCountUrl = `${buildApiUrl("/api/payroll/demographic/unique-count")}?${params.toString()}`;
+      const uniqueCountUrl = `${buildApiUrl(
+        "/api/payroll/demographic/unique-count"
+      )}?${params.toString()}`;
       const uniqueCountResponse = await authenticatedFetch(uniqueCountUrl);
 
       if (uniqueCountResponse.ok) {
@@ -1102,19 +1261,27 @@ const BusquedaEmpleados = () => {
       }
 
       if (selectedPuestos.length > 0) {
-        selectedPuestos.forEach((puesto) => fallbackParams.append("puesto", puesto));
+        selectedPuestos.forEach((puesto) =>
+          fallbackParams.append("puesto", puesto)
+        );
       }
 
       if (selectedEstados.length > 0) {
-        selectedEstados.forEach((estado) => fallbackParams.append("status", estado));
+        selectedEstados.forEach((estado) =>
+          fallbackParams.append("status", estado)
+        );
       }
 
       if (selectedSucursales.length > 0) {
-        selectedSucursales.forEach((sucursal) => fallbackParams.append("sucursal", sucursal));
+        selectedSucursales.forEach((sucursal) =>
+          fallbackParams.append("sucursal", sucursal)
+        );
       }
 
       if (selectedPuestosCategorias.length > 0) {
-        selectedPuestosCategorias.forEach((categoria) => fallbackParams.append("puestoCategorizado", categoria));
+        selectedPuestosCategorias.forEach((categoria) =>
+          fallbackParams.append("puestoCategorizado", categoria)
+        );
       }
 
       if (selectedPeriodos.length > 0) {
@@ -1123,7 +1290,9 @@ const BusquedaEmpleados = () => {
             fallbackParams.append("cveper", periodo);
           } else {
             const normalizedCveper =
-              periodo.includes("T") || periodo.includes("Z") ? new Date(periodo).toISOString().split("T")[0] : periodo;
+              periodo.includes("T") || periodo.includes("Z")
+                ? new Date(periodo).toISOString().split("T")[0]
+                : periodo;
             fallbackParams.append("cveper", normalizedCveper);
           }
         });
@@ -1132,7 +1301,9 @@ const BusquedaEmpleados = () => {
       fallbackParams.append("fields", "curp");
       fallbackParams.append("pageSize", "100000");
 
-      const fallbackUrl = `${buildApiUrl("/api/payroll")}?${fallbackParams.toString()}`;
+      const fallbackUrl = `${buildApiUrl(
+        "/api/payroll"
+      )}?${fallbackParams.toString()}`;
       const fallbackResponse = await authenticatedFetch(fallbackUrl);
 
       if (fallbackResponse.ok) {
@@ -1165,7 +1336,9 @@ const BusquedaEmpleados = () => {
       try {
         // Aplicar filtro de estado 'A' por defecto
         if (staticFilterOptions.status.length > 0) {
-          const estadoA = staticFilterOptions.status.find((s) => s.value === "A");
+          const estadoA = staticFilterOptions.status.find(
+            (s) => s.value === "A"
+          );
           if (estadoA) {
             setSelectedEstados(["A"]);
           }
@@ -1233,7 +1406,9 @@ const BusquedaEmpleados = () => {
       }
 
       // Llamar al nuevo endpoint de filtros
-      const response = await authenticatedFetch(`${buildApiUrl("/api/payroll/filters")}?${filterParams.toString()}`);
+      const response = await authenticatedFetch(
+        `${buildApiUrl("/api/payroll/filters")}?${filterParams.toString()}`
+      );
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -1264,7 +1439,12 @@ const BusquedaEmpleados = () => {
     try {
       // Para las categorías de puestos, necesitamos obtener TODOS los datos de la base de datos
       // para calcular conteos globales reales, no solo datos paginados
-      const [payrollResponse, categoriasResponse, allDataResponse, periodosResponse] = await Promise.all([
+      const [
+        payrollResponse,
+        categoriasResponse,
+        allDataResponse,
+        periodosResponse,
+      ] = await Promise.all([
         authenticatedFetch(`${buildApiUrl("/api/payroll")}?pageSize=1000`), // Para opciones de filtros normales
         authenticatedFetch(`${buildApiUrl("/api/payroll/categorias-puestos")}`),
         authenticatedFetch(`${buildApiUrl("/api/payroll")}?pageSize=100000`), // Obtener TODOS los datos para conteos globales
@@ -1272,12 +1452,16 @@ const BusquedaEmpleados = () => {
       ]);
 
       if (!payrollResponse.ok || !allDataResponse.ok) {
-        throw new Error(`Error ${payrollResponse.status || allDataResponse.status}`);
+        throw new Error(
+          `Error ${payrollResponse.status || allDataResponse.status}`
+        );
       }
 
       const payrollResult = await payrollResponse.json();
       const allDataResult = await allDataResponse.json();
-      const periodosResult = periodosResponse.ok ? await periodosResponse.json() : { success: true, data: [] };
+      const periodosResult = periodosResponse.ok
+        ? await periodosResponse.json()
+        : { success: true, data: [] };
       let categoriasResult = null;
 
       if (categoriasResponse.ok) {
@@ -1286,9 +1470,21 @@ const BusquedaEmpleados = () => {
 
       if (payrollResult.success && allDataResult.success) {
         // Extraer valores únicos para filtros normales desde datos paginados
-        const puestos = [...new Set(payrollResult.data.map((emp) => emp.puesto).filter(Boolean))];
-        const estados = [...new Set(payrollResult.data.map((emp) => emp.estado).filter(Boolean))];
-        const sucursales = [...new Set(payrollResult.data.map((emp) => emp.sucursal).filter(Boolean))];
+        const puestos = [
+          ...new Set(
+            payrollResult.data.map((emp) => emp.puesto).filter(Boolean)
+          ),
+        ];
+        const estados = [
+          ...new Set(
+            payrollResult.data.map((emp) => emp.estado).filter(Boolean)
+          ),
+        ];
+        const sucursales = [
+          ...new Set(
+            payrollResult.data.map((emp) => emp.sucursal).filter(Boolean)
+          ),
+        ];
 
         const fallbackOptions = {
           puestos: puestos.map((p) => ({
@@ -1301,13 +1497,16 @@ const BusquedaEmpleados = () => {
           })),
           categorias: sucursales.map((c) => ({
             value: c,
-            count: payrollResult.data.filter((emp) => emp.sucursal === c).length,
+            count: payrollResult.data.filter((emp) => emp.sucursal === c)
+              .length,
           })),
           puestosCategorias: [], // Se cargará con el nuevo servicio
-          periodos: (periodosResult.success ? periodosResult.data : []).map((p) => ({
-            value: p.value,
-            count: parseInt(p.count) || 0,
-          })),
+          periodos: (periodosResult.success ? periodosResult.data : []).map(
+            (p) => ({
+              value: p.value,
+              count: parseInt(p.count) || 0,
+            })
+          ),
         };
 
         setFilterOptions(fallbackOptions);
@@ -1446,7 +1645,16 @@ const BusquedaEmpleados = () => {
     const csvContent = [
       headers.join(","),
       ...employees.map((emp) =>
-        [emp.name, emp.position, emp.department, emp.curve, emp.status, emp.startDate, emp.salary, emp.years].join(",")
+        [
+          emp.name,
+          emp.position,
+          emp.department,
+          emp.curve,
+          emp.status,
+          emp.startDate,
+          emp.salary,
+          emp.years,
+        ].join(",")
       ),
     ].join("\n");
 
@@ -1455,7 +1663,10 @@ const BusquedaEmpleados = () => {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `empleados_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute(
+      "download",
+      `empleados_${new Date().toISOString().split("T")[0]}.csv`
+    );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -1465,25 +1676,33 @@ const BusquedaEmpleados = () => {
   // Function to navigate to employee profile (same logic as EmployeeTable)
   const handleViewEmployee = (employee) => {
     // Check all possible field names for CURP (same logic as EmployeeTable)
-    const identifier = (employee.rfc?.trim()) || 
-                       (employee.curp?.trim()) || 
-                       (employee.RFC?.trim()) || 
-                       null;
-    
+    const identifier = employee.curp?.trim() || employee.CURP?.trim() || null;
+
+    const rfc = employee.rfc?.trim() || employee.RFC?.trim() || null;
+
     let navigationPath;
-    
+
     if (identifier) {
-      navigationPath = `/perfil/${encodeURIComponent(identifier)}`;
-      console.log('🔗 Navigating to profile:', { identifier, path: navigationPath });
+      navigationPath = `/perfil/${encodeURIComponent(rfc)}/${encodeURIComponent(
+        identifier
+      )}`;
+      console.log("🔗 Navigating to profile:", {
+        identifier,
+        path: navigationPath,
+      });
       navigate(navigationPath);
     } else {
       // Fallback: use cleaned name
-      const cleanedName = (employee.name || employee.nombre)
-        ?.replace(/\s+/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .toUpperCase() || 'unknown';
+      const cleanedName =
+        (employee.name || employee.nombre)
+          ?.replace(/\s+/g, "")
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toUpperCase() || "unknown";
       navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`;
-      console.warn('⚠️ No CURP found, using name fallback:', { nombre: employee.name || employee.nombre, path: navigationPath });
+      console.warn("⚠️ No CURP found, using name fallback:", {
+        nombre: employee.name || employee.nombre,
+        path: navigationPath,
+      });
       navigate(navigationPath);
     }
   };
@@ -1494,10 +1713,19 @@ const BusquedaEmpleados = () => {
 
   // Handlers de paginación - ✅ FIXED: Directly call API with current search term and filters
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages && newPage !== pagination.page) {
+    if (
+      newPage >= 1 &&
+      newPage <= pagination.totalPages &&
+      newPage !== pagination.page
+    ) {
       setPagination((prev) => ({ ...prev, page: newPage }));
       // ✅ FIXED: Directly load data with new page (includes current search term and filters)
-      console.log("🔄 [PAGE CHANGE] Loading page", newPage, "with search:", employeeSearchTerm || "NONE");
+      console.log(
+        "🔄 [PAGE CHANGE] Loading page",
+        newPage,
+        "with search:",
+        employeeSearchTerm || "NONE"
+      );
       loadEmployeesWithPagination(newPage, pagination.pageSize);
     }
   };
@@ -1535,7 +1763,10 @@ const BusquedaEmpleados = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
       } else {
         // ⚠️ Campo no reconocido - usar local sorting como fallback
-        console.warn("⚠️ Campo de sorting no reconocido, usando local sorting:", newSortBy);
+        console.warn(
+          "⚠️ Campo de sorting no reconocido, usando local sorting:",
+          newSortBy
+        );
         if (newSortBy === localSortBy) {
           setLocalSortDir(localSortDir === "asc" ? "desc" : "asc");
         } else {
@@ -1636,7 +1867,9 @@ const BusquedaEmpleados = () => {
             params.append("cveper", periodo);
           } else {
             const normalizedCveper =
-              periodo.includes("T") || periodo.includes("Z") ? new Date(periodo).toISOString().split("T")[0] : periodo;
+              periodo.includes("T") || periodo.includes("Z")
+                ? new Date(periodo).toISOString().split("T")[0]
+                : periodo;
             params.append("cveper", normalizedCveper);
           }
         });
@@ -1679,8 +1912,13 @@ const BusquedaEmpleados = () => {
             department: employee.sucursal || employee["Sucursal"] || "N/A",
             rfc: employee.rfc || employee["RFC"] || "N/A",
             curp: employee.curp || employee["CURP"] || "N/A",
-            status: employee.estado || employee["Status"] || employee.status || "N/A",
-            startDate: employee["fechaAntiguedad"] || employee["Fecha antigüedad"] || employee["antiguedadFPL"] || null,
+            status:
+              employee.estado || employee["Status"] || employee.status || "N/A",
+            startDate:
+              employee["fechaAntiguedad"] ||
+              employee["Fecha antigüedad"] ||
+              employee["antiguedadFPL"] ||
+              null,
             salary: (() => {
               // Buscar salario en múltiples posibles claves devueltas por el backend
               const candidates = [
@@ -1692,11 +1930,15 @@ const BusquedaEmpleados = () => {
                 ["SUELDO", employee["SUELDO"]],
                 [" SUELDO ", employee[" SUELDO "]],
               ];
-              const found = candidates.find(([k, v]) => v !== null && v !== undefined && v !== "");
+              const found = candidates.find(
+                ([k, v]) => v !== null && v !== undefined && v !== ""
+              );
               const salarioValue = found ? found[1] : undefined;
 
               if (salarioValue !== null && salarioValue !== undefined) {
-                const parsed = parseFloat(String(salarioValue).toString().replace(",", ""));
+                const parsed = parseFloat(
+                  String(salarioValue).toString().replace(",", "")
+                );
                 if (!isNaN(parsed)) {
                   return parsed;
                 }
@@ -1706,11 +1948,14 @@ const BusquedaEmpleados = () => {
             })(),
             commissions: (() => {
               // El backend ya calcula la suma: COMISIONES CLIENTE + COMISIONES FACTURADAS
-              const comisionesTotal = employee.comisiones || employee.commissions;
+              const comisionesTotal =
+                employee.comisiones || employee.commissions;
 
               // CORRECCIÓN CRÍTICA: Distinguir entre 0 válido y dato faltante
               if (comisionesTotal !== null && comisionesTotal !== undefined) {
-                const parsed = parseFloat(String(comisionesTotal).toString().replace(",", ""));
+                const parsed = parseFloat(
+                  String(comisionesTotal).toString().replace(",", "")
+                );
                 if (!isNaN(parsed)) {
                   return parsed; // Retornar número (incluyendo 0 si aplica)
                 }
@@ -1718,23 +1963,32 @@ const BusquedaEmpleados = () => {
               return null; // null permite sorting correcto, tabla mostrará 'N/A'
             })(),
             comisionesCliente: parseFloat(employee.comisionesCliente || 0),
-            comisionesFacturadas: parseFloat(employee.comisionesFacturadas || 0),
+            comisionesFacturadas: parseFloat(
+              employee.comisionesFacturadas || 0
+            ),
             " TOTAL DE PERCEPCIONES ": (() => {
               // USAR SOLO EL CAMPO EXACTO DE LA BASE DE DATOS: ' TOTAL DE PERCEPCIONES '
               // Probar múltiples posibles nombres del campo
               const candidates = [
-                [" TOTAL DE PERCEPCIONES ", employee[" TOTAL DE PERCEPCIONES "]],
+                [
+                  " TOTAL DE PERCEPCIONES ",
+                  employee[" TOTAL DE PERCEPCIONES "],
+                ],
                 ["totalPercepciones", employee.totalPercepciones],
                 ["TOTAL DE PERCEPCIONES", employee["TOTAL DE PERCEPCIONES"]],
                 [" PERCEPCIONES TOTALES ", employee[" PERCEPCIONES TOTALES "]],
               ];
               // CORRECCIÓN: No filtrar valores === 0, solo null/undefined/string vacía
-              const found = candidates.find(([k, v]) => v !== null && v !== undefined && v !== "");
+              const found = candidates.find(
+                ([k, v]) => v !== null && v !== undefined && v !== ""
+              );
               const value = found ? found[1] : undefined;
 
               // CORRECCIÓN CRÍTICA: Distinguir entre 0 válido y dato faltante
               if (value !== null && value !== undefined) {
-                const parsed = parseFloat(String(value).toString().replace(",", ""));
+                const parsed = parseFloat(
+                  String(value).toString().replace(",", "")
+                );
                 if (!isNaN(parsed)) {
                   return parsed; // Retornar número (incluyendo 0 si aplica)
                 }
@@ -1751,11 +2005,15 @@ const BusquedaEmpleados = () => {
                 ["costo_nomina", employee.costo_nomina],
                 ["costo", employee.costo],
               ];
-              const found = candidates.find(([k, v]) => v !== null && v !== undefined && v !== "");
+              const found = candidates.find(
+                ([k, v]) => v !== null && v !== undefined && v !== ""
+              );
               const value = found ? found[1] : undefined;
 
               if (value !== null && value !== undefined) {
-                const parsed = parseFloat(String(value).toString().replace(",", ""));
+                const parsed = parseFloat(
+                  String(value).toString().replace(",", "")
+                );
                 if (!isNaN(parsed)) {
                   return parsed;
                 }
@@ -1772,7 +2030,10 @@ const BusquedaEmpleados = () => {
               // EXTRAER VALOR: Si cveper es un objeto, extraer el valor correcto
               const cveperValue =
                 typeof employee.cveper === "object" && employee.cveper !== null
-                  ? employee.cveper.value || employee.cveper.fecha || employee.cveper.date || employee.cveper.cveper
+                  ? employee.cveper.value ||
+                    employee.cveper.fecha ||
+                    employee.cveper.date ||
+                    employee.cveper.cveper
                   : employee.cveper;
 
               const cveperFormatted = formatCveperForTable(cveperValue);
@@ -1819,10 +2080,22 @@ const BusquedaEmpleados = () => {
     }
 
     // Apply local sorting for numeric fields (salario, comisiones, percepcionesTotales)
-    if (["salario", "comisiones", "percepcionesTotales"].includes(localSortBy)) {
+    if (
+      ["salario", "comisiones", "percepcionesTotales"].includes(localSortBy)
+    ) {
       return [...employees].sort((a, b) => {
-        let aValue = a[localSortBy] || a.salary || a.commissions || a[" TOTAL DE PERCEPCIONES "] || 0;
-        let bValue = b[localSortBy] || b.salary || b.commissions || b[" TOTAL DE PERCEPCIONES "] || 0;
+        let aValue =
+          a[localSortBy] ||
+          a.salary ||
+          a.commissions ||
+          a[" TOTAL DE PERCEPCIONES "] ||
+          0;
+        let bValue =
+          b[localSortBy] ||
+          b.salary ||
+          b.commissions ||
+          b[" TOTAL DE PERCEPCIONES "] ||
+          0;
 
         // Parse numeric values
         aValue = parseFloat(aValue) || 0;
@@ -1860,10 +2133,17 @@ const BusquedaEmpleados = () => {
           </PageHeader>
           <LoadingContainer>
             <LoadingSpinner size={48} />
-            <h3 style={{ marginTop: "1rem", color: theme?.brand?.primary || "#1e3a8a" }}>
+            <h3
+              style={{
+                marginTop: "1rem",
+                color: theme?.brand?.primary || "#1e3a8a",
+              }}
+            >
               Cargando sistema de búsqueda...
             </h3>
-            <LoadingText>Obteniendo datos de empleados y opciones de filtro</LoadingText>
+            <LoadingText>
+              Obteniendo datos de empleados y opciones de filtro
+            </LoadingText>
           </LoadingContainer>
         </PageContainer>
       </StyledThemeProvider>
@@ -1894,7 +2174,9 @@ const BusquedaEmpleados = () => {
             <DropDownMenu
               label="Sucursal"
               options={
-                staticFilterOptions.categorias.length > 0 ? staticFilterOptions.categorias : filterOptions.categorias
+                staticFilterOptions.categorias.length > 0
+                  ? staticFilterOptions.categorias
+                  : filterOptions.categorias
               }
               selectedValues={selectedSucursales}
               onChange={setSelectedSucursales}
@@ -1907,7 +2189,8 @@ const BusquedaEmpleados = () => {
             <DropDownMenu
               label="Puesto"
               options={
-                staticFilterOptions.puestos && staticFilterOptions.puestos.length > 0
+                staticFilterOptions.puestos &&
+                staticFilterOptions.puestos.length > 0
                   ? staticFilterOptions.puestos
                   : filterOptions.puestos && filterOptions.puestos.length > 0
                   ? filterOptions.puestos
@@ -1938,7 +2221,11 @@ const BusquedaEmpleados = () => {
             {/* DropDownMenu para Estados - USAR OPCIONES ESTÁTICAS */}
             <DropDownMenu
               label="Estado"
-              options={staticFilterOptions.status.length > 0 ? staticFilterOptions.status : filterOptions.status}
+              options={
+                staticFilterOptions.status.length > 0
+                  ? staticFilterOptions.status
+                  : filterOptions.status
+              }
               selectedValues={selectedEstados}
               onChange={setSelectedEstados}
               placeholder="Todos los estados"
@@ -1951,7 +2238,11 @@ const BusquedaEmpleados = () => {
             <DropDownMenu
               key="period-dropdown-stable"
               label="Periodo"
-              options={staticFilterOptions.periodos.length > 0 ? staticFilterOptions.periodos : filterOptions.periodos}
+              options={
+                staticFilterOptions.periodos.length > 0
+                  ? staticFilterOptions.periodos
+                  : filterOptions.periodos
+              }
               selectedValues={selectedPeriodos}
               onChange={setSelectedPeriodos}
               placeholder="Todos los periodos"
@@ -2021,7 +2312,8 @@ const BusquedaEmpleados = () => {
                     // Cerca del final
                     pages.push(1);
                     pages.push("...");
-                    for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                    for (let i = totalPages - 4; i <= totalPages; i++)
+                      pages.push(i);
                   } else {
                     // En el medio
                     pages.push(1);
@@ -2034,7 +2326,9 @@ const BusquedaEmpleados = () => {
 
                 return pages.map((pageNum, index) => {
                   if (pageNum === "...") {
-                    return <PageEllipsis key={`ellipsis-${index}`}>•••</PageEllipsis>;
+                    return (
+                      <PageEllipsis key={`ellipsis-${index}`}>•••</PageEllipsis>
+                    );
                   }
 
                   const isCurrentPage = pageNum === page;
@@ -2066,29 +2360,37 @@ const BusquedaEmpleados = () => {
                 »
               </PaginationButton>
 
-              <PageInfo>de {pagination.totalPages.toLocaleString("es-MX")}</PageInfo>
+              <PageInfo>
+                de {pagination.totalPages.toLocaleString("es-MX")}
+              </PageInfo>
             </PaginationContainer>
 
             {/* Estadísticas en el centro */}
             <StatsContainer>
               {pagination && pagination.total > 0 ? (
                 <div>
-                  {uniqueEmployeesCount > 0 ? uniqueEmployeesCount.toLocaleString("es-MX") : "..."} Empleados /{" "}
-                  {pagination.total.toLocaleString("es-MX")} Entradas
-                  {employees.length > 0 && pagination.total !== employees.length && (
-                    <span>
-                      {" "}
-                      (página {pagination.page} de {pagination.totalPages})
-                    </span>
-                  )}
+                  {uniqueEmployeesCount > 0
+                    ? uniqueEmployeesCount.toLocaleString("es-MX")
+                    : "..."}{" "}
+                  Empleados / {pagination.total.toLocaleString("es-MX")}{" "}
+                  Entradas
+                  {employees.length > 0 &&
+                    pagination.total !== employees.length && (
+                      <span>
+                        {" "}
+                        (página {pagination.page} de {pagination.totalPages})
+                      </span>
+                    )}
                 </div>
               ) : datasetStats &&
                 typeof datasetStats === "object" &&
                 datasetStats.uniqueEmployees &&
                 datasetStats.uniqueEmployees > 0 ? (
                 <div>
-                  {datasetStats.uniqueEmployees.toLocaleString("es-MX")} Empleados /{" "}
-                  {(datasetStats.totalRecords || 0).toLocaleString("es-MX")} Entradas
+                  {datasetStats.uniqueEmployees.toLocaleString("es-MX")}{" "}
+                  Empleados /{" "}
+                  {(datasetStats.totalRecords || 0).toLocaleString("es-MX")}{" "}
+                  Entradas
                 </div>
               ) : (
                 <div>Conectando con la base de datos...</div>
@@ -2097,16 +2399,30 @@ const BusquedaEmpleados = () => {
 
             {/* Botones de vista y exportar a la derecha */}
             <ViewButtonsContainer>
-              <ViewModeButton type="button" onClick={() => setViewMode("cards")} $isActive={viewMode === "cards"}>
+              <ViewModeButton
+                type="button"
+                onClick={() => setViewMode("cards")}
+                $isActive={viewMode === "cards"}
+              >
                 <FaTh />
                 Tarjetas
               </ViewModeButton>
-              <ViewModeButton type="button" onClick={() => setViewMode("table")} $isActive={viewMode === "table"}>
+              <ViewModeButton
+                type="button"
+                onClick={() => setViewMode("table")}
+                $isActive={viewMode === "table"}
+              >
                 <FaTable />
                 Tabla
               </ViewModeButton>
               <ExportButton onClick={exportResults} disabled={loading}>
-                <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                <span
+                  style={{
+                    position: "relative",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
                   <FaDownload
                     style={{
                       opacity: loading ? 0 : 1,
@@ -2129,7 +2445,11 @@ const BusquedaEmpleados = () => {
                 title={isTableCollapsed ? "Expandir tabla" : "Contraer tabla"}
                 disabled={viewMode !== "table"}
               >
-                {isTableCollapsed ? <FaExpandArrowsAlt /> : <FaCompressArrowsAlt />}
+                {isTableCollapsed ? (
+                  <FaExpandArrowsAlt />
+                ) : (
+                  <FaCompressArrowsAlt />
+                )}
                 {isTableCollapsed ? "Expandir" : "Contraer"}
               </CollapseButton>
             </ViewButtonsContainer>
@@ -2146,22 +2466,37 @@ const BusquedaEmpleados = () => {
                 marginBottom: "1rem",
               }}
             >
-              <FaTimes size={24} color="#ff6b6b" style={{ marginBottom: "0.5rem" }} />
-              <h4 style={{ color: "#ff6b6b", margin: "0.5rem 0" }}>Error al cargar datos</h4>
+              <FaTimes
+                size={24}
+                color="#ff6b6b"
+                style={{ marginBottom: "0.5rem" }}
+              />
+              <h4 style={{ color: "#ff6b6b", margin: "0.5rem 0" }}>
+                Error al cargar datos
+              </h4>
               <p style={{ opacity: 0.8, margin: 0 }}>{error}</p>
             </div>
           )}
 
           {loading && (
             <div style={{ textAlign: "center", padding: "3rem" }}>
-              <FaSpinner size={32} color="#1e3a8a" style={{ animation: "spin 1s linear infinite" }} />
-              <p style={{ marginTop: "1rem", opacity: 0.8 }}>Buscando empleados...</p>
+              <FaSpinner
+                size={32}
+                color="#1e3a8a"
+                style={{ animation: "spin 1s linear infinite" }}
+              />
+              <p style={{ marginTop: "1rem", opacity: 0.8 }}>
+                Buscando empleados...
+              </p>
             </div>
           )}
 
           {!loading && !error && employees.length === 0 ? (
             <NoResults>
-              <FaTimes size={48} style={{ marginBottom: "1rem", opacity: 0.5 }} />
+              <FaTimes
+                size={48}
+                style={{ marginBottom: "1rem", opacity: 0.5 }}
+              />
               <h3>No se encontraron empleados</h3>
               <p>Intenta ajustar los términos de búsqueda o filtros</p>
             </NoResults>
@@ -2182,8 +2517,16 @@ const BusquedaEmpleados = () => {
                         onPageChange={handlePageChange}
                         onPageSizeChange={handlePageSizeChange}
                         // Props para sorting - hybrid: server-side para texto, local para numéricos
-                        sortBy={serverSortFields.includes(localSortBy) ? sortBy : localSortBy}
-                        sortDir={serverSortFields.includes(localSortBy) ? sortDir : localSortDir}
+                        sortBy={
+                          serverSortFields.includes(localSortBy)
+                            ? sortBy
+                            : localSortBy
+                        }
+                        sortDir={
+                          serverSortFields.includes(localSortBy)
+                            ? sortDir
+                            : localSortDir
+                        }
                         onSortChange={handleSortChange}
                       />
                     </TableContainer>
@@ -2202,7 +2545,9 @@ const BusquedaEmpleados = () => {
                             </EmployeeAvatar>
                             <EmployeeInfo>
                               <EmployeeName>{employee.name}</EmployeeName>
-                              <EmployeePosition>{employee.position}</EmployeePosition>
+                              <EmployeePosition>
+                                {employee.position}
+                              </EmployeePosition>
                             </EmployeeInfo>
                           </EmployeeHeader>
 
@@ -2226,10 +2571,15 @@ const BusquedaEmpleados = () => {
                                   ? (() => {
                                       // Si es un timestamp ISO, extraer solo la parte de la fecha
                                       let fecha = employee.startDate;
-                                      if (typeof fecha === "string" && fecha.includes("T")) {
+                                      if (
+                                        typeof fecha === "string" &&
+                                        fecha.includes("T")
+                                      ) {
                                         fecha = fecha.split("T")[0];
                                       }
-                                      return new Date(fecha + "T12:00:00").toLocaleDateString("es-MX", {
+                                      return new Date(
+                                        fecha + "T12:00:00"
+                                      ).toLocaleDateString("es-MX", {
                                         year: "numeric",
                                         month: "long",
                                         day: "numeric",
@@ -2240,22 +2590,33 @@ const BusquedaEmpleados = () => {
                             </DetailRow>
                             <DetailRow>
                               <DetailLabel>Años de antigüedad:</DetailLabel>
-                              <DetailValue>{employee.years || "N/A"}</DetailValue>
+                              <DetailValue>
+                                {employee.years || "N/A"}
+                              </DetailValue>
                             </DetailRow>
                             {employee.salary && (
                               <DetailRow>
                                 <DetailLabel>Salario:</DetailLabel>
-                                <DetailValue>${employee.salary?.toLocaleString("es-MX")}</DetailValue>
+                                <DetailValue>
+                                  ${employee.salary?.toLocaleString("es-MX")}
+                                </DetailValue>
                               </DetailRow>
                             )}
                           </EmployeeDetails>
 
                           <EmployeeActions>
-                            <ActionButton primary onClick={() => handleViewEmployee(employee)}>
+                            <ActionButton
+                              primary
+                              onClick={() => handleViewEmployee(employee)}
+                            >
                               <FaEye />
                               Ver
                             </ActionButton>
-                            <ActionButton onClick={() => editEmployee(employee)}>Editar</ActionButton>
+                            <ActionButton
+                              onClick={() => editEmployee(employee)}
+                            >
+                              Editar
+                            </ActionButton>
                           </EmployeeActions>
                         </EmployeeCard>
                       ))}

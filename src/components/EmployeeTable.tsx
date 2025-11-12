@@ -1,155 +1,199 @@
-import React, { useState, useEffect } from 'react'
-import type { PayrollData } from '../types'
-import { parseMoney, formatCurrency, formatPeriod } from '../utils/data'
-import { useServerPagination } from '../hooks/useServerPagination'
-import { buildApiUrl } from '../config/apiConfig'
-import { normalizePayrollStats } from '../utils/payrollStatsNormalizer'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from "react";
+import type { PayrollData } from "../types";
+import { parseMoney, formatCurrency, formatPeriod } from "../utils/data";
+import { useServerPagination } from "../hooks/useServerPagination";
+import { buildApiUrl } from "../config/apiConfig";
+import { normalizePayrollStats } from "../utils/payrollStatsNormalizer";
+import { useNavigate } from "react-router-dom";
+import { authenticatedFetch } from "../services/authenticatedFetch";
 
 // ✅ FIELD MAPPING: Map frontend column keys to backend orderBy field names
 const FRONTEND_TO_BACKEND_FIELD_MAP: Record<string, string> = {
-  'nombre': 'nombre',
-  'rfc': 'rfc',
-  'puesto': 'puesto',
-  'sucursal': 'sucursal',
-  'mes': 'periodo',        // Frontend uses 'mes', backend expects 'periodo'
-  'periodo': 'periodo',
-  'sueldo': 'salario',     // Frontend uses 'sueldo', backend expects 'salario'
-  'salario': 'salario',
-  'comisiones': 'comisiones',
-  'totalPercepciones': 'totalpercepciones',
-  'percepcionesTotales': 'percepcionestotales',
-  'estado': 'estado'
-}
+  nombre: "nombre",
+  curp: "curp",
+  puesto: "puesto",
+  sucursal: "sucursal",
+  mes: "periodo", // Frontend uses 'mes', backend expects 'periodo'
+  periodo: "periodo",
+  sueldo: "salario", // Frontend uses 'sueldo', backend expects 'salario'
+  salario: "salario",
+  comisiones: "comisiones",
+  totalPercepciones: "totalpercepciones",
+  percepcionesTotales: "percepcionestotales",
+  estado: "estado",
+};
 
-const columns: { key: string; label: string; sortable: boolean; dataKey: keyof PayrollData | 'profile' }[] = [
-  { key: 'nombre', label: 'Nombre completo', sortable: true, dataKey: 'nombre' },
-  { key: 'rfc', label: 'CURP', sortable: true, dataKey: 'rfc' },
-  { key: 'puesto', label: 'Puesto', sortable: true, dataKey: 'puesto' },
-  { key: 'sucursal', label: 'Sucursal', sortable: true, dataKey: 'sucursal' },
-  { key: 'mes', label: 'Período', sortable: true, dataKey: 'mes' },
-  { key: 'sueldo', label: 'Salario', sortable: true, dataKey: 'sueldo' },
-  { key: 'comisiones', label: 'Comisiones', sortable: true, dataKey: 'comisiones' },
-  { key: 'percepcionesTotales', label: 'Percepciones totales', sortable: true, dataKey: 'totalPercepciones' },
-  { key: 'estado', label: 'Estado', sortable: true, dataKey: 'estado' }
-]
+const columns: {
+  key: string;
+  label: string;
+  sortable: boolean;
+  dataKey: keyof PayrollData | "profile";
+}[] = [
+  {
+    key: "nombre",
+    label: "Nombre completo",
+    sortable: true,
+    dataKey: "nombre",
+  },
+  { key: "curp", label: "CURP", sortable: true, dataKey: "curp" },
+  { key: "puesto", label: "Puesto", sortable: true, dataKey: "puesto" },
+  { key: "sucursal", label: "Sucursal", sortable: true, dataKey: "sucursal" },
+  { key: "mes", label: "Período", sortable: true, dataKey: "mes" },
+  { key: "sueldo", label: "Salario", sortable: true, dataKey: "sueldo" },
+  {
+    key: "comisiones",
+    label: "Comisiones",
+    sortable: true,
+    dataKey: "comisiones",
+  },
+  {
+    key: "percepcionesTotales",
+    label: "Percepciones totales",
+    sortable: true,
+    dataKey: "totalPercepciones",
+  },
+  { key: "estado", label: "Estado", sortable: true, dataKey: "estado" },
+];
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500]
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500];
 
 interface EmployeeTableProps {
-  employees?: PayrollData[]
-  loading?: boolean
+  employees?: PayrollData[];
+  loading?: boolean;
   pagination?: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
-  onPageChange?: (page: number) => void
-  onPageSizeChange?: (pageSize: number) => void
-  sortBy?: string
-  sortDir?: 'asc' | 'desc'
-  onSortChange?: (field: string, direction?: 'asc' | 'desc') => void
-  onViewEmployee?: (employee: PayrollData) => void
-  onEditEmployee?: (employee: PayrollData) => void
-  error?: string | null
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+  onSortChange?: (field: string, direction?: "asc" | "desc") => void;
+  onViewEmployee?: (employee: PayrollData) => void;
+  onEditEmployee?: (employee: PayrollData) => void;
+  error?: string | null;
 }
 
 export default function EmployeeTable(props?: EmployeeTableProps) {
-  const [stats, setStats] = useState(null)
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
-  const [isTableCollapsed, setIsTableCollapsed] = useState(false)
-  const navigate = useNavigate()
+  const [stats, setStats] = useState(null);
+  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
+  const [isTableCollapsed, setIsTableCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   // ✅ FIXED: Use props if provided, otherwise use useServerPagination (for backward compatibility)
   // Check if props object exists and has employees array (even if empty)
-  const useProps = props !== undefined && props !== null && 'employees' in props
+  const useProps =
+    props !== undefined && props !== null && "employees" in props;
 
   // ✅ CRITICAL FIX: Use a special disabled endpoint when props are provided
   // This prevents double API calls when BusquedaEmpleados passes data via props
   // Using '__DISABLED__' instead of empty string to avoid URL building issues
-  const endpointToUse = useProps ? '__DISABLED__' : '/api/payroll'
+  const endpointToUse = useProps ? "__DISABLED__" : "/api/payroll";
 
-  console.log('🔍 [EmployeeTable] Props check:', {
+  console.log("🔍 [EmployeeTable] Props check:", {
     hasProps: props !== undefined && props !== null,
-    hasEmployees: props && 'employees' in props,
+    hasEmployees: props && "employees" in props,
     useProps: useProps,
     endpoint: endpointToUse,
-    employeesCount: props?.employees?.length || 0
-  })
+    employeesCount: props?.employees?.length || 0,
+  });
 
   const serverPagination = useServerPagination(
     endpointToUse, // Special value disables fetch when using props
     100,
-    'nombre',
-    'asc'
-  )
+    "nombre",
+    "asc"
+  );
 
   // Use props if provided, otherwise use serverPagination
-  const data = useProps ? (props.employees || []) : serverPagination.data
-  const pagination = useProps ? (props.pagination || { page: 1, pageSize: 100, total: 0, totalPages: 0 }) : serverPagination.pagination
-  const loading = useProps ? (props.loading || false) : serverPagination.loading
-  const error = useProps ? (props.error || null) : serverPagination.error
-  const sortBy = useProps ? (props.sortBy || 'nombre') : serverPagination.sortBy
-  const sortDir = useProps ? (props.sortDir || 'asc') : serverPagination.sortDir
-  const setPage = useProps ? (props.onPageChange || (() => { })) : serverPagination.setPage
-  const setPageSize = useProps ? (props.onPageSizeChange || (() => { })) : serverPagination.setPageSize
-  const handleSortChange = useProps ? (props.onSortChange || (() => { })) : serverPagination.handleSortChange
-  const refresh = useProps ? (() => { }) : serverPagination.refresh
+  const data = useProps ? props.employees || [] : serverPagination.data;
+  const pagination = useProps
+    ? props.pagination || { page: 1, pageSize: 100, total: 0, totalPages: 0 }
+    : serverPagination.pagination;
+  const loading = useProps ? props.loading || false : serverPagination.loading;
+  const error = useProps ? props.error || null : serverPagination.error;
+  const sortBy = useProps ? props.sortBy || "nombre" : serverPagination.sortBy;
+  const sortDir = useProps ? props.sortDir || "asc" : serverPagination.sortDir;
+  const setPage = useProps
+    ? props.onPageChange || (() => {})
+    : serverPagination.setPage;
+  const setPageSize = useProps
+    ? props.onPageSizeChange || (() => {})
+    : serverPagination.setPageSize;
+  const handleSortChange = useProps
+    ? props.onSortChange || (() => {})
+    : serverPagination.handleSortChange;
+  const refresh = useProps ? () => {} : serverPagination.refresh;
 
   // Calculate display range
-  const from = pagination.total > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0
-  const to = Math.min(pagination.page * pagination.pageSize, pagination.total)
+  const from =
+    pagination.total > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0;
+  const to = Math.min(pagination.page * pagination.pageSize, pagination.total);
 
   // Function to navigate to employee profile
   const handleViewEmployee = (employee: PayrollData) => {
     // ✅ FIXED: Use onViewEmployee prop if provided, otherwise navigate
     if (useProps && props?.onViewEmployee) {
-      props.onViewEmployee(employee)
-      return
+      props.onViewEmployee(employee);
+      return;
     }
 
     // ✅ FIXED: Check all possible field names for CURP (same logic as table rendering)
-    const rAny = employee as any
-    const identifier = (employee.rfc?.trim()) ||
-      (rAny.curp?.trim()) ||
-      (rAny.RFC?.trim()) ||
-      null
+    const rAny = employee as any;
+    const identifier = employee.rfc?.trim() || rAny.RFC?.trim() || null;
+    const curpidentifier = rAny.curp?.trim();
 
-    let navigationPath: string
+    let navigationPath: string;
 
     if (identifier) {
-      navigationPath = `/perfil/${encodeURIComponent(identifier)}`
-      console.log('🔗 Navigating to profile:', { identifier, path: navigationPath })
-      navigate(navigationPath)
+      navigationPath = `/perfil/${encodeURIComponent(
+        identifier
+      )}/${encodeURIComponent(curpidentifier)}`;
+      console.log("🔗 Navigating to profile:", {
+        identifier,
+        path: navigationPath,
+      });
+      navigate(navigationPath);
     } else {
       // Fallback: use cleaned name
-      const cleanedName = employee.nombre
-        ?.replace(/\s+/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .toUpperCase() || 'unknown'
-      navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`
-      console.warn('⚠️ No CURP found, using name fallback:', { nombre: employee.nombre, path: navigationPath })
-      navigate(navigationPath)
+      const cleanedName =
+        employee.nombre
+          ?.replace(/\s+/g, "")
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toUpperCase() || "unknown";
+      navigationPath = `/perfil/${encodeURIComponent(cleanedName)}`;
+      console.warn("⚠️ No CURP found, using name fallback:", {
+        nombre: employee.nombre,
+        path: navigationPath,
+      });
+      navigate(navigationPath);
     }
-  }
+  };
 
   // Function to export data to CSV
   const exportToCSV = () => {
-    const headers = columns.map(col => col.label).join(',')
-    const rows = data.map(r => {
+    const headers = columns.map((col) => col.label).join(",");
+    const rows = data.map((r) => {
       // ✅ FIXED: Map data fields to expected format (handle both API format and props format)
       // Use bracket notation to access properties that may not be in PayrollData type
-      const rAny = r as any
-      const nombre = r.nombre || rAny.name || ''
-      const rfc = r.rfc || rAny.curp || rAny.RFC || ''
-      const puesto = r.puesto || rAny.position || rAny.Puesto || ''
-      const sucursal = r.sucursal || rAny.department || rAny.Sucursal || ''
-      const mes = r.mes || rAny.periodo || rAny.Mes || ''
-      const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0
-      const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
-      const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
-      const estado = r.estado || rAny.status || rAny.Estado || ''
+      const rAny = r as any;
+      const nombre = r.nombre || rAny.name || "";
+      const rfc = r.rfc || rAny.curp || rAny.RFC || "";
+      const curp = rAny.curp || r.rfc || rAny.RFC || "";
+      const puesto = r.puesto || rAny.position || rAny.Puesto || "";
+      const sucursal = r.sucursal || rAny.department || rAny.Sucursal || "";
+      const mes = r.mes || rAny.periodo || rAny.Mes || "";
+      const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0;
+      const comisiones =
+        r.comisiones || rAny.commissions || rAny.Comisiones || 0;
+      const totalPercepciones =
+        r.totalPercepciones ||
+        r[" TOTAL DE PERCEPCIONES "] ||
+        rAny.totalPercepciones ||
+        0;
+      const estado = r.estado || rAny.status || rAny.Estado || "";
 
       return [
         nombre,
@@ -160,113 +204,165 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         formatCurrency(parseMoney(sueldo)),
         formatCurrency(parseMoney(comisiones)),
         formatCurrency(parseMoney(totalPercepciones)),
-        estado
-      ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    })
+        estado,
+      ]
+        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+        .join(",");
+    });
 
-    const csvContent = [headers, ...rows].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `empleados_${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const csvContent = [headers, ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `empleados_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Sorting functions
   const toggleSort = (key: string) => {
-    console.log('🔄 EmployeeTable.toggleSort called:', { key, sortBy, sortDir })
+    console.log("🔄 EmployeeTable.toggleSort called:", {
+      key,
+      sortBy,
+      sortDir,
+    });
 
     // ✅ MAP frontend column key to backend field name
-    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
-    console.log('🔵 Field mapping:', { frontendKey: key, backendField: backendFieldName })
+    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key;
+    console.log("🔵 Field mapping:", {
+      frontendKey: key,
+      backendField: backendFieldName,
+    });
 
     // LOG ESPECIAL PARA PERCEPCIONES TOTALES
-    if (key === 'percepcionesTotales' || key === 'totalPercepciones') {
-      console.log('💰 PERCEPCIONES TOTALES CLICKED:', {
+    if (key === "percepcionesTotales" || key === "totalPercepciones") {
+      console.log("💰 PERCEPCIONES TOTALES CLICKED:", {
         clickedKey: key,
         mappedBackendField: backendFieldName,
         currentSortBy: sortBy,
         currentSortDir: sortDir,
-        willToggle: sortBy === backendFieldName
-      })
+        willToggle: sortBy === backendFieldName,
+      });
     }
 
     // ✅ Check if this column is currently sorted (compare backend field names)
-    let newDirection: 'asc' | 'desc'
+    let newDirection: "asc" | "desc";
     if (sortBy === backendFieldName) {
       // Same column clicked - toggle direction
-      newDirection = sortDir === 'asc' ? 'desc' : 'asc'
+      newDirection = sortDir === "asc" ? "desc" : "asc";
     } else {
       // Different column clicked - start with ascending
-      newDirection = 'asc'
+      newDirection = "asc";
     }
 
-    console.log('📤 EmployeeTable: Sending sort change to backend:', {
+    console.log("📤 EmployeeTable: Sending sort change to backend:", {
       frontendKey: key,
       backendField: backendFieldName,
-      direction: newDirection
-    })
+      direction: newDirection,
+    });
 
     // ✅ IMPORTANT: Send backend field name, not frontend key
-    handleSortChange(backendFieldName, newDirection)
-  }
+    handleSortChange(backendFieldName, newDirection);
+  };
 
   const getSortIcon = (key: string) => {
     // ✅ Map frontend key to backend field name for comparison
-    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key
+    const backendFieldName = FRONTEND_TO_BACKEND_FIELD_MAP[key] || key;
     // Compare with sortBy (which now contains backend field name)
-    const isActive = sortBy === backendFieldName
+    const isActive = sortBy === backendFieldName;
 
     if (!isActive) {
       return (
         <div className="flex flex-col -space-y-1">
-          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          <svg
+            className="w-3 h-3 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 15l7-7 7 7"
+            />
           </svg>
-          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <svg
+            className="w-3 h-3 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
-      )
+      );
     }
-    if (sortDir === 'asc') {
+    if (sortDir === "asc") {
       return (
-        <svg className="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        <svg
+          className="w-4 h-4 text-blue-900"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 15l7-7 7 7"
+          />
         </svg>
-      )
+      );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        <svg
+          className="w-4 h-4 text-blue-900"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
-      )
+      );
     }
-  }
+  };
 
   // Load database statistics on component mount
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch(buildApiUrl('/api/payroll/stats'))
+        const response = await authenticatedFetch(buildApiUrl("/api/payroll/stats"));
         if (response.ok) {
-          const result = await response.json()
+          const result = await response.json();
           // Normalize the response to old format
-          const normalizedResult = normalizePayrollStats(result)
+          const normalizedResult = normalizePayrollStats(result);
           if (normalizedResult.success) {
-            setStats(normalizedResult.data)
+            setStats(normalizedResult.data);
           }
         }
       } catch (error) {
-        console.error('Error loading stats:', error)
+        console.error("Error loading stats:", error);
       }
-    }
-    loadStats()
-  }, [])
+    };
+    loadStats();
+  }, []);
 
   if (error) {
     return (
@@ -280,23 +376,28 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
           Reintentar
         </button>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-4">
       {/* Database Statistics Panel */}
 
-
       {/* Table - Clean white design matching reference image */}
-      <div className={`overflow-auto rounded-lg border border-gray-300 bg-white shadow-sm ${isTableCollapsed ? 'max-h-[400px]' : ''}`}>
+      <div
+        className={`overflow-auto rounded-lg border border-gray-300 bg-white shadow-sm ${
+          isTableCollapsed ? "max-h-[400px]" : ""
+        }`}
+      >
         <table className="min-w-full text-sm">
           <thead className="bg-[#d2d8e8] border-b-2 border-blue-200 text-left sticky top-0 z-10 shadow-sm">
             <tr>
               {columns.map((col, idx) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 whitespace-nowrap font-semibold text-blue-900 border-r border-blue-200 ${idx === columns.length - 1 ? 'border-r-0' : ''}`}
+                  className={`px-4 py-3 whitespace-nowrap font-semibold text-blue-900 border-r border-blue-200 ${
+                    idx === columns.length - 1 ? "border-r-0" : ""
+                  }`}
                 >
                   {col.sortable ? (
                     <button
@@ -317,7 +418,10 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
           <tbody className="bg-white">
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-500">
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-12 text-center text-gray-500"
+                >
                   <div className="flex items-center justify-center space-x-3">
                     <div className="animate-spin h-6 w-6 border-3 border-blue-600 border-t-transparent rounded-full"></div>
                     <span className="text-base">Cargando datos...</span>
@@ -326,7 +430,10 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-500">
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-12 text-center text-gray-500"
+                >
                   <div className="text-base">Sin resultados</div>
                 </td>
               </tr>
@@ -334,19 +441,31 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
               data.map((r, i) => {
                 // ✅ FIXED: Map data fields to expected format (handle both API format and props format)
                 // Use bracket notation to access properties that may not be in PayrollData type
-                const rAny = r as any
-                const nombre = r.nombre || rAny.name || 'N/A'
-                const rfc = r.rfc || rAny.curp || rAny.RFC || 'N/A'
-                const puesto = r.puesto || rAny.position || rAny.Puesto || 'N/A'
-                const sucursal = r.sucursal || rAny.department || rAny.Sucursal || 'N/A'
-                const mes = r.mes || rAny.periodo || rAny.Mes || ''
-                const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0
-                const comisiones = r.comisiones || rAny.commissions || rAny.Comisiones || 0
-                const totalPercepciones = r.totalPercepciones || r[" TOTAL DE PERCEPCIONES "] || rAny.totalPercepciones || 0
-                const estado = r.estado || rAny.status || rAny.Estado || 'N/A'
+                const rAny = r as any;
+                const nombre = r.nombre || rAny.name || "N/A";
+                const curp = rAny.curp || r.rfc || rAny.RFC || "N/A";
+                const rfc = r.rfc || rAny.curp || rAny.RFC || "N/A";
+                const puesto =
+                  r.puesto || rAny.position || rAny.Puesto || "N/A";
+                const sucursal =
+                  r.sucursal || rAny.department || rAny.Sucursal || "N/A";
+                const mes = r.mes || rAny.periodo || rAny.Mes || "";
+                const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0;
+                const comisiones =
+                  r.comisiones || rAny.commissions || rAny.Comisiones || 0;
+                const totalPercepciones =
+                  r.totalPercepciones ||
+                  r[" TOTAL DE PERCEPCIONES "] ||
+                  rAny.totalPercepciones ||
+                  0;
+                const estado = r.estado || rAny.status || rAny.Estado || "N/A";
 
                 // ✅ FRONTEND LOGGING: Log values before display (only for first 5 rows and when sorting by percepciones)
-                if (i < 5 && (sortBy === 'percepcionestotales' || sortBy === 'totalpercepciones')) {
+                if (
+                  i < 5 &&
+                  (sortBy === "percepcionestotales" ||
+                    sortBy === "totalpercepciones")
+                ) {
                   const rawValue = totalPercepciones;
                   const parsedValue = parseMoney(rawValue);
                   const formattedValue = formatCurrency(parsedValue);
@@ -357,14 +476,21 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                     rawType: typeof rawValue,
                     parsedValue: parsedValue,
                     formattedValue: formattedValue,
-                    hasTotalPercepciones: 'totalPercepciones' in r,
-                    hasTotalDePercepciones: ' TOTAL DE PERCEPCIONES ' in r,
-                    allKeys: Object.keys(r).filter(k => k.toLowerCase().includes('percepcion') || k.toLowerCase().includes('total'))
+                    hasTotalPercepciones: "totalPercepciones" in r,
+                    hasTotalDePercepciones: " TOTAL DE PERCEPCIONES " in r,
+                    allKeys: Object.keys(r).filter(
+                      (k) =>
+                        k.toLowerCase().includes("percepcion") ||
+                        k.toLowerCase().includes("total")
+                    ),
                   });
                 }
 
                 return (
-                  <tr key={`${rfc}-${mes}-${i}`} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                  <tr
+                    key={`${rfc}-${mes}-${i}`}
+                    className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                  >
                     <td className="px-4 py-3">
                       <button
                         onClick={() => handleViewEmployee(r)}
@@ -376,12 +502,14 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       <code className="font-mono text-xs text-gray-700 bg-gray-50 rounded px-2 py-1">
-                        {rfc}
+                        {curp}
                       </code>
                     </td>
                     <td className="px-4 py-3 text-gray-800">{puesto}</td>
                     <td className="px-4 py-3 text-gray-800">{sucursal}</td>
-                    <td className="px-4 py-3 text-gray-700 font-mono text-xs">{mes || ''}</td>
+                    <td className="px-4 py-3 text-gray-700 font-mono text-xs">
+                      {mes || ""}
+                    </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">
                       {formatCurrency(parseMoney(sueldo))}
                     </td>
@@ -392,27 +520,27 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                       {formatCurrency(parseMoney(totalPercepciones || 0))}
                     </td>
                     <td className="px-4 py-3">
-                      {estado === 'Activo' || estado === 'A' ? (
+                      {estado === "Activo" || estado === "A" ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                           Activo
                         </span>
-                      ) : estado === 'Baja' || estado === 'B' ? (
+                      ) : estado === "Baja" || estado === "B" ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
                           Baja
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                          {estado || 'N/A'}
+                          {estado || "N/A"}
                         </span>
                       )}
                     </td>
                   </tr>
-                )
+                );
               })
             )}
           </tbody>
         </table>
       </div>
     </div>
-  )
+  );
 }
