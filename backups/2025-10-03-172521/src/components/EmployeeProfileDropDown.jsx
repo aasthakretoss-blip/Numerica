@@ -164,7 +164,7 @@ const EmployeeProfileDropDown = ({
         page: '1'
       });
       
-      const url = `${process.env.REACT_APP_API_BASE_URL || 'http://numericaapi.kretosstechnology.com'}/api/percepciones?${params.toString()}`;
+      const url = `${process.env.REACT_APP_API_BASE_URL || 'http://numericaapi.kretosstechnology.com:3001'}/api/percepciones?${params.toString()}`;
       
       const response = await fetch(url);
       

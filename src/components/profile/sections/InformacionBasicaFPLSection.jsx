@@ -94,12 +94,12 @@ const FieldValue = styled.div`
 const InformacionBasicaFPLSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (value === null || value === undefined || value === '') return '-';
     return value.toString();
   };
 
   const formatDate = (dateValue) => {
-    if (!dateValue) return 'No disponible';
+    if (!dateValue) return '-';
     try {
       // Si es un timestamp ISO, extraer solo la parte de la fecha
       if (typeof dateValue === 'string' && dateValue.includes('T')) {
@@ -139,11 +139,6 @@ const InformacionBasicaFPLSection = ({ data, loading }) => {
             value = formatDate(data?.[dbField]);
           } else {
             value = formatValue(data?.[dbField]);
-          }
-
-          // OCULTAR "Fecha de Baja" cuando sea "No disponible"
-          if (key === 'fecbaj' && value === 'No disponible') {
-            return null;
           }
 
           return (

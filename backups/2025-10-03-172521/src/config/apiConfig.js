@@ -1,18 +1,18 @@
 // Configuración de API basada en el entorno
 const API_CONFIG = {
   development: {
-    BASE_URL: 'http://numericaapi.kretosstechnology.com',
-    PAYROLL_API: 'http://numericaapi.kretosstechnology.com/api/payroll',
-    EMPLOYEES_API: 'http://numericaapi.kretosstechnology.com/api/employees',
-    DEMOGRAPHICS_API: 'http://numericaapi.kretosstechnology.com/api/demographics',
-    PROFILE_API: 'http://numericaapi.kretosstechnology.com/api/profile',
+    BASE_URL: 'http://numericaapi.kretosstechnology.com:3001',
+    PAYROLL_API: 'http://numericaapi.kretosstechnology.com:3001/api/payroll',
+    EMPLOYEES_API: 'http://numericaapi.kretosstechnology.com:3001/api/employees',
+    DEMOGRAPHICS_API: 'http://numericaapi.kretosstechnology.com:3001/api/demographics',
+    PROFILE_API: 'http://numericaapi.kretosstechnology.com:3001/api/profile',
   },
   production: {
-    BASE_URL: process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com',
-    PAYROLL_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com') + '/api',
-    EMPLOYEES_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com') + '/api',
-    DEMOGRAPHICS_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com') + '/api',
-    PROFILE_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com') + '/api',
+    BASE_URL: process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com:3001',
+    PAYROLL_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com:3001') + '/api',
+    EMPLOYEES_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com:3001') + '/api',
+    DEMOGRAPHICS_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com:3001') + '/api',
+    PROFILE_API: (process.env.REACT_APP_API_URL || 'http://numericaapi.kretosstechnology.com:3001') + '/api',
   }
 };
 

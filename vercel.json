@@ -6,7 +6,7 @@
     "rewrites":  [
                      {
                          "source":  "/api/:path*",
-                         "destination":  "http://numericaapi.kretosstechnology.com/api/:path*"
+                         "destination":  "http://numericaapi.kretosstechnology.com:3001/api/:path*"
                      },
                      {
                          "source":  "/:path*",

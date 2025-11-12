@@ -263,7 +263,7 @@ const Percepciones = ({ curp, selectedCveper }) => {
           params.append('cveper', selectedCveper); // Usar 'cveper' que es lo que espera el backend
         }
 
-        const response = await fetch(`http://numericaapi.kretosstechnology.com/api/percepciones?${params.toString()}`);
+        const response = await fetch(`http://numericaapi.kretosstechnology.com:3001/api/percepciones?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar percepciones del empleado');

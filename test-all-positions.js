@@ -6,9 +6,9 @@ const testFilterEndpoint = async () => {
     
     // Test 1: Filtros sin parámetros (debería devolver TODOS los puestos)
     console.log('1. Consultando filtros sin parámetros:');
-    console.log('   URL: http://numericaapi.kretosstechnology.com/api/payroll/filters');
+    console.log('   URL: http://numericaapi.kretosstechnology.com:3001/api/payroll/filters');
     
-    const response1 = await fetch('http://numericaapi.kretosstechnology.com/api/payroll/filters', {
+    const response1 = await fetch('http://numericaapi.kretosstechnology.com:3001/api/payroll/filters', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ const testFilterEndpoint = async () => {
     
     // Test 2: Comparar con endpoint normal de payroll
     console.log('2. Comparando con endpoint /api/payroll con pageSize máximo:');
-    const response2 = await fetch('http://numericaapi.kretosstechnology.com/api/payroll?pageSize=100000');
+    const response2 = await fetch('http://numericaapi.kretosstechnology.com:3001/api/payroll?pageSize=100000');
     
     if (!response2.ok) {
       throw new Error(`Error ${response2.status}: ${response2.statusText}`);
@@ -77,7 +77,7 @@ const testFilterEndpoint = async () => {
   } catch (error) {
     console.error('❌ Error en la prueba:', error.message);
     console.log('\n💡 Posibles causas:');
-    console.log('   - El servidor no está corriendo en http://numericaapi.kretosstechnology.com');
+    console.log('   - El servidor no está corriendo en http://numericaapi.kretosstechnology.com:3001');
     console.log('   - Problema de conexión a la base de datos');
     console.log('   - Error en el servicio de filtros');
   }

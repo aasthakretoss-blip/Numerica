@@ -53,7 +53,7 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
       }
       
       // Usar el nuevo endpoint de datos FPL completos
-      const response = await fetch(`http://numericaapi.kretosstechnology.com/api/fpl/data-from-rfc?${params.toString()}`);
+      const response = await fetch(`http://numericaapi.kretosstechnology.com:3001/api/fpl/data-from-rfc?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error('Error al cargar datos FPL del empleado');

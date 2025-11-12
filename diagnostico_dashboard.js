@@ -5,7 +5,7 @@
 
 // Configuración de la API (similar a la del proyecto)
 const API_CONFIG = {
-  BASE_URL: 'http://numericaapi.kretosstechnology.com'
+  BASE_URL: 'http://numericaapi.kretosstechnology.com:3001'
 };
 
 const buildApiUrl = (endpoint) => {

@@ -172,7 +172,7 @@ const PercepcionesHistoricoChart = ({ curp, onPeriodClick }) => {
         });
 
         const response = await authenticatedFetch(
-          `http://numericaapi.kretosstechnology.com/api/percepciones?${params.toString()}`
+          `http://numericaapi.kretosstechnology.com:3001/api/percepciones?${params.toString()}`
         );
 
         if (!response.ok) {

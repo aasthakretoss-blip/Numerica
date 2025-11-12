@@ -131,7 +131,7 @@ const FechaFPLDropdownRFC = ({
       try {
         console.log('🔍 Cargando fechas FPL para RFC:', rfc);
         
-        const response = await fetch(`http://numericaapi.kretosstechnology.com/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
+        const response = await fetch(`http://numericaapi.kretosstechnology.com:3001/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar fechas FPL');

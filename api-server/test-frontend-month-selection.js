@@ -5,7 +5,7 @@ async function testFrontendMonthSelection() {
   console.log('🧪 === SIMULANDO SELECCIÓN DE MES EN EL FRONTEND ===');
   
   try {
-    const baseURL = 'http://numericaapi.kretosstechnology.com';
+    const baseURL = 'http://numericaapi.kretosstechnology.com:3001';
     
     // Paso 1: Obtener los períodos disponibles (lo que hace el frontend al cargar)
     console.log('\n📋 === PASO 1: Obtener opciones de períodos ===');

@@ -165,24 +165,6 @@ const FPLDataViewer = ({ rfc, selectedFechaFPL }) => {
     );
   }
 
-  if (error) {
-    return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '2rem',
-        background: 'rgba(255, 107, 107, 0.1)',
-        border: '1px solid rgba(255, 107, 107, 0.3)',
-        borderRadius: '12px',
-        margin: '1rem 0'
-      }}>
-        <h3 style={{ color: '#ff6b6b', marginBottom: '1rem' }}>Error al cargar datos FPL</h3>
-        <p style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-          {error}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Sección A - Información Básica FPL */}

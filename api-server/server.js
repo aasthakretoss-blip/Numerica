@@ -48,7 +48,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   : [
       "http://localhost:5173",
       "http://localhost:3000",
-      "http://numericaapi.kretosstechnology.com",
+      "http://numericaapi.kretosstechnology.com:3001",
       "http://localhost:3002",
       "http://localhost:3003",
       "https://numerica-imsa.vercel.app", // Vercel frontend

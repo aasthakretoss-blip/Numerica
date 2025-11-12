@@ -125,7 +125,7 @@ const PerfilFPL = ({ rfc, curp }) => {
         console.log("🔍 Buscando RFC para CURP:", curpFromURL);
 
         const response = await fetch(
-          `http://numericaapi.kretosstechnology.com/api/payroll/rfc-from-curp?curp=${encodeURIComponent(
+          `http://numericaapi.kretosstechnology.com:3001/api/payroll/rfc-from-curp?curp=${encodeURIComponent(
             curpFromURL
           )}`
         );

@@ -3,7 +3,7 @@
 
 const fetch = require('node-fetch');
 
-const API_BASE = 'http://numericaapi.kretosstechnology.com';
+const API_BASE = 'http://numericaapi.kretosstechnology.com:3001';
 
 async function verificarSistema() {
   console.log('\n🔍 VERIFICACIÓN DEL SISTEMA COMPLETO');
@@ -123,7 +123,7 @@ async function verificarSistema() {
     console.log('✅ Filtros funcionando correctamente');
     console.log('✅ Datos reales (500 registros) disponibles');
     console.log('\n📱 Frontend disponible en: http://localhost:3000');
-    console.log('🔧 API disponible en: http://numericaapi.kretosstechnology.com');
+    console.log('🔧 API disponible en: http://numericaapi.kretosstechnology.com:3001');
     
   } catch (error) {
     console.log(`❌ ERROR en verificación: ${error.message}`);

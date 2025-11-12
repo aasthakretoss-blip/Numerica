@@ -103,13 +103,13 @@ const FieldValue = styled.div`
 const MovimientosFondoSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (value === null || value === undefined || value === '') return '-';
     return value.toString();
   };
 
   const formatCurrency = (value) => {
     if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (value === null || value === undefined || value === '') return '-';
     
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return value.toString();
@@ -123,7 +123,7 @@ const MovimientosFondoSection = ({ data, loading }) => {
 
   const formatNumeric = (value) => {
     if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return 'No disponible';
+    if (value === null || value === undefined || value === '') return '-';
     
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return value.toString();

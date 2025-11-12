@@ -643,99 +643,28 @@ const PerfilDocumentos = ({ rfc, curp }) => {
             )}
           </SearchControls>
 
-          {/* Lista de documentos encontrados */}
-          {documents.length > 0 && (
-            <DocumentsContainer>
-              {documents.map((doc) => (
-                <DocumentCard key={doc.id}>
-                  <DocumentHeader>
-                    <DocumentTitle>
-                      <FiFile /> {doc.name}
-                    </DocumentTitle>
-
-                    <DocumentActions>
-                      <ActionButton
-                        variant="primary"
-                        onClick={() => viewDocument(doc)}
-                        disabled={selectedDocument?.loading}
-                      >
-                        <FiEye /> Ver
-                      </ActionButton>
-
-                      <ActionButton
-                        onClick={() => downloadDocument(doc)}
-                        disabled={downloadingDocument === doc.id}
-                      >
-                        {downloadingDocument === doc.id ? (
-                          <>
-                            <FiRefreshCw /> Descargando...
-                          </>
-                        ) : (
-                          <>
-                            <FiDownload /> Descargar
-                          </>
-                        )}
-                      </ActionButton>
-                    </DocumentActions>
-                  </DocumentHeader>
-
-                  <DocumentInfo>
-                    <strong>Tamaño:</strong>{" "}
-                    {doc.size
-                      ? `${(doc.size / 1024 / 1024).toFixed(2)} MB`
-                      : "N/A"}
-                    <br />
-                    <strong>Tipo:</strong> {doc.mimeType || "application/pdf"}
-                    <br />
-                    <strong>Modificado:</strong>{" "}
-                    {doc.modifiedTime
-                      ? new Date(doc.modifiedTime).toLocaleDateString()
-                      : "N/A"}
-                  </DocumentInfo>
-
-                  {/* Visor PDF si este documento está seleccionado */}
-                  {selectedDocument?.id === doc.id && (
-                    <>
-                      {selectedDocument.loading && (
-                        <StatusMessage type="loading">
-                          <FiRefreshCw /> Cargando vista previa...
-                        </StatusMessage>
-                      )}
-
-                      {selectedDocument.error && (
-                        <StatusMessage type="error">
-                          Error cargando vista previa: {selectedDocument.error}
-                        </StatusMessage>
-                      )}
-
-                      {selectedDocument.viewUrl &&
-                        !selectedDocument.loading &&
-                        !selectedDocument.error && (
-                          <PDFViewer>
-                            <iframe
-                              src={`${selectedDocument.viewUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-                              title={`Vista previa de ${doc.name}`}
-                              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                            />
-                          </PDFViewer>
-                        )}
-                    </>
-                  )}
-                </DocumentCard>
-              ))}
-            </DocumentsContainer>
-          )}
-
-          {/* Mensaje cuando no hay documentos y no se está buscando */}
-          {documents.length === 0 &&
-            !searchingDocuments &&
-            nombreData?.nombreCompleto &&
-            searchMessage && (
-              <StatusMessage type="error">
-                No se encontraron documentos PDF para{" "}
-                {nombreData.nombreCompleto}
+          {/* ✅ Always render a wrapper div to keep the DOM stable */}
+          <div style={{ width: "100%" }}>
+            {searchingDocuments ? (
+              <StatusMessage type="loading">
+                <FiRefreshCw /> Buscando documentos...
               </StatusMessage>
+            ) : documents.length > 0 ? (
+              <DocumentsContainer>
+                {documents.map((doc) => (
+                  <DocumentCard key={doc.id}> ... </DocumentCard>
+                ))}
+              </DocumentsContainer>
+            ) : (
+              nombreData?.nombreCompleto &&
+              searchMessage && (
+                <StatusMessage type="error">
+                  No se encontraron documentos PDF para{" "}
+                  {nombreData.nombreCompleto}
+                </StatusMessage>
+              )
             )}
+          </div>
         </SearchSection>
       </ContentContainer>
     </PerfilContainer>

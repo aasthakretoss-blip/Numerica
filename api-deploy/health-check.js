@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_ENDPOINT = 'http://numericaapi.kretosstechnology.com';
+const API_ENDPOINT = 'http://numericaapi.kretosstechnology.com:3001';
 
 exports.handler = async (event) => {
     const timestamp = new Date().toISOString();

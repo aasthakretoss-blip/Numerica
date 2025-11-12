@@ -165,7 +165,7 @@ const FondosHistoricoChart = ({ rfc, onPeriodClick }) => {
         console.log('📈 [FondosChart] Cargando datos FPL para RFC:', rfc);
         
         // PASO 1: Obtener todas las fechas FPL calculadas usando el mismo endpoint que el dropdown
-        const fechasResponse = await fetch(`http://numericaapi.kretosstechnology.com/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
+        const fechasResponse = await fetch(`http://numericaapi.kretosstechnology.com:3001/api/payroll/fecpla-from-rfc?rfc=${encodeURIComponent(rfc)}`);
         
         if (!fechasResponse.ok) {
           throw new Error(`Error obteniendo fechas FPL: ${fechasResponse.status}`);
@@ -185,7 +185,7 @@ const FondosHistoricoChart = ({ rfc, onPeriodClick }) => {
           const { value: fechaCalculada, metadata } = fechaFPL;
           
           try {
-            const dataUrl = `http://numericaapi.kretosstechnology.com/api/fpl/data-from-rfc?rfc=${encodeURIComponent(rfc)}&originalFecpla=${encodeURIComponent(metadata.originalFecpla)}&originalAntiguedad=${encodeURIComponent(metadata.originalAntiguedad)}`;
+            const dataUrl = `http://numericaapi.kretosstechnology.com:3001/api/fpl/data-from-rfc?rfc=${encodeURIComponent(rfc)}&originalFecpla=${encodeURIComponent(metadata.originalFecpla)}&originalAntiguedad=${encodeURIComponent(metadata.originalAntiguedad)}`;
             const dataResponse = await fetch(dataUrl);
             
             if (dataResponse.ok) {

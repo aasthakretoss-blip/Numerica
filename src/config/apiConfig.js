@@ -1,13 +1,13 @@
 // ✅ UPDATED: Use Render API URL for all environments
-const LOCAL_API_URL = 'http://numericaapi.kretosstechnology.com';
-const RENDER_API_URL = 'http://numericaapi.kretosstechnology.com';
+const LOCAL_API_URL = 'http://numericaapi.kretosstechnology.com:3001';
+const RENDER_API_URL = 'http://numericaapi.kretosstechnology.com:3001';
 
 // ✅ UPDATED: Always use Render API (no localhost option)
-// All environments now use http://numericaapi.kretosstechnology.com
+// All environments now use http://numericaapi.kretosstechnology.com:3001
 const USE_RENDER = true; // Always use Render
 
 // CONFIGURACIÓN PARA DESARROLLO Y PRODUCCIÓN
-// ✅ UPDATED: Both development and production now use http://numericaapi.kretosstechnology.com
+// ✅ UPDATED: Both development and production now use http://numericaapi.kretosstechnology.com:3001
 const API_CONFIG = {
   development: {
     // ✅ UPDATED: Always use Render API
@@ -94,7 +94,7 @@ const getApiConfig = () => {
 export const apiConfig = getApiConfig();
 export const isProduction = getCurrentEnv() === 'production';
 
-// ✅ UPDATED: Both development and production use http://numericaapi.kretosstechnology.com
+// ✅ UPDATED: Both development and production use http://numericaapi.kretosstechnology.com:3001
 
 // URLs específicas para compatibilidad con el código existente
 export const API_BASE_URL = apiConfig.BASE_URL;

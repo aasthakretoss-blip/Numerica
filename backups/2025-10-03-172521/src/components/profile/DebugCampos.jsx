@@ -23,7 +23,7 @@ const DebugCampos = ({ rfc, selectedCveper }) => {
           sortDir: 'desc'
         });
         
-        const response = await fetch(`http://numericaapi.kretosstechnology.com/busqueda-empleados?${params.toString()}`);
+        const response = await fetch(`http://numericaapi.kretosstechnology.com:3001/busqueda-empleados?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Error al cargar datos');

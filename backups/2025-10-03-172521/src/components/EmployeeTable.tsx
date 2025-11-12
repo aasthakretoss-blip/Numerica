@@ -80,7 +80,7 @@ export default function EmployeeTable() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('http://numericaapi.kretosstechnology.com/api/payroll/stats')
+        const response = await fetch('http://numericaapi.kretosstechnology.com:3001/api/payroll/stats')
         if (response.ok) {
           const result = await response.json()
           if (result.success) {
