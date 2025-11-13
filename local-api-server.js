@@ -1698,9 +1698,25 @@ app.get("/api/percepciones", verifyToken, async (req, res) => {
 
     await client.end();
 
+    const adjustedData = dataResult.rows.map((row) => {
+      if (row.Mes) {
+        const date = new Date(row.Mes);
+        if (!isNaN(date.getTime())) {
+          // Add +1 day
+          const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+          // Format in YYYY-MM-DD for clarity
+          const formatted = `${nextDay.getUTCFullYear()}-${String(
+            nextDay.getUTCMonth() + 1
+          ).padStart(2, "0")}-${String(nextDay.getUTCDate()).padStart(2, "0")}`;
+          row.Mes = formatted;
+        }
+      }
+      return row;
+    });
+
     res.json({
       success: true,
-      data: dataResult.rows,
+      data: adjustedData,
       pagination: {
         page: validatedPage,
         pageSize: validatedPageSize,
