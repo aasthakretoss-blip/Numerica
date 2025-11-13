@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const moment = require("moment");
 const { Client } = require("pg");
 require("dotenv").config({ path: ".env.database" });
 const authService = require("./api-server/services/authService");
@@ -2649,26 +2650,29 @@ app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
         const antiguedadAnos = parseFloat(row.antiguedad_anos) || 0;
         const fechaCalculada = row.fecha_fpl_calculada;
 
+        const fechaBaseStr = moment.utc(fechaBase).format("YYYY-MM-DD");
+        const fechaCalculadaStr = moment
+          .utc(fechaCalculada)
+          .format("YYYY-MM-DD");
+
         console.log(
           `[FECPLA API] [${requestId}] Record ${
             index + 1
-          }: Base: ${fechaBase}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculada}`
+          }: Base: ${fechaBaseStr}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculadaStr}`
         );
 
-        // Use calculated date as unique key
-        const fechaKey = fechaCalculada.toISOString().split("T")[0];
+        const fechaKey = fechaCalculadaStr; // now stable
 
         if (!fecplasCalculadas.has(fechaKey)) {
           fecplasCalculadas.set(fechaKey, {
-            fechaCalculada: fechaCalculada,
-            fechaBase: fechaBase,
+            fechaCalculada: fechaCalculadaStr,
+            fechaBase: fechaBaseStr,
             antiguedadAnos: antiguedadAnos,
             count: 0,
           });
         }
 
         fecplasCalculadas.get(fechaKey).count++;
-        allCalculatedDates.push(fechaCalculada);
       });
 
       // Convert to array and sort from most recent to oldest
@@ -2690,26 +2694,23 @@ app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
       // Format for dropdown - WITHOUT TIMESTAMP, only dates
       // INCLUDE METADATA FROM ORIGINAL DATAPOINT for reverse lookup
       const formattedDates = uniqueFecplasFPL.map((item) => {
-        const fechaFPL = item.fechaCalculada;
-        let displayValue = fechaFPL.toISOString().split("T")[0]; // Format YYYY-MM-DD
+        const fechaFPL = moment.utc(item.fechaCalculada).format("YYYY-MM-DD");
+        const fechaBase = moment.utc(item.fechaBase).format("YYYY-MM-DD");
 
         return {
-          value: displayValue, // Only date WITHOUT timestamp for backend
-          label: displayValue, // Only date for display
+          value: fechaFPL,
+          label: fechaFPL,
           count: item.count,
           metadata: {
-            fechaBase: item.fechaBase.toISOString().split("T")[0], // Also without timestamp
+            fechaBase,
             antiguedadAnos: item.antiguedadAnos,
-            calculoAplicado: `${item.fechaBase.toISOString().split("T")[0]} + ${
-              item.antiguedadAnos
-            } years = ${displayValue}`,
+            calculoAplicado: `${fechaBase} + ${item.antiguedadAnos} years = ${fechaFPL}`,
             ajusteAplicado:
-              fechaFPL.getDate() >= 28
+              moment.utc(fechaFPL).date() >= 28
                 ? "Moved to 1st of next month"
                 : "Original date maintained",
-            // CRITICAL DATA for reverse lookup
-            originalFecpla: item.fechaBase.toISOString().split("T")[0], // Original fecpla date
-            originalAntiguedad: item.antiguedadAnos, // Exact antigüedad used
+            originalFecpla: fechaBase,
+            originalAntiguedad: item.antiguedadAnos,
           },
         };
       });
