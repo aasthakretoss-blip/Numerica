@@ -925,6 +925,33 @@ WHERE 1=1
         }
       }
 
+      if (options.cvepermonth) {
+        let months = Array.isArray(options.cvepermonth)
+          ? options.cvepermonth
+          : [options.cvepermonth];
+
+        const conditions = [];
+        months.forEach((month) => {
+          if (month.match(/^\d{4}-\d{2}$/)) {
+            const startDate = `${month}-01`;
+            const endDate = new Date(
+              new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)
+            )
+              .toISOString()
+              .slice(0, 10);
+            conditions.push(
+              `(cveper >= '${startDate}' AND cveper < '${endDate}')`
+            );
+          }
+        });
+
+        if (conditions.length > 0) {
+          const monthCondition = conditions.join(" OR ");
+          query += ` AND (${monthCondition})`;
+          countQuery += ` AND (${monthCondition})`;
+        }
+      }
+
       if (options.cveper) {
         if (options.cveper.match(/^\d{4}-\d{2}$/)) {
           // Filtro por mes completo (formato YYYY-MM)
@@ -993,7 +1020,7 @@ WHERE 1=1
           sucursal: '"Sucursal"',
           compania: '"Compañía"',
           cvecia: "cvecia",
-          sexo:"Sexo",
+          sexo: "Sexo",
           cvetno: "cvetno",
           localidad: "Localidad",
           periodicidad: "Periodicidad",
@@ -1452,9 +1479,9 @@ WHERE 1=1
         } catch (e) {
           // If already decoded or invalid, continue with original
         }
-        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
-        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
-        
+        cleanedSearch = cleanedSearch.replace(/\+/g, " ");
+        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, " ");
+
         if (cleanedSearch && cleanedSearch.length > 0) {
           const searchPattern = `%${cleanedSearch}%`;
           countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
@@ -1465,19 +1492,21 @@ WHERE 1=1
 
       if (options.puesto) {
         // Decode and clean puesto parameter
-        let cleanedPuesto = Array.isArray(options.puesto) 
-          ? options.puesto.map(p => {
+        let cleanedPuesto = Array.isArray(options.puesto)
+          ? options.puesto.map((p) => {
               try {
-                return decodeURIComponent(String(p).replace(/\+/g, ' ')).trim();
+                return decodeURIComponent(String(p).replace(/\+/g, " ")).trim();
               } catch (e) {
-                return String(p).replace(/\+/g, ' ').trim();
+                return String(p).replace(/\+/g, " ").trim();
               }
             })
           : (() => {
               try {
-                return decodeURIComponent(String(options.puesto).replace(/\+/g, ' ')).trim();
+                return decodeURIComponent(
+                  String(options.puesto).replace(/\+/g, " ")
+                ).trim();
               } catch (e) {
-                return String(options.puesto).replace(/\+/g, ' ').trim();
+                return String(options.puesto).replace(/\+/g, " ").trim();
               }
             })();
 
@@ -1500,18 +1529,20 @@ WHERE 1=1
       if (options.sucursal) {
         // Decode and clean sucursal parameter
         let cleanedSucursal = Array.isArray(options.sucursal)
-          ? options.sucursal.map(s => {
+          ? options.sucursal.map((s) => {
               try {
-                return decodeURIComponent(String(s).replace(/\+/g, ' ')).trim();
+                return decodeURIComponent(String(s).replace(/\+/g, " ")).trim();
               } catch (e) {
-                return String(s).replace(/\+/g, ' ').trim();
+                return String(s).replace(/\+/g, " ").trim();
               }
             })
           : (() => {
               try {
-                return decodeURIComponent(String(options.sucursal).replace(/\+/g, ' ')).trim();
+                return decodeURIComponent(
+                  String(options.sucursal).replace(/\+/g, " ")
+                ).trim();
               } catch (e) {
-                return String(options.sucursal).replace(/\+/g, ' ').trim();
+                return String(options.sucursal).replace(/\+/g, " ").trim();
               }
             })();
 

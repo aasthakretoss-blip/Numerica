@@ -575,6 +575,32 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       }
     }
 
+    let cvepermonthArray = null;
+    if (req.query?.cvepermonth) {
+      if (Array.isArray(req.query.cvepermonth)) {
+        cvepermonthArray = req.query.cvepermonth.map((val) => {
+          try {
+            return decodeURIComponent(String(val)).replace(/\+/g, " ");
+          } catch {
+            return String(val).replace(/\+/g, " ");
+          }
+        });
+      } else {
+        try {
+          cvepermonthArray = [
+            decodeURIComponent(String(req.query.cvepermonth)).replace(
+              /\+/g,
+              " "
+            ),
+          ];
+        } catch {
+          cvepermonthArray = [
+            String(req.query.cvepermonth).replace(/\+/g, " "),
+          ];
+        }
+      }
+    }
+
     // COMMENTED OUT: Verbose logging
     // console.log('🔍 [SEARCH PROCESSING] Processing search parameter:', {...});
 
@@ -590,6 +616,7 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       puesto,
       sucursal,
       status,
+      cvepermonth: cvepermonthArray,
       cveper: (() => {
         if (!cveper) return null;
         try {
@@ -1601,7 +1628,10 @@ app.get(
       let puestoCategorizado = req.query.puestoCategorizado
         ? decodeParam(req.query.puestoCategorizado)
         : undefined;
-      const cveper = req.query.cveper;
+      let cveper = req.query.cveper;
+      if (cveper) {
+        cveper = decodeParam(cveper); // decodeParam handles both string and array
+      }
 
       // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
       if (puestoCategorizado) {
