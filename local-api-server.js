@@ -590,27 +590,7 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       puesto,
       sucursal,
       status,
-      cveper: (() => {
-        if (!cveper) return null;
-        try {
-          const decoded = decodeURIComponent(cveper.trim());
-
-          // If format is YYYY-MM, append '-01' safely
-          if (/^\d{4}-\d{2}$/.test(decoded)) {
-            return `${decoded}-01`;
-          }
-
-          // If already full date YYYY-MM-DD, return as is
-          if (/^\d{4}-\d{2}-\d{2}$/.test(decoded)) {
-            return decoded;
-          }
-
-          // Otherwise, invalid format
-          return null;
-        } catch {
-          return null;
-        }
-      })(),
+      cveper,
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
       fullData: fullData === "true" || fullData === true,
