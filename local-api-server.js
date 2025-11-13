@@ -2003,28 +2003,28 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
         try {
           const date = new Date(cveper);
           if (!isNaN(date.getTime())) {
-            // Format label as YYYY-MM-DD
-            const labelYear = date.getFullYear();
-            const labelMonth = String(date.getMonth() + 1).padStart(2, "0");
-            const labelDay = String(date.getDate()).padStart(2, "0");
-            labelValue = `${labelYear}-${labelMonth}-${labelDay}`;
+            // Add +1 day in UTC (milliseconds)
+            const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
 
-            // Add +1 day for the value
-            date.setDate(date.getDate() + 1);
-            const valueYear = date.getFullYear();
-            const valueMonth = String(date.getMonth() + 1).padStart(2, "0");
-            const valueDay = String(date.getDate()).padStart(2, "0");
-            valuePlusOne = `${valueYear}-${valueMonth}-${valueDay}`;
+            // Label → formatted YYYY-MM-DD
+            const formatDateUTC = (d) =>
+              `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+                2,
+                "0"
+              )}-${String(d.getUTCDate()).padStart(2, "0")}`;
+            labelValue = formatDateUTC(nextDay);
+
+            // Value → ISO string (UTC)
+            valuePlusOne = nextDay.toISOString();
           }
         } catch (err) {
-          // Fallback if not a valid date
           labelValue = cveper;
           valuePlusOne = cveper;
         }
 
         return {
-          value: valuePlusOne,
-          label: labelValue,
+          value: valuePlusOne, // 👈 ISO format (e.g. 2023-12-15T00:00:00.000Z)
+          label: labelValue, // 👈 formatted display date (e.g. 2023-12-15)
           count: allCvepers.filter((c) => c === cveper).length,
         };
       });
