@@ -1594,75 +1594,41 @@ app.get(
   async (req, res) => {
     try {
       // Helper to decode URL parameters (handle + as space)
-      const decodeParam = (param) => {
-        if (!param) return param;
-        if (Array.isArray(param)) {
-          return param.map((p) => {
-            try {
-              return decodeURIComponent(String(p).replace(/\+/g, " "));
-            } catch (e) {
-              return String(p).replace(/\+/g, " ");
-            }
-          });
-        }
-        try {
-          return decodeURIComponent(String(param).replace(/\+/g, " "));
-        } catch (e) {
-          return String(param).replace(/\+/g, " ");
-        }
-      };
-
-      // Extract and decode parameters
-      const search = req.query.search
-        ? decodeParam(req.query.search)
-        : undefined;
-      const puesto = req.query.puesto
-        ? decodeParam(req.query.puesto)
-        : undefined;
-      const sucursal = req.query.sucursal
-        ? decodeParam(req.query.sucursal)
-        : undefined;
-      const status = req.query.status
-        ? decodeParam(req.query.status)
-        : undefined;
-      let puestoCategorizado = req.query.puestoCategorizado
-        ? decodeParam(req.query.puestoCategorizado)
-        : undefined;
-      let cveper = req.query.cveper ? decodeParam(req.query.cveper) : undefined;
-
-      // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
-      if (puestoCategorizado) {
-        if (Array.isArray(puestoCategorizado)) {
-          puestoCategorizado = puestoCategorizado.map((cat) =>
-            cat === "Categorizar" ? "Sin Categorizar" : cat
-          );
-        } else if (puestoCategorizado === "Categorizar") {
-          puestoCategorizado = "Sin Categorizar";
-        }
-      }
-
-      let cveperFilter = null;
+      let cveper = req.query.cveper;
       if (cveper) {
-        const months = Array.isArray(cveper) ? cveper : [cveper];
-        const conditions = [];
-
-        months.forEach((month) => {
-          if (typeof month === "string" && month.match(/^\d{4}-\d{2}$/)) {
-            const startDate = `${month}-01`;
-            // Next month start
-            const [year, mon] = month.split("-");
-            const nextMonth = new Date(Number(year), Number(mon), 1); // JS months 0-indexed
-            const endDate = nextMonth.toISOString().slice(0, 10);
-            conditions.push(
-              `(cveper >= '${startDate}' AND cveper < '${endDate}')`
-            );
-          }
-        });
-
-        if (conditions.length > 0) {
-          cveperFilter = `(${conditions.join(" OR ")})`;
-        }
+        if (!Array.isArray(cveper)) cveper = [cveper]; // single value -> array
+        cveper = cveper
+          .map((month) => String(month).trim())
+          .filter((month) => /^\d{4}-\d{2}$/.test(month)); // only valid YYYY-MM
       }
+
+      // Prepare SQL condition for months
+      let cveperCondition = null;
+      if (cveper && cveper.length > 0) {
+        const conditions = cveper.map((month) => {
+          const start = `${month}-01`;
+          const [year, mon] = month.split("-");
+          const nextMonth = new Date(Number(year), Number(mon), 1); // JS months 0-indexed
+          const end = nextMonth.toISOString().slice(0, 10);
+          return `(cveper >= '${start}' AND cveper < '${end}')`;
+        });
+        cveperCondition = `(${conditions.join(" OR ")})`;
+      }
+
+      // Other filters
+      const decodeParam = (param) => {
+        if (!param) return undefined;
+        if (Array.isArray(param))
+          return param.map((p) => decodeURIComponent(p));
+        return decodeURIComponent(param);
+      };
+      const search = decodeParam(req.query.search);
+      const puesto = decodeParam(req.query.puesto);
+      const sucursal = decodeParam(req.query.sucursal);
+      const status = decodeParam(req.query.status);
+      let puestoCategorizado = decodeParam(req.query.puestoCategorizado);
+      if (puestoCategorizado === "Categorizar")
+        puestoCategorizado = "Sin Categorizar";
 
       // Use the payrollFilterService which handles all filters correctly
       const result = await payrollFilterService.getUniqueCurpCount({
@@ -1671,7 +1637,7 @@ app.get(
         sucursal,
         status,
         puestoCategorizado,
-        cveper: cveperFilter,
+        cveper: cveperCondition,
       });
 
       res.json({
