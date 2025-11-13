@@ -1628,10 +1628,7 @@ app.get(
       let puestoCategorizado = req.query.puestoCategorizado
         ? decodeParam(req.query.puestoCategorizado)
         : undefined;
-      let cveper = req.query.cveper;
-      if (cveper) {
-        cveper = decodeParam(cveper); // decodeParam handles both string and array
-      }
+      let cveper = req.query.cveper ? decodeParam(req.query.cveper) : undefined;
 
       // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
       if (puestoCategorizado) {
@@ -1644,6 +1641,29 @@ app.get(
         }
       }
 
+      let cveperFilter = null;
+      if (cveper) {
+        const months = Array.isArray(cveper) ? cveper : [cveper];
+        const conditions = [];
+
+        months.forEach((month) => {
+          if (typeof month === "string" && month.match(/^\d{4}-\d{2}$/)) {
+            const startDate = `${month}-01`;
+            // Next month start
+            const [year, mon] = month.split("-");
+            const nextMonth = new Date(Number(year), Number(mon), 1); // JS months 0-indexed
+            const endDate = nextMonth.toISOString().slice(0, 10);
+            conditions.push(
+              `(cveper >= '${startDate}' AND cveper < '${endDate}')`
+            );
+          }
+        });
+
+        if (conditions.length > 0) {
+          cveperFilter = `(${conditions.join(" OR ")})`;
+        }
+      }
+
       // Use the payrollFilterService which handles all filters correctly
       const result = await payrollFilterService.getUniqueCurpCount({
         search,
@@ -1651,7 +1671,7 @@ app.get(
         sucursal,
         status,
         puestoCategorizado,
-        cveper,
+        cveper: cveperFilter,
       });
 
       res.json({
