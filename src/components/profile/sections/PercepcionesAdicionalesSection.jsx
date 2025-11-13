@@ -94,7 +94,7 @@ const FieldValue = styled.div`
 const PercepcionesAdicionalesSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "") return "No disponible";
     return value.toString();
   };
 
@@ -129,121 +129,127 @@ const PercepcionesAdicionalesSection = ({ data, loading }) => {
     {
       key: "destajoInformado",
       label: "Destajo informado",
-      dbField: " DESTAJO INFORMADO ",
+      dbField: "destajo_informado",
       isCurrency: true,
     },
     {
       key: "premioPuntualidad",
       label: "Premio puntualidad",
-      dbField: " PREMIO PUNTUALIDAD ",
+      dbField: "premio_puntualidad",
       isCurrency: true,
     },
     {
       key: "premioAsistencia",
       label: "Premio asistencia",
-      dbField: " PREMIO ASISTENCIA ",
+      dbField: "premio_asistencia",
       isCurrency: true,
     },
     {
       key: "valesDespensa",
       label: "Vales de despensa",
-      dbField: " VALES DE DESPENSA ",
+      dbField: "vales_despensa",
       isCurrency: true,
     },
     {
       key: "descuentoIndebido",
       label: "Descuento indebido",
-      dbField: " DESCUENTO INDEBIDO ",
+      dbField: "descuento_indebido",
       isCurrency: true,
     },
     {
       key: "diaFestivoTrabajado",
       label: "Día festivo trabajado",
-      dbField: " DIA FESTIVO TRABAJADO ",
+      dbField: "dia_festivo_trabajado",
       isCurrency: true,
     },
     {
       key: "sueldoDiasVacaciones",
       label: "Sueldo x días AC vacaciones",
-      dbField: " SUELDO X DIAS AC VACACIONES ",
+      dbField: "sueldo_vacaciones",
       isCurrency: true,
     },
     {
       key: "primaVacacional",
       label: "Prima vacacional",
-      dbField: " PRIMA VACACIONAL ",
+      dbField: "prima_vacacional",
       isCurrency: true,
     },
     {
       key: "primaDominical",
       label: "Prima dominical",
-      dbField: " PRIMA DOMINICAL ",
+      dbField: "prima_dominical",
       isCurrency: true,
     },
     {
       key: "primaAntiguedad",
       label: "Prima de antigüedad",
-      dbField: " PRIMA DE ANTIGUEDAD ",
+      dbField: "prima_antiguedad",
       isCurrency: true,
     },
     {
       key: "pagoSeparacion",
       label: "Pago por separación",
-      dbField: " PAGO POR SEPARACION ",
+      dbField: "pago_separacion",
       isCurrency: true,
     },
     {
       key: "vacacionesPendientes",
       label: "Vacaciones pendientes",
-      dbField: " VACACIONES PENDIENTES ",
+      dbField: "vacaciones_pendientes",
       isCurrency: true,
     },
     {
       key: "subsidioIncapacidad",
       label: "Subsidio por incapacidad",
-      dbField: " SUBSIDIO POR INCAPACIDAD ",
+      dbField: "subsidio_incapacidad",
       isCurrency: true,
     },
     {
       key: "subsidioEmpleo",
       label: "Subsidio al empleo",
-      dbField: " SUBSIDIO AL EMPLEO ",
+      dbField: "subsidio_empleo",
       isCurrency: true,
     },
     {
       key: "destajo",
       label: "Destajo",
-      dbField: " DESTAJO ",
+      dbField: "destajo",
       isCurrency: true,
     },
     {
       key: "horasExtraDoble",
       label: "Horas extra doble",
-      dbField: " HORAS EXTRA DOBLE ",
+      dbField: "horas_extra_doble",
+      isCurrency: true,
+    },
+    {
+      key: "horas_extra_doble3",
+      label: "Horas extra doble 2",
+      dbField: "horas_extra_doble3",
       isCurrency: true,
     },
     {
       key: "horasExtraTriple",
       label: "Horas extra triple",
-      dbField: " HORAS EXTRA TRIPLE ",
+      dbField: "horas_extra_triple",
       isCurrency: true,
     },
     {
       key: "diasPromedio",
       label: "Dias promedio",
-      dbField: " DIAS PROMEDIO ",
+      dbField: "dias_promedio",
       isCurrency: true,
     },
     {
       key: "diasPendientesPorIngreso",
       label: "Dias pendientes por ingreso",
-      dbField: " DIAS PENDIENTES POR INGRESO ",
+      dbField: "dias_pendientes_ingreso",
       isCurrency: true,
     },
     {
       key: "septimoDia",
       label: "Séptimo día",
-      dbField: " SEPTIMO DIA ",
+      dbField: "septimo_dia",
       isCurrency: true,
     },
   ];

@@ -652,8 +652,62 @@ const PerfilDocumentos = ({ rfc, curp }) => {
             ) : documents.length > 0 ? (
               <DocumentsContainer>
                 {documents.map((doc) => (
-                  <DocumentCard key={doc.id}> ... </DocumentCard>
+                  <DocumentCard key={doc.id}>
+                    <DocumentHeader>
+                      <DocumentTitle>
+                        <FiFile />
+                        {doc.name}
+                      </DocumentTitle>
+
+                      <DocumentActions>
+                        <ActionButton
+                          variant="primary"
+                          onClick={() =>
+                            setSelectedDocument({
+                              ...doc,
+                              viewUrl: doc.viewLink,
+                            })
+                          }
+                        >
+                          <FiEye /> Ver
+                        </ActionButton>
+
+                        <ActionButton
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = doc.downloadLink;
+                            link.download = doc.name;
+                            link.target = "_blank";
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <FiDownload /> Descargar
+                        </ActionButton>
+                      </DocumentActions>
+                    </DocumentHeader>
+
+                    <DocumentInfo>
+                      <strong>Subcarpeta:</strong>{" "}
+                      {doc.subfolder || "Sin carpeta"} <br />
+                      <strong>Modificado:</strong>{" "}
+                      {new Date(doc.modifiedTime).toLocaleString("es-MX")}{" "}
+                      <br />
+                      <strong>Tamaño:</strong>{" "}
+                      {(doc.size / 1024 / 1024).toFixed(2)} MB
+                    </DocumentInfo>
+                  </DocumentCard>
                 ))}
+
+                {selectedDocument && selectedDocument.viewUrl && (
+                  <PDFViewer>
+                    <iframe
+                      src={selectedDocument.viewUrl}
+                      title={selectedDocument.name}
+                    />
+                  </PDFViewer>
+                )}
               </DocumentsContainer>
             ) : (
               nombreData?.nombreCompleto &&

@@ -443,6 +443,134 @@ class PayrollFilterService {
   }
 
   // NUEVO: Obtener datos de payroll con filtros y sorting integrado
+  async getPuestoCategoriasWithGlobalCounts(client, activeFilters = {}) {
+    try {
+      // Construir WHERE para categorías de puestos (excluyendo el filtro de categoría de puestos)
+      let categoriaWhere = "WHERE 1=1";
+      let categoriaParams = [];
+      let categoriaParamIndex = 1;
+
+      if (activeFilters.search) {
+        const searchPattern = `%${activeFilters.search}%`;
+        categoriaWhere += ` AND ("Nombre completo" ILIKE $${categoriaParamIndex} OR "CURP" ILIKE $${categoriaParamIndex})`;
+        categoriaParams.push(searchPattern);
+        categoriaParamIndex++;
+      }
+
+      if (activeFilters.sucursal && Array.isArray(activeFilters.sucursal)) {
+        const sucursalConditions = activeFilters.sucursal
+          .map((_, index) => `$${categoriaParamIndex + index}`)
+          .join(", ");
+        categoriaWhere += ` AND "Compañía" IN (${sucursalConditions})`;
+        categoriaParams.push(...activeFilters.sucursal);
+        categoriaParamIndex += activeFilters.sucursal.length;
+      } else if (activeFilters.sucursal) {
+        categoriaWhere += ` AND "Compañía" ILIKE $${categoriaParamIndex}`;
+        categoriaParams.push(`%${activeFilters.sucursal}%`);
+        categoriaParamIndex++;
+      }
+
+      if (activeFilters.puesto && Array.isArray(activeFilters.puesto)) {
+        const puestoConditions = activeFilters.puesto
+          .map((_, index) => `$${categoriaParamIndex + index}`)
+          .join(", ");
+        categoriaWhere += ` AND "Puesto" IN (${puestoConditions})`;
+        categoriaParams.push(...activeFilters.puesto);
+        categoriaParamIndex += activeFilters.puesto.length;
+      } else if (activeFilters.puesto) {
+        categoriaWhere += ` AND "Puesto" ILIKE $${categoriaParamIndex}`;
+        categoriaParams.push(`%${activeFilters.puesto}%`);
+        categoriaParamIndex++;
+      }
+
+      if (activeFilters.status && Array.isArray(activeFilters.status)) {
+        const statusConditions = activeFilters.status
+          .map((_, index) => `$${categoriaParamIndex + index}`)
+          .join(", ");
+        categoriaWhere += ` AND "Status" IN (${statusConditions})`;
+        categoriaParams.push(...activeFilters.status);
+        categoriaParamIndex += activeFilters.status.length;
+      } else if (activeFilters.status) {
+        categoriaWhere += ` AND "Status" = $${categoriaParamIndex}`;
+        categoriaParams.push(activeFilters.status);
+        categoriaParamIndex++;
+      }
+
+      if (activeFilters.cveper) {
+        if (activeFilters.cveper.match(/^\d{4}-\d{2}$/)) {
+          // Filtro por mes completo (formato YYYY-MM)
+          categoriaWhere += ` AND DATE_TRUNC('month', cveper) = $${categoriaParamIndex}`;
+          categoriaParams.push(`${activeFilters.cveper}-01`);
+        } else if (activeFilters.cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Filtro por fecha exacta (formato YYYY-MM-DD)
+          categoriaWhere += ` AND DATE(cveper) = $${categoriaParamIndex}`;
+          categoriaParams.push(activeFilters.cveper);
+        } else {
+          // Filtro por timestamp completo
+          categoriaWhere += ` AND cveper = $${categoriaParamIndex}`;
+          categoriaParams.push(activeFilters.cveper);
+        }
+        categoriaParamIndex++;
+      }
+
+      // Obtener todos los puestos únicos con sus conteos
+      const puestosQuery = `
+        SELECT "Puesto" as puesto, COUNT(*) as count
+        FROM historico_nominas_gsau
+        ${categoriaWhere} AND "Puesto" IS NOT NULL
+        GROUP BY "Puesto"
+      `;
+
+      const puestosResult = await client.query(puestosQuery, categoriaParams);
+
+      // Mapear puestos a categorías y calcular conteos
+      const categoriaConteos = new Map();
+
+      // Inicializar categorías disponibles con conteo 0
+      const categoriasDisponibles = nominasService.getPuestosCategorias();
+      categoriasDisponibles.forEach((categoria) => {
+        categoriaConteos.set(categoria, 0);
+      });
+
+      // Sumar conteos por categoría
+      puestosResult.rows.forEach((row) => {
+        let categoria = nominasService.getPuestoCategorizado(row.puesto);
+        // ✅ FIX: Normalizar "Categorizar" a "Sin Categorizar" si viene del CSV
+        if (categoria === "Categorizar") {
+          categoria = "Sin Categorizar";
+        }
+        const currentCount = categoriaConteos.get(categoria) || 0;
+        categoriaConteos.set(categoria, currentCount + parseInt(row.count));
+      });
+
+      // ✅ FIX: Asegurar que "Sin Categorizar" esté en el mapa si no existe
+      if (!categoriaConteos.has("Sin Categorizar")) {
+        categoriaConteos.set("Sin Categorizar", 0);
+      }
+
+      // ✅ FIXED: Convertir a formato de array, MOSTRAR TODAS las categorías (incluso con count 0)
+      // Esto asegura que el dropdown siempre muestre todas las opciones disponibles
+      const result = Array.from(categoriaConteos.entries())
+        .map(([categoria, count]) => ({ value: categoria, count: count || 0 }))
+        .sort((a, b) => a.value.localeCompare(b.value));
+
+      console.log(
+        "✅ [Puesto Categorizado] Categorías encontradas:",
+        result.length
+      );
+      console.log(
+        "✅ [Puesto Categorizado] Categorías:",
+        result.map((c) => `${c.value} (${c.count})`).join(", ")
+      );
+
+      return result;
+    } catch (error) {
+      console.error("❌ Error calculando categorías de puestos:", error);
+      return [];
+    }
+  }
+
+  // NUEVO: Obtener datos de payroll con filtros y sorting integrado
   async getPayrollDataWithFiltersAndSorting(options = {}) {
     try {
       const client = await nominasPool.connect();
@@ -495,17 +623,21 @@ class PayrollFilterService {
       let query = `
         SELECT 
   "CURP" AS curp,
-  "cvecia" AS cvecia,
+  cvecia AS cvecia,
+  "Sexo" AS sexo,
   "Nombre completo" AS nombre,
   "RFC" AS rfc,
   "Puesto" AS puesto,
-  "Compañía" AS sucursal,
-  DATE(cveper)::text AS mes,
-  cveper AS periodo,
-  cveper AS cveper,
-  TO_CHAR(COALESCE(" SUELDO CLIENTE "::NUMERIC, 0), 'FM999999990.00') AS salario,
-  TO_CHAR((COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0)), 'FM999999990.00') AS comisiones,
-  TO_CHAR(COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0), 'FM999999990.00') AS totalpercepciones,
+  "Compañía" AS compania,
+  "cvetno" AS cvetno,
+  "Sucursal" AS sucursal,
+  "Localidad" AS localidad,
+  "Periodicidad" AS periodicidad,
+  "Clave trabajador" AS clave_trabajador,
+  "Número IMSS" AS numero_imss,
+  "Antigüedad en FPL" AS antiguedad_fpl,
+  "Fecha antigüedad" AS fecha_antiguedad,
+  "Fecha baja" AS fecha_baja,
   "Status" AS status,
   CASE 
     WHEN "Status" = 'A' THEN 'Activo'
@@ -513,11 +645,91 @@ class PayrollFilterService {
     WHEN "Status" = 'F' THEN 'Finiquito'
     ELSE 'N/A'
   END AS estado,
-  "Periodicidad" AS periodicidad,
-  "Clave trabajador" AS "claveTrabajador",
-  "Número IMSS" AS "numeroIMSS",
-  "Fecha antigüedad" AS "fechaAntiguedad",
-  "Antigüedad en FPL" AS "antiguedadFPL"
+  DATE(cveper)::text AS mes,
+  cveper AS periodo,
+  " tipo " AS tipo,
+  TO_CHAR(COALESCE(" SDI "::NUMERIC, 0), 'FM999999990.00') AS sdi,
+  " sdi_es " AS sdi_es,
+  TO_CHAR(COALESCE(" SD "::NUMERIC, 0), 'FM999999990.00') AS sd,
+  " sdim " AS sdim,
+  TO_CHAR(COALESCE(" SUELDO CLIENTE "::NUMERIC, 0), 'FM999999990.00') AS sueldo_cliente,
+  TO_CHAR(COALESCE(" SUELDO "::NUMERIC, 0), 'FM999999990.00') AS sueldo,
+  TO_CHAR(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0), 'FM999999990.00') AS comisiones,
+  TO_CHAR(COALESCE(" DESTAJO INFORMADO "::NUMERIC, 0), 'FM999999990.00') AS destajo_informado,
+  TO_CHAR(COALESCE(" PREMIO PUNTUALIDAD "::NUMERIC, 0), 'FM999999990.00') AS premio_puntualidad,
+  TO_CHAR(COALESCE(" PREMIO ASISTENCIA "::NUMERIC, 0), 'FM999999990.00') AS premio_asistencia,
+  TO_CHAR(COALESCE(" VALES DE DESPENSA "::NUMERIC, 0), 'FM999999990.00') AS vales_despensa,
+  TO_CHAR(COALESCE(" DESCUENTO INDEBIDO "::NUMERIC, 0), 'FM999999990.00') AS descuento_indebido,
+  TO_CHAR(COALESCE(" BONO "::NUMERIC, 0), 'FM999999990.00') AS bono,
+  TO_CHAR(COALESCE(" COMISIONES "::NUMERIC, 0), 'FM999999990.00') AS comisiones_extra,
+  TO_CHAR(COALESCE(" DIA FESTIVO TRABAJADO "::NUMERIC, 0), 'FM999999990.00') AS dia_festivo_trabajado,
+  TO_CHAR(COALESCE(" SUELDO X DIAS AC VACACIONES "::NUMERIC, 0), 'FM999999990.00') AS sueldo_vacaciones,
+  TO_CHAR(COALESCE(" PRIMA VACACIONAL "::NUMERIC, 0), 'FM999999990.00') AS prima_vacacional,
+  TO_CHAR(COALESCE(" AGUINALDO "::NUMERIC, 0), 'FM999999990.00') AS aguinaldo,
+  TO_CHAR(COALESCE(" GRATIFICACION "::NUMERIC, 0), 'FM999999990.00') AS gratificacion,
+  TO_CHAR(COALESCE(" COMPENSACION "::NUMERIC, 0), 'FM999999990.00') AS compensacion,
+  TO_CHAR(COALESCE(" PRIMA DOMINICAL "::NUMERIC, 0), 'FM999999990.00') AS prima_dominical,
+  TO_CHAR(COALESCE(" PRIMA DE ANTIGÜEDAD "::NUMERIC, 0), 'FM999999990.00') AS prima_antiguedad,
+  TO_CHAR(COALESCE(" PAGO POR SEPARACION "::NUMERIC, 0), 'FM999999990.00') AS pago_separacion,
+  TO_CHAR(COALESCE(" VACACIONES PENDIENTES "::NUMERIC, 0), 'FM999999990.00') AS vacaciones_pendientes,
+  TO_CHAR(COALESCE(" SUBSIDIO POR INCAPACIDAD "::NUMERIC, 0), 'FM999999990.00') AS subsidio_incapacidad,
+  TO_CHAR(COALESCE(" SUBSIDIO AL EMPLEO "::NUMERIC, 0), 'FM999999990.00') AS subsidio_empleo,
+  TO_CHAR(COALESCE(" DESTAJO "::NUMERIC, 0), 'FM999999990.00') AS destajo,
+  TO_CHAR(COALESCE(" HORAS EXTRA DOBLE "::NUMERIC, 0), 'FM999999990.00') AS horas_extra_doble,
+  TO_CHAR(COALESCE(" HORAS EXTRA DOBLE3 "::NUMERIC, 0), 'FM999999990.00') AS horas_extra_doble3,
+  TO_CHAR(COALESCE(" HORAS EXTRA TRIPLE "::NUMERIC, 0), 'FM999999990.00') AS horas_extra_triple,
+  " DIAS PROMEDIO " AS dias_promedio,
+  " DIAS PENDIENTES POR INGRESO " AS dias_pendientes_ingreso,
+  " SEPTIMO DIA " AS septimo_dia,
+  TO_CHAR(COALESCE(" REINTEGRO ISR "::NUMERIC, 0), 'FM999999990.00') AS reintegro_isr,
+  TO_CHAR(COALESCE(" ISR ANUAL A FAVOR "::NUMERIC, 0), 'FM999999990.00') AS isr_anual_favor,
+  " DIFERENCIA FONACOT " AS diferencia_fonacot,
+  " DIFERENCIA INFONAVIT " AS diferencia_infonavit,
+  " INDEMNIZACION 90 DIAS " AS indemnizacion_90_dias,
+  " VACACIONES FINIQUITO " AS vacaciones_finiquito,
+  " VALES DESPENSA NETO " AS vales_despensa_neto,
+  " VALES DESPENSA PENSION ALIMENT " AS vales_despensa_pension,
+  " P.FPL " AS pfpl,
+  " AYUDA POR INCAPACIDAD " AS ayuda_incapacidad,
+  " APORTACION COMPRA PRESTACIÓN " AS aportacion_compra_prestacion,
+  " AP COMP PRIMAS SEGURO " AS ap_comp_primas_seguro,
+  " IMSS PATRONAL " AS imss_patronal,
+  " INFONAVIT " AS infonavit,
+  " IMPUESTO SOBRE NÓMINA " AS impuesto_nomina,
+  " PRESTAMOS PERSONALES " AS prestamos_personales,
+  " TOTAL DE PERCEPCIONES " AS total_percepciones,
+  " TOTAL DEDUCCIONES " AS total_deducciones,
+  " NETO ANTES DE VALES " AS neto_antes_vales,
+  " NETO A PAGAR " AS neto_a_pagar,
+  " SUBTOTAL COSTO DE NOMINA " AS subtotal_costo_nomina,
+  " REGALÍAS " AS regalias,
+  " COSTO DE NOMINA " AS costo_nomina,
+  " IVA " AS iva,
+  " TOTAL A FACTURAR " AS total_facturar,
+  " PTU " AS ptu,
+  " ISR " AS isr,
+  " DESCUENTO IMSS " AS descuento_imss,
+  " RETARDOS " AS retardos,
+  " DESCUENTO INFONAVIT " AS descuento_infonavit,
+  " DIFERENCIA INFONAVIT4 " AS diferencia_infonavit4,
+  " SEGURO A LA VIVIENDA " AS seguro_vivienda,
+  " FONACOT " AS fonacot,
+  " DIFERENCIA FONACOT5 " AS diferencia_fonacot5,
+  " PRESTAMOS PERSONALES6 " AS prestamos_personales6,
+  " PENSIÓN ALIMENTICIA " AS pension_alimenticia,
+  " ANTICIPO DE NOMINA " AS anticipo_nomina,
+  " CUOTA SINDICAL " AS cuota_sindical,
+  " DCTO PENSION ALIMENTICIA VALES " AS dcto_pension_vales,
+  " OTROS DESCUENTOS " AS otros_descuentos,
+  " DESCUENTOS VARIOS " AS descuentos_varios,
+  " ISR INDEMNIZACION " AS isr_indemnizacion,
+  " DESTRUCCION HERRAMIENTAS " AS destruccion_herramientas,
+  " DESCUENTO POR UNIFORMES " AS descuento_uniformes,
+  " APORTACION CAJA DE AHORRO " AS aportacion_caja_ahorro,
+  " PRESTAMO FPL " AS prestamo_fpl,
+  " PENSION ALIMENTICIA FPL " AS pension_alimenticia_fpl,
+  " AJUSTE SUBS AL EMPLEO PAGADO " AS ajuste_subsidio_empleo,
+  "AYUDA FPL" AS ayuda_fpl
 FROM historico_nominas_gsau
 WHERE 1=1
       `;
@@ -771,33 +983,128 @@ WHERE 1=1
         console.log("🔵 Normalized orderBy:", normalizedOrderBy);
 
         const fieldMapping = {
+          // Identifiers
           nombre: '"Nombre completo"',
-          cvecia: '"cvecia"',
           name: '"Nombre completo"',
           curp: '"CURP"',
           rfc: '"RFC"',
           puesto: '"Puesto"',
-          sucursal: '"Compañía"',
+          position: '"Puesto"',
+          sucursal: '"Sucursal"',
           compania: '"Compañía"',
+          cvecia: "cvecia",
+          sexo:"Sexo",
+          cvetno: "cvetno",
+          localidad: "Localidad",
+          periodicidad: "Periodicidad",
+          clave_trabajador: '"Clave trabajador"',
+          numero_imss: '"Número IMSS"',
+          antiguedad_fpl: '"Antigüedad en FPL"',
+          fecha_antiguedad: '"Fecha antigüedad"',
+          fecha_baja: '"Fecha baja"',
+          tipo: '" tipo "',
+
+          // Status
+          estado: '"Status"',
+          status: '"Status"',
+
+          // Dates / periods
           mes: "DATE(cveper)",
           cveper: "cveper",
           periodo: "cveper",
+
+          // Payroll / numeric fields
+          sdi: 'COALESCE(" SDI "::NUMERIC, 0)',
+          sdi_es: '" sdi_es "',
+          sd: 'COALESCE(" SD "::NUMERIC, 0)',
+          sdim: '" sdim "',
+          sueldo_cliente: 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
+          sueldo: 'COALESCE(" SUELDO "::NUMERIC, 0)',
           salario: 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
           salary: 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
-          sueldo: 'COALESCE(" SUELDO CLIENTE "::NUMERIC, 0)',
-          // ✅ FIXED: Comisiones sorting uses sum of both commission fields with proper casting
           comisiones:
             '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
           commissions:
             '(COALESCE(" COMISIONES CLIENTE "::NUMERIC, 0) + COALESCE(" COMISIONES FACTURADAS "::NUMERIC, 0))',
-          // ✅ CRITICAL FIX: Add all variations (case-insensitive)
-          totalpercepciones: 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
-          percepcionestotales:
-            'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
-          totalpercepcion: 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
-          percepcion: 'COALESCE(" TOTAL DE PERCEPCIONES "::NUMERIC, 0)',
-          estado: '"Status"',
-          status: '"Status"',
+          comisiones_extra: 'COALESCE(" COMISIONES "::NUMERIC, 0)',
+          destajo_informado: 'COALESCE(" DESTAJO INFORMADO "::NUMERIC, 0)',
+          premio_puntualidad: 'COALESCE(" PREMIO PUNTUALIDAD "::NUMERIC, 0)',
+          premio_asistencia: 'COALESCE(" PREMIO ASISTENCIA "::NUMERIC, 0)',
+          vales_despensa: 'COALESCE(" VALES DE DESPENSA "::NUMERIC, 0)',
+          descuento_indebido: 'COALESCE(" DESCUENTO INDEBIDO "::NUMERIC, 0)',
+          bono: 'COALESCE(" BONO "::NUMERIC, 0)',
+          dia_festivo_trabajado:
+            'COALESCE(" DIA FESTIVO TRABAJADO "::NUMERIC, 0)',
+          sueldo_vacaciones:
+            'COALESCE(" SUELDO X DIAS AC VACACIONES "::NUMERIC, 0)',
+          prima_vacacional: 'COALESCE(" PRIMA VACACIONAL "::NUMERIC, 0)',
+          aguinaldo: 'COALESCE(" AGUINALDO "::NUMERIC, 0)',
+          gratificacion: 'COALESCE(" GRATIFICACION "::NUMERIC, 0)',
+          compensacion: 'COALESCE(" COMPENSACION "::NUMERIC, 0)',
+          prima_dominical: 'COALESCE(" PRIMA DOMINICAL "::NUMERIC, 0)',
+          prima_antiguedad: 'COALESCE(" PRIMA DE ANTIGÜEDAD "::NUMERIC, 0)',
+          pago_separacion: 'COALESCE(" PAGO POR SEPARACION "::NUMERIC, 0)',
+          vacaciones_pendientes:
+            'COALESCE(" VACACIONES PENDIENTES "::NUMERIC, 0)',
+          subsidio_incapacidad:
+            'COALESCE(" SUBSIDIO POR INCAPACIDAD "::NUMERIC, 0)',
+          subsidio_empleo: 'COALESCE(" SUBSIDIO AL EMPLEO "::NUMERIC, 0)',
+          destajo: 'COALESCE(" DESTAJO "::NUMERIC, 0)',
+          horas_extra_doble: 'COALESCE(" HORAS EXTRA DOBLE "::NUMERIC, 0)',
+          horas_extra_doble3: 'COALESCE(" HORAS EXTRA DOBLE3 "::NUMERIC, 0)',
+          horas_extra_triple: 'COALESCE(" HORAS EXTRA TRIPLE "::NUMERIC, 0)',
+          dias_promedio: '" DIAS PROMEDIO "',
+          dias_pendientes_ingreso: '" DIAS PENDIENTES POR INGRESO "',
+          septimo_dia: '" SEPTIMO DIA "',
+          reintegro_isr: 'COALESCE(" REINTEGRO ISR "::NUMERIC, 0)',
+          isr_anual_favor: 'COALESCE(" ISR ANUAL A FAVOR "::NUMERIC, 0)',
+          diferencia_fonacot: '" DIFERENCIA FONACOT "',
+          diferencia_infonavit: '" DIFERENCIA INFONAVIT "',
+          indemnizacion_90_dias: '" INDEMNIZACION 90 DIAS "',
+          vacaciones_finiquito: '" VACACIONES FINIQUITO "',
+          vales_despensa_neto: '" VALES DESPENSA NETO "',
+          vales_despensa_pension: '" VALES DESPENSA PENSION ALIMENT "',
+          pfpl: '" P.FPL "',
+          ayuda_incapacidad: '" AYUDA POR INCAPACIDAD "',
+          aportacion_compra_prestacion: '" APORTACION COMPRA PRESTACIÓN "',
+          ap_comp_primas_seguro: '" AP COMP PRIMAS SEGURO "',
+          imss_patronal: '" IMSS PATRONAL "',
+          infonavit: '" INFONAVIT "',
+          impuesto_nomina: '" IMPUESTO SOBRE NÓMINA "',
+          prestamos_personales: '" PRESTAMOS PERSONALES "',
+          total_percepciones: '" TOTAL DE PERCEPCIONES "',
+          total_deducciones: '" TOTAL DEDUCCIONES "',
+          neto_antes_vales: '" NETO ANTES DE VALES "',
+          neto_a_pagar: '" NETO A PAGAR "',
+          subtotal_costo_nomina: '" SUBTOTAL COSTO DE NOMINA "',
+          regalias: '" REGALÍAS "',
+          costo_nomina: '" COSTO DE NOMINA "',
+          iva: '" IVA "',
+          total_facturar: '" TOTAL A FACTURAR "',
+          ptu: '" PTU "',
+          isr: '" ISR "',
+          descuento_imss: '" DESCUENTO IMSS "',
+          retardos: '" RETARDOS "',
+          descuento_infonavit: '" DESCUENTO INFONAVIT "',
+          diferencia_infonavit4: '" DIFERENCIA INFONAVIT4 "',
+          seguro_vivienda: '" SEGURO A LA VIVIENDA "',
+          fonacot: '" FONACOT "',
+          diferencia_fonacot5: '" DIFERENCIA FONACOT5 "',
+          prestamos_personales6: '" PRESTAMOS PERSONALES6 "',
+          pension_alimenticia: '" PENSIÓN ALIMENTICIA "',
+          anticipo_nomina: '" ANTICIPO DE NOMINA "',
+          cuota_sindical: '" CUOTA SINDICAL "',
+          dcto_pension_vales: '" DCTO PENSION ALIMENTICIA VALES "',
+          otros_descuentos: '" OTROS DESCUENTOS "',
+          descuentos_varios: '" DESCUENTOS VARIOS "',
+          isr_indemnizacion: '" ISR INDEMNIZACION "',
+          destruccion_herramientas: '" DESTRUCCION HERRAMIENTAS "',
+          descuento_uniformes: '" DESCUENTO POR UNIFORMES "',
+          aportacion_caja_ahorro: '" APORTACION CAJA DE AHORRO "',
+          prestamo_fpl: '" PRESTAMO FPL "',
+          pension_alimenticia_fpl: '" PENSION ALIMENTICIA FPL "',
+          ajuste_subsidio_empleo: '" AJUSTE SUBS AL EMPLEO PAGADO "',
+          ayuda_fpl: '"AYUDA FPL"',
         };
 
         console.log(

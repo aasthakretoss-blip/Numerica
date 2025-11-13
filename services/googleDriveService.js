@@ -10,219 +10,160 @@ class GoogleDriveService {
 
   async initialize() {
     try {
-      // For now, we'll use a simple approach with API key
-      // In production, you should use service account authentication
       console.log("🔧 Inicializando Google Drive API...");
-
-      // Create auth client
       this.auth = new google.auth.GoogleAuth({
-        keyFile: path.join(__dirname, "../config/harvest-c95bd-bb61d9f0db0a.json"), // You'll need to create this
-        scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+        keyFile: path.join(
+          __dirname,
+          "../config/harvest-c95bd-bb61d9f0db0a.json"
+        ),
+        scopes: ["https://www.googleapis.com/auth/drive"], // ✅ full access (needed for permissions)
       });
 
-      // Create Drive API client
-      this.drive = google.drive({
-        version: "v3",
-        auth: this.auth,
-      });
-
+      this.drive = google.drive({ version: "v3", auth: this.auth });
       console.log("✅ Google Drive API inicializada exitosamente");
       return true;
     } catch (error) {
       console.error("❌ Error inicializando Google Drive API:", error.message);
+      return false;
+    }
+  }
 
-      // Fallback: Use public API approach
-      console.log("🔄 Intentando configuración alternativa...");
-      try {
-        this.drive = google.drive({
-          version: "v3",
-          auth: process.env.GOOGLE_API_KEY, // You'll need to set this
+  async ensureDriveInitialized() {
+    if (!this.drive) {
+      console.warn("⚠️ Drive client no inicializado — reinicializando...");
+      await this.initialize();
+    }
+  }
+
+  /** ✅ Makes file public (anyone with link can view) */
+  async ensureFileIsPublic(fileId) {
+    try {
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: { role: "reader", type: "anyone" },
         });
-        console.log("✅ Google Drive API configurada con API Key");
-        return true;
-      } catch (fallbackError) {
+      console.log(`🌍 Archivo ${fileId} hecho público`);
+    } catch (error) {
+      if (error.code === 403) {
+        console.warn(`⚠️ No se pudo cambiar permisos (403) para ${fileId}`);
+      } else if (error.code !== 404) {
         console.error(
-          "❌ Error en configuración alternativa:",
-          fallbackError.message
+          `❌ Error al hacer público el archivo ${fileId}:`,
+          error.message
         );
-        return false;
       }
     }
   }
 
-  async searchFilesByName(employeeName) {
+  async listSubfolders() {
+    await this.ensureDriveInitialized();
+    console.log("📂 Obteniendo lista de subcarpetas...");
+
+    let subfolders = [];
+    let pageToken = null;
+
     try {
-      console.log(employeeName, "employeeName");
-      if (!this.drive) {
-        await this.initialize();
-      }
-
-      console.log(`🔍 Buscando archivos PDF para empleado: ${employeeName}`);
-
-      // Search for PDF files in the shared folder that contain the employee name
-      const searchQuery = `'${this.SHARED_FOLDER_ID}' in parents and mimeType='application/pdf' and name contains '${employeeName}'`;
-
+      do {
       const response = await this.drive.files.list({
-        q: searchQuery,
-        fields: "files(id,name,size,modifiedTime,webViewLink,webContentLink)",
+          q: `'${this.SHARED_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder'`,
+          fields: "nextPageToken, files(id, name)",
+          pageToken,
         pageSize: 100,
       });
 
-      const files = response.data.files || [];
-      console.log(
-        `📁 Encontrados ${files.length} archivos para ${employeeName}`
-      );
+        subfolders = subfolders.concat(response?.data?.files || []);
+        pageToken = response?.data?.nextPageToken || null;
+      } while (pageToken);
 
-      return {
-        success: true,
-        files: files.map((file) => ({
-          id: file.id,
-          name: file.name,
-          size: file.size,
-          modifiedTime: file.modifiedTime,
-          viewLink: file.webViewLink,
-          downloadLink: file.webContentLink,
-        })),
-      };
+      console.log(`📁 Total subcarpetas encontradas: ${subfolders.length}`);
+      return subfolders;
     } catch (error) {
-      console.error("❌ Error buscando archivos en Google Drive:", error);
-
-      // For development, return mock data with working PDF viewer
-      console.log(
-        "🔄 Retornando datos de prueba para desarrollo con PDF visible..."
-      );
-      return {
-        success: true,
-        files: [
-          {
-            id: "sample-pdf-demo",
-            name: `CONSENTIMIENTO_${employeeName
-              .replace(/\s+/g, "_")
-              .toUpperCase()}.pdf`,
-            size: "1024000",
-            modifiedTime: new Date().toISOString(),
-            viewLink:
-              "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-            downloadLink:
-              "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-            isMockData: true,
-          },
-        ],
-      };
+      console.error("❌ Error listando subcarpetas:", error.message);
+      return [];
     }
   }
 
   async searchInSubfolders(employeeName) {
-    try {
+    await this.ensureDriveInitialized();
+
       console.log(`🔍 Buscando en subcarpetas para empleado: ${employeeName}`);
+    const subfolders = await this.listSubfolders();
 
-      // First, get all subfolders
-      const subfoldersResponse = await this.drive.files.list({
-        q: `'${this.SHARED_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder'`,
-        fields: "files(id,name)",
-      });
+    if (!subfolders.length) {
+      console.log("⚠️ No se encontraron subcarpetas");
+      return { success: true, files: [] };
+    }
 
-      const subfolders = subfoldersResponse.data.files || [];
-      console.log(`📂 Encontradas ${subfolders.length} subcarpetas`);
+    // Timeout safeguard
+    const timeout = new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error("⏱️ Timeout buscando en subcarpetas")),
+        30000
+      )
+    );
 
-      let allFiles = [];
-
-      // Search in each subfolder
-      for (const subfolder of subfolders) {
-        console.log(`🔍 Buscando en subcarpeta: ${subfolder.name}`);
-
-        const searchQuery = `'${subfolder.id}' in parents and mimeType='application/pdf' and name contains '${employeeName}'`;
-
-        const filesResponse = await this.drive.files.list({
-          q: searchQuery,
-          fields: "files(id,name,size,modifiedTime,webViewLink,webContentLink)",
+    const searchPromise = Promise.all(
+      subfolders.map(async (subfolder) => {
+        try {
+          const query = `'${subfolder.id}' in parents and mimeType='application/pdf' and name contains '${employeeName}'`;
+          const response = await this.drive.files.list({
+            q: query,
+            fields: "files(id, name, size, modifiedTime)",
           pageSize: 50,
         });
 
-        const files = (filesResponse.data.files || []).map((file) => ({
+          const files = await Promise.all(
+            (response?.data?.files || []).map(async (file) => {
+              await this.ensureFileIsPublic(file.id); // ✅ make public automatically
+
+              return {
           id: file.id,
           name: file.name,
           size: file.size,
           modifiedTime: file.modifiedTime,
-          viewLink: file.webViewLink,
-          downloadLink: file.webContentLink,
           subfolder: subfolder.name,
-        }));
+                viewLink: `https://drive.google.com/file/d/${file.id}/preview`, // ✅ works for anyone
+                downloadLink: `https://drive.google.com/uc?id=${file.id}&export=download`,
+              };
+            })
+          );
 
-        allFiles = allFiles.concat(files);
-      }
+          if (files.length > 0) {
+            console.log(`📁 ${files.length} archivo(s) en ${subfolder.name}`);
+          }
 
-      console.log(`📁 Total de archivos encontrados: ${allFiles.length}`);
-
-      return {
-        success: true,
-        files: allFiles,
-      };
-    } catch (error) {
-      console.error("❌ Error buscando en subcarpetas:", error);
-      return {
-        success: false,
-        error: error.message,
-        files: [],
-      };
+          return files;
+        } catch (err) {
+          console.log(`⚠️ Error buscando en ${subfolder.name}:`, err.message);
+          return [];
     }
-  }
+      })
+    );
 
-  async getFileMetadata(fileId) {
     try {
-      const response = await this.drive.files.get({
-        fileId: fileId,
-        fields:
-          "id,name,size,modifiedTime,webViewLink,webContentLink,thumbnailLink",
-      });
+      const allFilesArray = await Promise.race([searchPromise, timeout]);
+      const allFiles = allFilesArray.flat();
 
-      return {
-        success: true,
-        file: response.data,
-      };
-    } catch (error) {
-      console.error("❌ Error obteniendo metadatos del archivo:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      console.log(`✅ Total de archivos encontrados: ${allFiles.length}`);
+      return { success: true, files: allFiles };
+    } catch (err) {
+      console.error("❌ Error o timeout:", err.message);
+      return { success: false, files: [], error: err.message };
     }
   }
 
-  async generateDownloadUrl(fileId) {
-    try {
-      // Generate a temporary download URL
-      const url = `https://drive.google.com/uc?id=${fileId}&export=download`;
-
-      return {
-        success: true,
-        downloadUrl: url,
-        expiresIn: "1h", // Google Drive URLs don't expire quickly
-      };
-    } catch (error) {
-      console.error("❌ Error generando URL de descarga:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  // Utility method to normalize names for search
   normalizeNameForSearch(employeeName) {
-    // Remove special characters and extra spaces
     return employeeName
       .replace(/[^\w\s]/gi, "")
       .replace(/\s+/g, " ")
       .trim();
   }
 
-  // Method to search with multiple name variations
   async searchWithNameVariations(employeeName) {
-    const normalizedName = this.normalizeNameForSearch(employeeName);
+    await this.ensureDriveInitialized();
 
-    // Try different name formats
-    const searchVariations = [
+    const normalizedName = this.normalizeNameForSearch(employeeName);
+    const baseVariations = [
       normalizedName,
       normalizedName.replace(/\s+/g, "_"),
       normalizedName.replace(/\s+/g, ""),
@@ -230,31 +171,33 @@ class GoogleDriveService {
       normalizedName.toUpperCase(),
     ];
 
+    const consentVariations = baseVariations.flatMap((v) => [
+      `${v}_CONSENTIMIENTOS`,
+      `${v}-CONSENTIMIENTOS`,
+    ]);
+
+    const searchVariations = [...baseVariations, ...consentVariations];
+    console.log("🔍 Variaciones de búsqueda:", searchVariations);
+
     let allFiles = [];
 
     for (const variation of searchVariations) {
       try {
-        const result = await this.searchFilesByName(variation);
+        console.log(`🔎 Buscando con variación: ${variation}`);
+        const result = await this.searchInSubfolders(variation);
         if (result.success && result.files.length > 0) {
-          // Avoid duplicates
           const newFiles = result.files.filter(
             (file) => !allFiles.some((existing) => existing.id === file.id)
           );
           allFiles = allFiles.concat(newFiles);
         }
       } catch (error) {
-        console.log(
-          `⚠️ Error buscando con variación "${variation}":`,
-          error.message
-        );
+        console.log(`⚠️ Error buscando con "${variation}":`, error.message);
       }
     }
 
-    return {
-      success: true,
-      files: allFiles,
-      searchVariations,
-    };
+    console.log(`📦 Total final de archivos encontrados: ${allFiles.length}`);
+    return { success: true, files: allFiles, searchVariations };
   }
 }
 

@@ -94,12 +94,12 @@ const FieldValue = styled.div`
 const InformacionBasicaFPLSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return 'Cargando...';
-    if (value === null || value === undefined || value === '') return '-';
+    if (value === null || value === undefined || value === '') return 'No disponible';
     return value.toString();
   };
 
   const formatDate = (dateValue) => {
-    if (!dateValue) return '-';
+    if (!dateValue) return 'No disponible';
     try {
       // Si es un timestamp ISO, extraer solo la parte de la fecha
       if (typeof dateValue === 'string' && dateValue.includes('T')) {
@@ -119,13 +119,15 @@ const InformacionBasicaFPLSection = ({ data, loading }) => {
   const fields = [
     { key: 'cvecia', label: 'Clave Compañía', dbField: 'cvecia' },
     { key: 'cvetno', label: 'Clave sucursal', dbField: 'cvetno' },
-    { key: 'sucursal', label: 'Sucursal', dbField: 'Sucursal' },
-    { key: 'claveTrabajador', label: 'Clave trabajador', dbField: 'Clave trabajador' },
-    { key: 'nombre', label: 'Nombre completo', dbField: 'Nombre completo', highlight: true },
-    { key: 'rfc', label: 'RFC', dbField: 'RFC', highlight: true },
-    { key: 'fechaAntiguedad', label: 'Fecha de antigüedad', dbField: 'Fecha antigüedad', isDate: true },
-    { key: 'fechaBaja', label: 'Fecha de baja', dbField: 'Fecha baja', isDate: true },
-    { key: 'status', label: 'Estado', dbField: 'Status', isStatus: true }
+    { key: 'descripcion_cvetno', label: 'Sucursal', dbField: 'descripcion_cvetno' },
+    { key: 'cvetra', label: 'Clave trabajador', dbField: 'cvetra' },
+    { key: 'nombre', label: 'Nombre completo', dbField: 'nombre', highlight: true },
+    { key: 'rfc', label: 'RFC', dbField: 'numrfc', highlight: true },
+    { key: 'fecpla', label: 'Fecha del plazo', dbField: 'fecpla', isDate: true },
+    { key: 'fecalt', label: 'Fecha de alta', dbField: 'fecalt', isDate: true },
+    { key: 'fechaAntiguedad', label: 'Fecha de antigüedad', dbField: 'fecant', isDate: true },
+    { key: 'fechaBaja', label: 'Fecha de baja', dbField: 'fecbaj', isDate: true },
+    { key: 'status', label: 'Estado', dbField: 'status', isStatus: true }
   ];
 
   return (

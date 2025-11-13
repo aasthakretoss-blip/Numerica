@@ -99,7 +99,7 @@ const FieldValue = styled.div`
 const TotalesCostosSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "") return "No disponible";
     return value.toString();
   };
 
@@ -123,7 +123,7 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: " TOTAL DE PERCEPCIONES ",
       label: "Total de percepciones",
-      dbField: " TOTAL DE PERCEPCIONES ",
+      dbField: "total_percepciones",
       isCurrency: true,
       isHighlight: true,
     },
@@ -131,7 +131,7 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: "totalDeducciones",
       label: "Total de deducciones",
-      dbField: "total_deducciones_no_disponible",
+      dbField: "total_deducciones",
       isCurrency: true,
       isHighlight: true,
       placeholder: true,
@@ -139,14 +139,14 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: "netoAntesVales",
       label: "Neto antes de vales",
-      dbField: "neto_antes_vales_no_disponible",
+      dbField: "neto_antes_vales",
       isCurrency: true,
       placeholder: true,
     },
     {
       key: "netoAPagar",
       label: "Neto a pagar",
-      dbField: "neto_pagar_no_disponible",
+      dbField: "neto_a_pagar",
       isCurrency: true,
       isHighlight: true,
       placeholder: true,
@@ -154,21 +154,21 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: "subtotalCostoNomina",
       label: "Subtotal costo de nómina",
-      dbField: "subtotal_costo_nomina_no_disponible",
+      dbField: "subtotal_costo_nomina",
       isCurrency: true,
       placeholder: true,
     },
     {
       key: "regalias",
       label: "Regalías",
-      dbField: "regalias_no_disponible",
+      dbField: "regalias",
       isCurrency: true,
       placeholder: true,
     },
     {
       key: "costoNomina",
       label: "Costo de nómina",
-      dbField: "costo_nomina_no_disponible",
+      dbField: "costo_nomina",
       isCurrency: true,
       isHighlight: true,
       placeholder: true,
@@ -176,14 +176,14 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: "iva",
       label: "IVA",
-      dbField: "iva_no_disponible",
+      dbField: "iva",
       isCurrency: true,
       placeholder: true,
     },
     {
       key: "totalFacturar",
       label: "Total a facturar",
-      dbField: "total_facturar_no_disponible",
+      dbField: "total_facturar",
       isCurrency: true,
       isHighlight: true,
       placeholder: true,
@@ -191,7 +191,7 @@ const TotalesCostosSection = ({ data, loading }) => {
     {
       key: "ptu",
       label: "PTU",
-      dbField: "ptu_no_disponible",
+      dbField: "ptu",
       isCurrency: true,
       placeholder: true,
     },

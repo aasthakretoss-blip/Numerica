@@ -141,18 +141,18 @@ const MovimientosFondoSection = ({ data, loading }) => {
   // Mapeo de campos usando nombres probables de la API (con espacios y capitalización)
   // Nota: Estos nombres necesitan confirmación con logs reales de la API
   const fields = [
-    { key: 'observaciones', label: 'Observaciones', dbField: 'Observaciones' },
-    { key: 'antiguedadEnFondo', label: 'Antigüedad en fondo', dbField: 'Antigüedad en fondo', isNumeric: true },
-    { key: 'saldoInicial', label: 'Saldo inicial', dbField: 'Saldo inicial', isCurrency: true },
-    { key: 'aportacionFideicomiso', label: 'Aportación al Fideicomiso', dbField: 'Aportación al Fideicomiso', isCurrency: true },
-    { key: 'interesesFideicomiso', label: 'Intereses Fideicomiso', dbField: 'Intereses Fideicomiso', isCurrency: true },
-    { key: 'cargosFideicomiso', label: 'Cargos Fideicomiso', dbField: 'Cargos Fideicomiso', isCurrency: true },
-    { key: 'interesesPrestamos', label: 'Intereses por Prestamos', dbField: 'Intereses por Prestamos', isCurrency: true },
-    { key: 'entregaFondos', label: 'Entrega de Fondos', dbField: 'Entrega de Fondos', isCurrency: true },
-    { key: 'saldoBajas', label: 'Saldo Bajas', dbField: 'Saldo Bajas', isCurrency: true },
-    { key: 'gr', label: 'GR', dbField: 'GR', isCurrency: true },
-    { key: 'saldoFinal', label: 'Saldo Final', dbField: 'Saldo Final', isCurrency: true },
-    { key: 'saldoFinal2', label: 'Saldo Final 2', dbField: 'Saldo Final 2', isCurrency: true }
+    { key: 'observaciones', label: 'Observaciones', dbField: 'observaciones' },
+    { key: 'antiguedadEnFondo', label: 'Antigüedad en fondo', dbField: 'antiguedad_en_fondo', isNumeric: true },
+    { key: 'saldoInicial', label: 'Saldo inicial', dbField: 'saldo_inicial', isCurrency: true },
+    { key: 'aportacionFideicomiso', label: 'Aportación al Fideicomiso', dbField: 'aportacion_al_fideicomiso', isCurrency: true },
+    { key: 'interesesFideicomiso', label: 'Intereses Fideicomiso', dbField: 'intereses_fideicomiso', isCurrency: true },
+    { key: 'cargosFideicomiso', label: 'Cargos Fideicomiso', dbField: 'cargos_fideicomiso', isCurrency: true },
+    { key: 'interesesPrestamos', label: 'Intereses por Prestamos', dbField: 'intereses_por_prestamos', isCurrency: true },
+    { key: 'entregaFondos', label: 'Entrega de Fondos', dbField: 'entrega_de_fondos', isCurrency: true },
+    { key: 'saldoBajas', label: 'Saldo Bajas', dbField: 'saldo_bajas', isCurrency: true },
+    { key: 'gr', label: 'GR', dbField: 'gr', isCurrency: true },
+    { key: 'saldo_final', label: 'Saldo Final', dbField: 'saldo_final', isCurrency: true },
+    { key: 'saldo_final_1', label: 'Saldo Final 2', dbField: 'saldo_final_1', isCurrency: true }
   ];
 
   return (

@@ -2131,7 +2131,15 @@ const BusquedaEmpleados = () => {
             <FaUsers size={40} color={theme?.brand?.primary || "#1e3a8a"} />
             <PageTitle>Búsqueda de Empleados</PageTitle>
           </PageHeader>
-          <LoadingContainer>
+          <LoadingContainer
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
             <LoadingSpinner size={48} />
             <h3
               style={{
@@ -2483,7 +2491,14 @@ const BusquedaEmpleados = () => {
               <FaSpinner
                 size={32}
                 color="#1e3a8a"
-                style={{ animation: "spin 1s linear infinite" }}
+                style={{
+                  animation: "spin 1s linear infinite",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                }}
               />
               <p style={{ marginTop: "1rem", opacity: 0.8 }}>
                 Buscando empleados...

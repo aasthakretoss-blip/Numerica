@@ -94,7 +94,7 @@ const FieldValue = styled.div`
 const BeneficiosAjustesSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "") return "No disponible";
     return value.toString();
   };
 
@@ -117,91 +117,97 @@ const BeneficiosAjustesSection = ({ data, loading }) => {
     {
       key: "reintegroISR",
       label: "Reintegro ISR",
-      dbField: " REINTEGRO ISR ",
+      dbField: "reintegro_isr",
       isCurrency: true,
     },
     {
       key: "isrAnualFavor",
       label: "ISR anual a favor",
-      dbField: " ISR ANUAL A FAVOR ",
+      dbField: "isr_anual_favor",
       isCurrency: true,
     },
     {
       key: "diferenciaFONACOT",
       label: "Diferencia FONACOT",
-      dbField: " DIFERENCIA FONACOT ",
+      dbField: "diferencia_fonacot",
       isCurrency: true,
     },
     {
       key: "diferenciaINFONAVIT",
       label: "Diferencia INFONAVIT",
-      dbField: " DIFERENCIA INFONAVIT ",
+      dbField: "diferencia_infonavit",
       isCurrency: true,
     },
     {
       key: "indemnizacion90Dias",
       label: "Indemnización 90 días",
-      dbField: " INDEMNIZACION 90 DIAS ",
+      dbField: "indemnizacion_90_dias",
       isCurrency: true,
     },
     {
       key: "vacacionesFiniquito",
       label: "Vacaciones finiquito",
-      dbField: " VACACIONES FINIQUITO ",
+      dbField: "vacaciones_finiquito",
       isCurrency: true,
     },
     {
       key: "valesDespensaNeto",
       label: "Vales de despensa neto",
-      dbField: " VALES DESPENSA NETO ",
+      dbField: "vales_despensa_neto",
       isCurrency: true,
     },
     {
       key: "ValesDespensaPensionAliment",
       label: "Vales de despensa, pensión alimenticia",
-      dbField: " VALES DESPENSA PENSION ALIMENT ",
+      dbField: "vales_despensa_pension",
       isCurrency: true,
     },
     {
       key: "pFPL",
       label: "P.FPL",
-      dbField: " P.FPL ",
+      dbField: "pfpl",
       isCurrency: true,
     },
     {
       key: "ayudaPorIncapacidad",
       label: "Ayuda por incapacidad",
-      dbField: " AYUDA POR INCAPACIDAD ",
+      dbField: "ayuda_incapacidad",
+      isCurrency: true,
+    },
+    {
+      key: "aportacion_compra_prestacion",
+      label: "Aportación compra prestación",
+      dbField: "aportacion_compra_prestacion",
       isCurrency: true,
     },
     {
       key: "aPCompPrimasSeguro",
       label: "AP Comp primas seguro",
-      dbField: " AP COMP PRIMAS SEGURO ",
+      dbField: "ap_comp_primas_seguro",
       isCurrency: true,
     },
     {
       key: "iMSSPatronal",
       label: "IMSS Patronal",
-      dbField: " IMSS PATRONAL ",
+      dbField: "imss_patronal",
       isCurrency: true,
     },
     {
       key: "iNFONAVIT",
       label: "INFONAVIT",
-      dbField: " INFONAVIT ",
+      dbField: "infonavit",
       isCurrency: true,
     },
     {
       key: "impuestoSobreNomina",
       label: "Impuesto sobre nómina",
-      dbField: " IMPUESTO SOBRE NÓMINA ",
+      dbField: "impuesto_nomina",
       isCurrency: true,
     },
     {
       key: "prestamosPersonales",
       label: "Préstamos personales",
-      dbField: " PRESTAMOS PERSONALES ",
+      dbField: "prestamos_personales",
       isCurrency: true,
     },
   ];

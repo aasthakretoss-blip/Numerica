@@ -150,13 +150,13 @@ const AportacionesSDISection = ({ data, loading }) => {
   // Mapeo de campos usando nombres probables de la API (con espacios y capitalización)
   // Nota: Estos nombres necesitan confirmación con logs reales de la API
   const fields = [
-    { key: 'sdi', label: 'SDI', dbField: ' SDI ', isSDI: true },
-    { key: 'aportacionInicial', label: 'Aportación inicial', dbField: 'Aportación inicial', isCurrency: true },
-    { key: 'aportacionesATFPL', label: 'Aportaciones ATFPL', dbField: 'Aportaciones ATFPL', isCurrency: true },
-    { key: 'interesesATFPL', label: 'Intereses ATFPL', dbField: 'Intereses ATFPL', isCurrency: true },
-    { key: 'retiros', label: 'Retiros', dbField: 'Retiros', isCurrency: true },
-    { key: 'aportacionesFinal', label: 'Aportaciones Final', dbField: 'Aportaciones Final', isCurrency: true },
-    { key: 'ajuste', label: 'Ajuste', dbField: 'Ajuste', isCurrency: true }
+    { key: 'sdi', label: 'SDI', dbField: 'sdi', isSDI: true },
+    { key: 'aportacionInicial', label: 'Aportación inicial', dbField: 'aportacion_inicial', isCurrency: true },
+    { key: 'aportacionesATFPL', label: 'Aportaciones ATFPL', dbField: 'aportaciones_atfpl', isCurrency: true },
+    { key: 'interesesATFPL', label: 'Intereses ATFPL', dbField: 'intereses_atfpl', isCurrency: true },
+    { key: 'retiros', label: 'Retiros', dbField: 'retiros', isCurrency: true },
+    { key: 'aportacionesFinal', label: 'Aportaciones Final', dbField: 'aportaciones_final', isCurrency: true },
+    { key: 'ajuste', label: 'Ajuste', dbField: 'ajuste', isCurrency: true }
   ];
 
   return (

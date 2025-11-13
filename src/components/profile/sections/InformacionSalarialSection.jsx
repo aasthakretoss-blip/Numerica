@@ -94,7 +94,8 @@ const FieldValue = styled.div`
 const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "")
+      return "No disponible";
     return value.toString();
   };
 
@@ -114,7 +115,8 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
 
   const formatCleanValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "")
+      return "No disponible";
     let cleanValue = value.toString();
     // Limpiar timestamps - extraer solo la parte antes de 'T' si existe
     if (cleanValue.includes("T")) {
@@ -146,7 +148,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "cveper",
       label: "Clave Percepción",
-      dbFields: ["perception", "clavePerception", "clave"],
+      dbFields: ["perception", "clavePerception", "periodo"],
       isClean: true,
     },
     { key: "periodo", label: "Periodo", dbFields: ["periodo"], isClean: true },
@@ -167,24 +169,29 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
         "Sueldo cliente",
         "SUELDO CLIENTE",
         "Sueldocliente",
-        "SueldoCliente",
+        "sueldo_cliente",
       ],
       isClean: true,
     },
-    { key: "sueldo", label: "Sueldo", dbFields: ["salario"], isCurrency: true },
+    { key: "sueldo", label: "Sueldo", dbFields: ["sueldo"], isCurrency: true },
     {
       key: "comisiones cliente",
       label: "Comisiones Cliente",
-      dbFields: [" COMISIONES CLIENTE ", "COMISIONES CLIENTE"],
+      dbFields: [" COMISIONES CLIENTE ", "comisions_cliente"],
       isCurrency: true,
     },
     {
       key: "comisionesfacturades",
       label: "Comisiones facturadas",
-      dbFields: [" COMISIONES FACTURADAS ", "COMISIONES FACTURADAS"],
+      dbFields: [" COMISIONES FACTURADAS ", "comisions_facturadas"],
       isCurrency: true,
     },
-    { key: "bono", label: "Bono", dbFields: [" BONO "], isCurrency: true },
+    {
+      key: "bono",
+      label: "Bono",
+      dbFields: [" BONO ", "bono"],
+      isCurrency: true,
+    },
     {
       key: "comisiones",
       label: "Comisiones",
@@ -194,7 +201,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "Aguinaldo",
       label: "Aguinaldo",
-      dbFields: ["Aguinaldo", " AGUINALDO", "AGUINALDO ", "AGUINALDO"],
+      dbFields: ["Aguinaldo", " AGUINALDO", "aguinaldo ", "AGUINALDO"],
       isCurrency: true,
     },
     {
@@ -203,7 +210,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
       dbFields: [
         " GRATIFICACION ",
         " GRATIFICACION",
-        "GRATIFICACION ",
+        "gratificacion ",
         "GRATIFICACION",
       ],
       isCurrency: true,
@@ -215,7 +222,7 @@ const InformacionSalarialSection = ({ data, loading, selectedPeriod }) => {
         " COMPENSACION ",
         " COMPENSACION",
         "COMPENSACION ",
-        "COMPENSACION",
+        "compensacion",
       ],
       isCurrency: true,
     },

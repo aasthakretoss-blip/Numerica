@@ -94,12 +94,13 @@ const FieldValue = styled.div`
 const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "")
+      return "No disponible";
     return value.toString();
   };
 
   const formatDate = (dateValue) => {
-    if (!dateValue) return "-";
+    if (!dateValue) return "No disponible";
     try {
       // Si es un timestamp ISO, extraer solo la parte de la fecha
       if (typeof dateValue === "string" && dateValue.includes("T")) {
@@ -117,7 +118,8 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
 
   const formatNumberIMSS = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "")
+      return "No disponible";
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return value.toString();
     return Math.floor(numValue).toString();
@@ -125,7 +127,8 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
 
   const formatCleanValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "")
+      return "No disponible";
     let cleanValue = value.toString();
     // Limpiar timestamps - extraer solo la parte antes de 'T' si existe
     if (cleanValue.includes("T")) {
@@ -191,7 +194,12 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "claveTrabajador",
       label: "Clave trabajador",
-      dbFields: ["Clave trabajador", "claveTrabajador", "clave trabajador"],
+      dbFields: [
+        "Clave trabajador",
+        "claveTrabajador",
+        "clave trabajador",
+        "clave_trabajador",
+      ],
     },
     {
       key: "nombre",
@@ -215,13 +223,13 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "numeroIMSS",
       label: "Número IMSS",
-      dbFields: ["Número IMSS", "numeroIMSS", "Número IMSS", "numero IMSS"],
+      dbFields: ["Número IMSS", "numero_imss", "Número IMSS", "numero IMSS"],
       isIMSS: true,
     },
     {
       key: "antiguedadFPL",
       label: "Antigüedad en FPL",
-      dbFields: ["Antigüedad en FPL", "antiguedadFPL", "Antiguedad en FPL"],
+      dbFields: ["Antigüedad en FPL", "antiguedad_fpl", "Antiguedad en FPL"],
       isDate: true,
     },
     {
@@ -229,7 +237,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
       label: "Fecha de antigüedad",
       dbFields: [
         "Fecha antigüedad",
-        "fechaAntiguedad",
+        "fecha_antiguedad",
         "Fecha antiguedad",
         "fechaAntiguedadFPL",
       ],
@@ -238,7 +246,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "fechabaja",
       label: "Fecha baja",
-      dbFields: ["Fecha baja", "fechaBaja", "fechabaja"],
+      dbFields: ["Fecha baja", "fecha_baja", "fechabaja"],
       isDate: true,
     },
     {

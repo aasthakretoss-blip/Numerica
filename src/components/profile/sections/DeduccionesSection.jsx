@@ -94,7 +94,7 @@ const FieldValue = styled.div`
 const DeduccionesSection = ({ data, loading }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "") return "No disponible";
     return value.toString();
   };
 
@@ -119,133 +119,133 @@ const DeduccionesSection = ({ data, loading }) => {
     {
       key: "descuentoIMSS",
       label: "Descuento IMSS",
-      dbField: " DESCUENTO IMSS ",
+      dbField: "descuento_imss",
       isCurrency: true,
     },
     {
       key: "retardos",
       label: "Retardos",
-      dbField: " RETARDOS ",
+      dbField: "retardos",
       isCurrency: true,
     },
     {
       key: "descuentoINFONAVIT",
       label: "Descuento INFONAVIT",
-      dbField: " DESCUENTO INFONAVIT ",
+      dbField: "descuento_infonavit",
       isCurrency: true,
     },
     {
       key: "diferenciaINFONAVIT4",
       label: "Diferencia INFONAVIT",
-      dbField: " DIFERENCIA INFONAVIT4 ",
+      dbField: "diferencia_infonavit4",
       isCurrency: true,
     },
     {
       key: "seguroVivienda",
       label: "Seguro a la vivienda",
-      dbField: " SEGURO A LA VIVIENDA ",
+      dbField: "seguro_vivienda",
       isCurrency: true,
     },
     {
       key: "fonacot",
       label: "FONACOT",
-      dbField: " FONACOT ",
+      dbField: "fonacot",
       isCurrency: true,
     },
     {
       key: "diferenciaFONACOT5",
       label: "Diferencia FONACOT",
-      dbField: " DIFERENCIA FONACOT5 ",
+      dbField: "diferencia_fonacot5",
       isCurrency: true,
     },
     {
       key: "prestamosPersonales6",
       label: "Préstamos personales 2",
-      dbField: " PRESTAMOS PERSONALES6 ",
+      dbField: "prestamos_personales6",
       isCurrency: true,
     },
     {
       key: "pensionAlimenticia",
       label: "Pensión alimenticia",
-      dbField: " PENSIÓN ALIMENTICIA ",
+      dbField: "pension_alimenticia",
       isCurrency: true,
     },
     {
       key: "anticipoNomina",
       label: "Anticipo de nómina",
-      dbField: " ANTICIPO DE NOMINA ",
+      dbField: "anticipo_nomina",
       isCurrency: true,
     },
     {
       key: "cuotaSindical",
       label: "Cuota sindical",
-      dbField: " CUOTA SINDICAL ",
+      dbField: "cuota_sindical",
       isCurrency: true,
     },
     {
       key: "dctoPensionAlimenticiaVales",
       label: "Descuento pensión alimenticia vales",
-      dbField: " DCTO PENSION ALIMENTICIA VALES ",
+      dbField: "dcto_pension_vales",
       isCurrency: true,
     },
     {
       key: "otrosDescuentos",
       label: "Otros descuentos",
-      dbField: " OTROS DESCUENTOS ",
+      dbField: "otros_descuentos",
       isCurrency: true,
     },
     {
       key: "descuentosVarios",
       label: "Descuentos varios",
-      dbField: " DESCUENTOS VARIOS ",
+      dbField: "descuentos_varios",
       isCurrency: true,
     },
     {
       key: "isrIndemnizacion",
       label: "ISR Indemnización",
-      dbField: " ISR INDEMNIZACION ",
+      dbField: "isr_indemnizacion",
       isCurrency: true,
     },
     {
       key: "destruccionHerramientas",
       label: "Destrucción herramientas",
-      dbField: " DESTRUCCION HERRAMIENTAS ",
+      dbField: "destruccion_herramientas",
       isCurrency: true,
     },
     {
       key: "descuentoUniformes",
       label: "Descuento por uniformes",
-      dbField: " DESCUENTO POR UNIFORMES ",
+      dbField: "descuento_uniformes",
       isCurrency: true,
     },
     {
       key: "aportacionCajaAhorro",
       label: "Aportación caja de ahorro",
-      dbField: " APORTACION CAJA DE AHORRO ",
+      dbField: "aportacion_caja_ahorro",
       isCurrency: true,
     },
     {
       key: "prestamoFpl",
       label: "Préstamo FPL",
-      dbField: " PRESTAMO FPL ",
+      dbField: "prestamo_fpl",
       isCurrency: true,
     },
     {
       key: "pensionAlimenticiaFpl",
       label: "Pensión alimenticia FPL",
-      dbField: " PENSION ALIMENTICIA FPL ",
+      dbField: "pension_alimenticia_fpl",
       isCurrency: true,
     },
     {
       key: "ajusteSubsAlEmpeoPagado",
       label: "Ajuste subs al empleao pagado",
-      dbField: " AJUSTE SUBS AL EMPLEO PAGADO ",
+      dbField: "ajuste_subsidio_empleo",
       isCurrency: true,
     },
     {
       key: "ayudaFpl",
       label: "Ayuda FPL",
-      dbField: "AYUDA FPL",
+      dbField: "ayuda_fpl",
       isCurrency: true,
     },
   ];

@@ -318,12 +318,12 @@ const PerfilHistorico = ({ rfc, curp }) => {
 
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "") return "-";
+    if (value === null || value === undefined || value === "") return "No disponible";
     return value.toString();
   };
 
   const formatDate = (dateValue) => {
-    if (!dateValue) return "-";
+    if (!dateValue) return "No disponible";
     try {
       // Si es un timestamp ISO, extraer solo la parte de la fecha
       if (typeof dateValue === "string" && dateValue.includes("T")) {
