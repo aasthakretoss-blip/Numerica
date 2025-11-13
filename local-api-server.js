@@ -676,25 +676,122 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
 
     // Transform data to match expected format
     const transformedData = result.data.map((row) => ({
+      // Core identifiers
       rfc: row.rfc,
       nombre: row.nombre,
       name: row.name || row.nombre,
       curp: row.curp,
+      cvecia: row.cvecia,
       sucursal: row.sucursal,
       department: row.sucursal,
       puesto: row.puesto,
       position: row.puesto,
-      periodo: row.periodo || row.mes,
-      fecha: row.fecha || row.cveper,
-      mes: row.mes || "Enero 2024",
-      sueldo: parseFloat(row.sueldo || row.salary || 0),
-      salary: parseFloat(row.salary || row.sueldo || 0),
-      comisiones: parseFloat(row.comisiones || 0),
-      commissions: parseFloat(row.comisiones || 0),
-      totalPercepciones: parseFloat(row.totalPercepciones || row.sueldo || 0),
-      totalCost: parseFloat(row.totalPercepciones || row.sueldo || 0),
+      compania: row.compania,
+      cvetno: row.cvetno,
+      sexo: row.sexo,
+      localidad: row.localidad,
+      periodicidad: row.periodicidad,
+      clave_trabajador: row.clave_trabajador,
+      numero_imss: row.numero_imss,
+      antiguedad_fpl: row.antiguedad_fpl,
+      fecha_antiguedad: row.fecha_antiguedad,
+      fecha_baja: row.fecha_baja,
       status: row.status,
       estado: row.estado || row.status,
+      periodo: row.periodo || row.mes,
+      mes: row.mes || "Enero 2024",
+      tipo: row.tipo,
+
+      // Payroll / numeric fields
+      sdi: parseFloat(row.sdi || 0),
+      sdi_es: parseFloat(row.sdi_es || 0),
+      sd: parseFloat(row.sd || 0),
+      sdim: parseFloat(row.sdim || 0),
+      sueldo_cliente: parseFloat(row.sueldo_cliente || 0),
+      sueldo: parseFloat(row.sueldo || 0),
+      comisions_cliente: parseFloat(row.comisions_cliente || 0),
+      comisions_facturadas: parseFloat(row.comisions_facturadas || 0),
+      comisiones: parseFloat(row.comisiones || row.comisiones_extra || 0),
+      commissions: parseFloat(row.comisiones || row.comisiones_extra || 0),
+      destajo_informado: parseFloat(row.destajo_informado || 0),
+      premio_puntualidad: parseFloat(row.premio_puntualidad || 0),
+      premio_asistencia: parseFloat(row.premio_asistencia || 0),
+      vales_despensa: parseFloat(row.vales_despensa || 0),
+      descuento_indebido: parseFloat(row.descuento_indebido || 0),
+      bono: parseFloat(row.bono || 0),
+      comisiones_extra: parseFloat(row.comisiones_extra || 0),
+      dia_festivo_trabajado: parseFloat(row.dia_festivo_trabajado || 0),
+      sueldo_vacaciones: parseFloat(row.sueldo_vacaciones || 0),
+      prima_vacacional: parseFloat(row.prima_vacacional || 0),
+      aguinaldo: parseFloat(row.aguinaldo || 0),
+      gratificacion: parseFloat(row.gratificacion || 0),
+      compensacion: parseFloat(row.compensacion || 0),
+      prima_dominical: parseFloat(row.prima_dominical || 0),
+      prima_antiguedad: parseFloat(row.prima_antiguedad || 0),
+      pago_separacion: parseFloat(row.pago_separacion || 0),
+      vacaciones_pendientes: parseFloat(row.vacaciones_pendientes || 0),
+      subsidio_incapacidad: parseFloat(row.subsidio_incapacidad || 0),
+      subsidio_empleo: parseFloat(row.subsidio_empleo || 0),
+      destajo: parseFloat(row.destajo || 0),
+      horas_extra_doble: parseFloat(row.horas_extra_doble || 0),
+      horas_extra_doble3: parseFloat(row.horas_extra_doble3 || 0),
+      horas_extra_triple: parseFloat(row.horas_extra_triple || 0),
+      dias_promedio: parseFloat(row.dias_promedio || 0),
+      dias_pendientes_ingreso: parseFloat(row.dias_pendientes_ingreso || 0),
+      septimo_dia: parseFloat(row.septimo_dia || 0),
+      reintegro_isr: parseFloat(row.reintegro_isr || 0),
+      isr_anual_favor: parseFloat(row.isr_anual_favor || 0),
+      diferencia_fonacot: parseFloat(row.diferencia_fonacot || 0),
+      diferencia_infonavit: parseFloat(row.diferencia_infonavit || 0),
+      indemnizacion_90_dias: parseFloat(row.indemnizacion_90_dias || 0),
+      vacaciones_finiquito: parseFloat(row.vacaciones_finiquito || 0),
+      vales_despensa_neto: parseFloat(row.vales_despensa_neto || 0),
+      vales_despensa_pension: parseFloat(row.vales_despensa_pension || 0),
+      pfpl: parseFloat(row.pfpl || 0),
+      ayuda_incapacidad: parseFloat(row.ayuda_incapacidad || 0),
+      aportacion_compra_prestacion: parseFloat(
+        row.aportacion_compra_prestacion || 0
+      ),
+      ap_comp_primas_seguro: parseFloat(row.ap_comp_primas_seguro || 0),
+      imss_patronal: parseFloat(row.imss_patronal || 0),
+      infonavit: parseFloat(row.infonavit || 0),
+      impuesto_nomina: parseFloat(row.impuesto_nomina || 0),
+      prestamos_personales: parseFloat(row.prestamos_personales || 0),
+      total_percepciones: parseFloat(row.total_percepciones || 0),
+      total_deducciones: parseFloat(row.total_deducciones || 0),
+      neto_antes_vales: parseFloat(row.neto_antes_vales || 0),
+      neto_a_pagar: parseFloat(row.neto_a_pagar || 0),
+      subtotal_costo_nomina: parseFloat(row.subtotal_costo_nomina || 0),
+      regalias: parseFloat(row.regalias || 0),
+      costo_nomina: parseFloat(row.costo_nomina || 0),
+      iva: parseFloat(row.iva || 0),
+      total_facturar: parseFloat(row.total_facturar || 0),
+      ptu: parseFloat(row.ptu || 0),
+      isr: parseFloat(row.isr || 0),
+      descuento_imss: parseFloat(row.descuento_imss || 0),
+      retardos: parseFloat(row.retardos || 0),
+      descuento_infonavit: parseFloat(row.descuento_infonavit || 0),
+      diferencia_infonavit4: parseFloat(row.diferencia_infonavit4 || 0),
+      seguro_vivienda: parseFloat(row.seguro_vivienda || 0),
+      fonacot: parseFloat(row.fonacot || 0),
+      diferencia_fonacot5: parseFloat(row.diferencia_fonacot5 || 0),
+      prestamos_personales6: parseFloat(row.prestamos_personales6 || 0),
+      pension_alimenticia: parseFloat(row.pension_alimenticia || 0),
+      anticipo_nomina: parseFloat(row.anticipo_nomina || 0),
+      cuota_sindical: parseFloat(row.cuota_sindical || 0),
+      dcto_pension_vales: parseFloat(row.dcto_pension_vales || 0),
+      otros_descuentos: parseFloat(row.otros_descuentos || 0),
+      descuentos_varios: parseFloat(row.descuentos_varios || 0),
+      isr_indemnizacion: parseFloat(row.isr_indemnizacion || 0),
+      destruccion_herramientas: parseFloat(row.destruccion_herramientas || 0),
+      descuento_uniformes: parseFloat(row.descuento_uniformes || 0),
+      aportacion_caja_ahorro: parseFloat(row.aportacion_caja_ahorro || 0),
+      prestamo_fpl: parseFloat(row.prestamo_fpl || 0),
+      pension_alimenticia_fpl: parseFloat(row.pension_alimenticia_fpl || 0),
+      ajuste_subsidio_empleo: parseFloat(row.ajuste_subsidio_empleo || 0),
+      ayuda_fpl: parseFloat(row.ayuda_fpl || 0),
+
+      // Default placeholder for URL
       perfilUrl: null,
     }));
 
@@ -1471,33 +1568,43 @@ app.get(
       const decodeParam = (param) => {
         if (!param) return param;
         if (Array.isArray(param)) {
-          return param.map(p => {
+          return param.map((p) => {
             try {
-              return decodeURIComponent(String(p).replace(/\+/g, ' '));
+              return decodeURIComponent(String(p).replace(/\+/g, " "));
             } catch (e) {
-              return String(p).replace(/\+/g, ' ');
+              return String(p).replace(/\+/g, " ");
             }
           });
         }
         try {
-          return decodeURIComponent(String(param).replace(/\+/g, ' '));
+          return decodeURIComponent(String(param).replace(/\+/g, " "));
         } catch (e) {
-          return String(param).replace(/\+/g, ' ');
+          return String(param).replace(/\+/g, " ");
         }
       };
 
       // Extract and decode parameters
-      const search = req.query.search ? decodeParam(req.query.search) : undefined;
-      const puesto = req.query.puesto ? decodeParam(req.query.puesto) : undefined;
-      const sucursal = req.query.sucursal ? decodeParam(req.query.sucursal) : undefined;
-      const status = req.query.status ? decodeParam(req.query.status) : undefined;
-      let puestoCategorizado = req.query.puestoCategorizado ? decodeParam(req.query.puestoCategorizado) : undefined;
+      const search = req.query.search
+        ? decodeParam(req.query.search)
+        : undefined;
+      const puesto = req.query.puesto
+        ? decodeParam(req.query.puesto)
+        : undefined;
+      const sucursal = req.query.sucursal
+        ? decodeParam(req.query.sucursal)
+        : undefined;
+      const status = req.query.status
+        ? decodeParam(req.query.status)
+        : undefined;
+      let puestoCategorizado = req.query.puestoCategorizado
+        ? decodeParam(req.query.puestoCategorizado)
+        : undefined;
       const cveper = req.query.cveper;
 
       // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
       if (puestoCategorizado) {
         if (Array.isArray(puestoCategorizado)) {
-          puestoCategorizado = puestoCategorizado.map(cat => 
+          puestoCategorizado = puestoCategorizado.map((cat) =>
             cat === "Categorizar" ? "Sin Categorizar" : cat
           );
         } else if (puestoCategorizado === "Categorizar") {
