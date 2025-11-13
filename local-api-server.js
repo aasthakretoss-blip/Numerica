@@ -590,7 +590,22 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       puesto,
       sucursal,
       status,
-      cveper,
+      cveper: (() => {
+        if (!cveper) return null;
+        try {
+          const decoded = decodeURIComponent(cveper);
+          const parsedDate = new Date(decoded);
+          if (isNaN(parsedDate)) return null;
+
+          // Keep only the date portion (YYYY-MM-DD) without timezone drift
+          const year = parsedDate.getUTCFullYear();
+          const month = String(parsedDate.getUTCMonth() + 1).padStart(2, "0");
+          const day = String(parsedDate.getUTCDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        } catch {
+          return null;
+        }
+      })(),
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
       fullData: fullData === "true" || fullData === true,
