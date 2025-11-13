@@ -2650,29 +2650,26 @@ app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
         const antiguedadAnos = parseFloat(row.antiguedad_anos) || 0;
         const fechaCalculada = row.fecha_fpl_calculada;
 
-        const fechaBaseStr = moment.utc(fechaBase).format("YYYY-MM-DD");
-        const fechaCalculadaStr = moment
-          .utc(fechaCalculada)
-          .format("YYYY-MM-DD");
-
         console.log(
           `[FECPLA API] [${requestId}] Record ${
             index + 1
-          }: Base: ${fechaBaseStr}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculadaStr}`
+          }: Base: ${fechaBase}, Antigüedad: ${antiguedadAnos} years, FPL: ${fechaCalculada}`
         );
 
-        const fechaKey = fechaCalculadaStr; // now stable
+        // Use calculated date as unique key
+        const fechaKey = fechaCalculada.toISOString().split("T")[0];
 
         if (!fecplasCalculadas.has(fechaKey)) {
           fecplasCalculadas.set(fechaKey, {
-            fechaCalculada: fechaCalculadaStr,
-            fechaBase: fechaBaseStr,
+            fechaCalculada: fechaCalculada,
+            fechaBase: fechaBase,
             antiguedadAnos: antiguedadAnos,
             count: 0,
           });
         }
 
         fecplasCalculadas.get(fechaKey).count++;
+        allCalculatedDates.push(fechaCalculada);
       });
 
       // Convert to array and sort from most recent to oldest
@@ -2694,23 +2691,26 @@ app.get("/api/payroll/fecpla-from-rfc", verifyToken, async (req, res) => {
       // Format for dropdown - WITHOUT TIMESTAMP, only dates
       // INCLUDE METADATA FROM ORIGINAL DATAPOINT for reverse lookup
       const formattedDates = uniqueFecplasFPL.map((item) => {
-        const fechaFPL = moment.utc(item.fechaCalculada).format("YYYY-MM-DD");
-        const fechaBase = moment.utc(item.fechaBase).format("YYYY-MM-DD");
+        const fechaFPL = item.fechaCalculada;
+        let displayValue = fechaFPL.toISOString().split("T")[0]; // Format YYYY-MM-DD
 
         return {
-          value: fechaFPL,
-          label: fechaFPL,
+          value: displayValue, // Only date WITHOUT timestamp for backend
+          label: displayValue, // Only date for display
           count: item.count,
           metadata: {
-            fechaBase,
+            fechaBase: item.fechaBase.toISOString().split("T")[0], // Also without timestamp
             antiguedadAnos: item.antiguedadAnos,
-            calculoAplicado: `${fechaBase} + ${item.antiguedadAnos} years = ${fechaFPL}`,
+            calculoAplicado: `${item.fechaBase.toISOString().split("T")[0]} + ${
+              item.antiguedadAnos
+            } years = ${displayValue}`,
             ajusteAplicado:
-              moment.utc(fechaFPL).date() >= 28
+              fechaFPL.getDate() >= 28
                 ? "Moved to 1st of next month"
                 : "Original date maintained",
-            originalFecpla: fechaBase,
-            originalAntiguedad: item.antiguedadAnos,
+            // CRITICAL DATA for reverse lookup
+            originalFecpla: item.fechaBase.toISOString().split("T")[0], // Original fecpla date
+            originalAntiguedad: item.antiguedadAnos, // Exact antigüedad used
           },
         };
       });
