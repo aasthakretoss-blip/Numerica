@@ -1603,31 +1603,37 @@ WHERE 1=1
       }
 
       if (options.cveper) {
-        // Normalize to array
         const months = Array.isArray(options.cveper)
           ? options.cveper
           : [options.cveper];
 
-        const cveperConditions = [];
+        // Only include valid YYYY-MM or YYYY-MM-DD
+        const validMonths = months.filter(
+          (m) => /^\d{4}-\d{2}$/.test(m) || /^\d{4}-\d{2}-\d{2}$/.test(m)
+        );
 
-        months.forEach((month) => {
-          if (/^\d{4}-\d{2}$/.test(month)) {
-            // Month filter (YYYY-MM)
-            countQuery += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
-            queryParams.push(`${month}-01`);
-            paramIndex++;
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(month)) {
-            // Exact date filter (YYYY-MM-DD)
-            countQuery += ` AND DATE(cveper) = $${paramIndex}`;
-            queryParams.push(month);
-            paramIndex++;
-          } else {
-            // Full timestamp
-            countQuery += ` AND cveper = $${paramIndex}`;
-            queryParams.push(month);
-            paramIndex++;
+        if (validMonths.length > 0) {
+          const monthConditions = [];
+
+          validMonths.forEach((month) => {
+            if (/^\d{4}-\d{2}$/.test(month)) {
+              monthConditions.push(
+                `DATE_TRUNC('month', cveper) = $${paramIndex}`
+              );
+              queryParams.push(`${month}-01`);
+              paramIndex++;
+            } else if (/^\d{4}-\d{2}-\d{2}$/.test(month)) {
+              monthConditions.push(`DATE(cveper) = $${paramIndex}`);
+              queryParams.push(month);
+              paramIndex++;
+            }
+          });
+
+          // Wrap in parentheses and join with OR
+          if (monthConditions.length > 0) {
+            countQuery += ` AND (${monthConditions.join(" OR ")})`;
           }
-        });
+        }
       }
 
       // Ejecutar consulta
