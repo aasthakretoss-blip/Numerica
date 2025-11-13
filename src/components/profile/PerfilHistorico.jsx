@@ -212,7 +212,7 @@ const PerfilHistorico = ({ rfc, curp }) => {
         );
 
         const params = new URLSearchParams({
-          curp: curpFromURL,
+          curp: rfcFromURL,
           pageSize: "1",
           page: "1",
         });
@@ -318,8 +318,7 @@ const PerfilHistorico = ({ rfc, curp }) => {
 
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "")
-      return "-";
+    if (value === null || value === undefined || value === "") return "-";
     return value.toString();
   };
 
@@ -388,7 +387,7 @@ const PerfilHistorico = ({ rfc, curp }) => {
             <FieldLabelBox>CURP del Empleado</FieldLabelBox>
             <TextBox
               type="text"
-              value={curpFromURL || ""}
+              value={rfcFromURL || ""}
               readOnly
               placeholder="CURP del empleado"
               title="CURP del perfil de empleado actual"
@@ -443,7 +442,7 @@ const PerfilHistorico = ({ rfc, curp }) => {
 
       {/* Gráfica histórica de percepciones */}
       <PercepcionesHistoricoChart
-        curp={curpFromURL}
+        curp={rfcFromURL}
         onPeriodClick={handlePeriodClick}
       />
 
