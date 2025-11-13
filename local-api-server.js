@@ -701,6 +701,7 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       periodo: row.periodo || row.mes,
       mes: row.mes || "Enero 2024",
       tipo: row.tipo,
+      " TOTAL DE PERCEPCIONES ": parseFloat(row.total_percepciones || 0),
 
       // Payroll / numeric fields
       sdi: parseFloat(row.sdi || 0),
