@@ -1291,13 +1291,13 @@ const BusquedaEmpleados = () => {
       if (selectedPeriodos.length > 0) {
         selectedPeriodos.forEach((periodo) => {
           if (/^\d{4}-\d{2}$/.test(periodo)) {
-            fallbackParams.append("cveper", periodo);
+            fallbackParams.append("cvepermonth", periodo);
           } else {
             const normalizedCveper =
               periodo.includes("T") || periodo.includes("Z")
                 ? new Date(periodo).toISOString().split("T")[0]
                 : periodo;
-            fallbackParams.append("cveper", normalizedCveper);
+            fallbackParams.append("cvepermonth", normalizedCveper);
           }
         });
       }
@@ -1868,13 +1868,13 @@ const BusquedaEmpleados = () => {
       if (selectedPeriodos.length > 0) {
         selectedPeriodos.forEach((periodo) => {
           if (/^\d{4}-\d{2}$/.test(periodo)) {
-            params.append("cveper", periodo);
+            params.append("cvepermonth", periodo);
           } else {
             const normalizedCveper =
               periodo.includes("T") || periodo.includes("Z")
                 ? new Date(periodo).toISOString().split("T")[0]
                 : periodo;
-            params.append("cveper", normalizedCveper);
+            params.append("cvepermonth", normalizedCveper);
           }
         });
       }
