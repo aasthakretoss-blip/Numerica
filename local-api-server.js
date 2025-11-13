@@ -984,21 +984,36 @@ app.get("/api/payroll/filters", verifyToken, async (req, res) => {
     }
 
     if (cveper) {
-      // Detectar formato de cveper y aplicar filtro apropiado
-      if (cveper.match(/^\d{4}-\d{2}$/)) {
-        // Formato YYYY-MM: filtrar por mes completo
-        conditions.push(`DATE_TRUNC('month', "cveper") = $${paramIndex}`);
-        params.push(`${cveper}-01`);
-      } else if (cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // Formato YYYY-MM-DD: filtrar por fecha exacta
-        conditions.push(`DATE("cveper") = $${paramIndex}`);
-        params.push(cveper);
-      } else {
-        // Timestamp completo
-        conditions.push(`"cveper" = $${paramIndex}`);
-        params.push(cveper);
+      // Normalize to array
+      const months = Array.isArray(cveper) ? cveper : [cveper];
+
+      // Keep only valid YYYY-MM or YYYY-MM-DD
+      const validMonths = months.filter(
+        (m) => /^\d{4}-\d{2}$/.test(m) || /^\d{4}-\d{2}-\d{2}$/.test(m)
+      );
+
+      if (validMonths.length > 0) {
+        const monthConditions = [];
+
+        validMonths.forEach((month) => {
+          if (/^\d{4}-\d{2}$/.test(month)) {
+            monthConditions.push(
+              `DATE_TRUNC('month', "cveper") = $${paramIndex}`
+            );
+            params.push(`${month}-01`);
+            paramIndex++;
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(month)) {
+            monthConditions.push(`DATE("cveper") = $${paramIndex}`);
+            params.push(month);
+            paramIndex++;
+          }
+        });
+
+        if (monthConditions.length > 0) {
+          // Join with OR and wrap in parentheses
+          conditions.push(`(${monthConditions.join(" OR ")})`);
+        }
       }
-      paramIndex++;
     }
 
     const whereClause =
