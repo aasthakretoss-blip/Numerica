@@ -1698,25 +1698,9 @@ app.get("/api/percepciones", verifyToken, async (req, res) => {
 
     await client.end();
 
-    const adjustedData = dataResult.rows.map((row) => {
-      if (row.Mes) {
-        const date = new Date(row.Mes);
-        if (!isNaN(date.getTime())) {
-          // Add +1 day
-          const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
-          // Format in YYYY-MM-DD for clarity
-          const formatted = `${nextDay.getUTCFullYear()}-${String(
-            nextDay.getUTCMonth() + 1
-          ).padStart(2, "0")}-${String(nextDay.getUTCDate()).padStart(2, "0")}`;
-          row.Mes = formatted;
-        }
-      }
-      return row;
-    });
-
     res.json({
       success: true,
-      data: adjustedData,
+      data: dataResult.rows,
       pagination: {
         page: validatedPage,
         pageSize: validatedPageSize,
@@ -2012,38 +1996,11 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
       });
 
       // Formatear para dropdown (similar a getUniquePayrollPeriods)
-      const formattedPeriods = uniqueCvepers.map((cveper) => {
-        let labelValue = cveper;
-        let valuePlusOne = cveper;
-
-        try {
-          const date = new Date(cveper);
-          if (!isNaN(date.getTime())) {
-            // Add +1 day in UTC (milliseconds)
-            const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
-
-            // Label → formatted YYYY-MM-DD
-            const formatDateUTC = (d) =>
-              `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
-                2,
-                "0"
-              )}-${String(d.getUTCDate()).padStart(2, "0")}`;
-            labelValue = formatDateUTC(nextDay);
-
-            // Value → ISO string (UTC)
-            valuePlusOne = nextDay.toISOString();
-          }
-        } catch (err) {
-          labelValue = cveper;
-          valuePlusOne = cveper;
-        }
-
-        return {
-          value: valuePlusOne, // 👈 ISO format (e.g. 2023-12-15T00:00:00.000Z)
-          label: labelValue, // 👈 formatted display date (e.g. 2023-12-15)
-          count: allCvepers.filter((c) => c === cveper).length,
-        };
-      });
+      const formattedPeriods = uniqueCvepers.map((cveper) => ({
+        value: cveper,
+        label: cveper,
+        count: allCvepers.filter((c) => c === cveper).length,
+      }));
 
       console.log(`🎯 METODOLOGÍA APLICADA:`);
       console.log(`1. ✅ Buscado CURP ${curp} en historico_nominas_gsau`);
