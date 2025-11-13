@@ -1996,11 +1996,30 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
       });
 
       // Formatear para dropdown (similar a getUniquePayrollPeriods)
-      const formattedPeriods = uniqueCvepers.map((cveper) => ({
-        value: cveper,
-        label: cveper,
-        count: allCvepers.filter((c) => c === cveper).length,
-      }));
+      const formattedPeriods = uniqueCvepers.map((cveper) => {
+        let labelValue = cveper;
+
+        // Try to interpret cveper as a date (supports YYYY-MM-DD or similar)
+        try {
+          const date = new Date(cveper);
+          if (!isNaN(date.getTime())) {
+            date.setDate(date.getDate() + 1); // Add 1 day
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            labelValue = `${day}/${month}/${year}`;
+          }
+        } catch (err) {
+          // If not a valid date, fallback to original
+          labelValue = cveper;
+        }
+
+        return {
+          value: cveper,
+          label: labelValue,
+          count: allCvepers.filter((c) => c === cveper).length,
+        };
+      });
 
       console.log(`🎯 METODOLOGÍA APLICADA:`);
       console.log(`1. ✅ Buscado CURP ${curp} en historico_nominas_gsau`);
