@@ -1,26 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuthenticator } from '@aws-amplify/ui-react';
-import { fetchAuthSession } from 'aws-amplify/auth';
-import styled, { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { useTheme } from '../contexts/ThemeContext';
-import { buildApiUrl } from '../config/apiConfig';
-import { authenticatedFetch } from '../services/authenticatedFetch';
-import Sidebar from './Sidebar';
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuthenticator } from "@aws-amplify/ui-react";
+import { fetchAuthSession } from "aws-amplify/auth";
+import styled, {
+  ThemeProvider as StyledThemeProvider,
+} from "styled-components";
+import { useTheme } from "../contexts/ThemeContext";
+import { buildApiUrl } from "../config/apiConfig";
+import { authenticatedFetch } from "../services/authenticatedFetch";
+import Sidebar from "./Sidebar";
 
 const LayoutContainer = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme?.gradients?.backgrounds?.primary || 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)'};
+  background: ${(props) =>
+    props.theme?.gradients?.backgrounds?.primary ||
+    "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)"};
   display: flex;
   position: relative;
 `;
 
 const MainContent = styled.div`
   flex: 1;
-  margin-left: ${props => props.$sidebarExpanded ? '250px' : '70px'};
+  margin-left: ${(props) => (props.$sidebarExpanded ? "250px" : "70px")};
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
   position: relative;
+  margin-left: ${({ $sidebarExpanded }) =>
+    $sidebarExpanded ? "250px" : "70px"};
+  width: ${({ $sidebarExpanded }) =>
+    $sidebarExpanded ? "calc(100vw - 250px)" : "calc(100vw - 70px)"};
+  max-width: ${({ $sidebarExpanded }) =>
+    $sidebarExpanded ? "calc(100vw - 250px)" : "calc(100vw - 70px)"};
 
   @media (max-width: 768px) {
     margin-left: 0;
@@ -28,7 +38,7 @@ const MainContent = styled.div`
 `;
 
 const Header = styled.header`
-  background: ${props => props.theme?.brand?.primary || '#1a365d'};
+  background: ${(props) => props.theme?.brand?.primary || "#1a365d"};
   padding: 1rem 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   display: flex;
@@ -89,7 +99,7 @@ const UserAvatar = styled.div`
   font-size: 0.9rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.3);
     border-color: rgba(255, 255, 255, 0.5);
@@ -131,7 +141,7 @@ const Overlay = styled.div`
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: ${props => props.$show ? 'block' : 'none'};
+  display: ${(props) => (props.$show ? "block" : "none")};
 
   @media (min-width: 769px) {
     display: none;
@@ -148,7 +158,7 @@ const UserDropdownContainer = styled.div`
 const UserSectionClickable = styled(UserSection)`
   cursor: pointer;
   position: relative;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.5);
@@ -167,14 +177,15 @@ const DropdownMenu = styled.div`
   border: 1px solid rgba(0, 0, 0, 0.1);
   z-index: 1000;
   overflow: hidden;
-  opacity: ${props => props.$show ? '1' : '0'};
-  visibility: ${props => props.$show ? 'visible' : 'hidden'};
-  transform: ${props => props.$show ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)'};
+  opacity: ${(props) => (props.$show ? "1" : "0")};
+  visibility: ${(props) => (props.$show ? "visible" : "hidden")};
+  transform: ${(props) =>
+    props.$show ? "translateY(0) scale(1)" : "translateY(-10px) scale(0.95)"};
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
-  
+
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -6px;
     right: 20px;
@@ -199,19 +210,19 @@ const DropdownItem = styled.div`
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   &:hover {
     background: #f8f9fa;
     color: #1a365d;
   }
-  
+
   &.logout-item {
     color: #e53e3e;
-    
+
     &:hover {
       background: #fed7d7;
       color: #c53030;
@@ -227,7 +238,7 @@ const ChevronIcon = styled.span`
   margin-left: 8px;
   font-size: 0.8rem;
   transition: transform 0.2s ease;
-  transform: ${props => props.$open ? 'rotate(180deg)' : 'rotate(0deg)'};
+  transform: ${(props) => (props.$open ? "rotate(180deg)" : "rotate(0deg)")};
 `;
 
 // Notification banner for unverified email
@@ -243,9 +254,9 @@ const VerificationBanner = styled.div`
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
-  
+
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 0;
@@ -281,7 +292,7 @@ const BannerButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.3);
     border-color: rgba(255, 255, 255, 0.5);
@@ -298,7 +309,7 @@ const CloseButton = styled.button`
   padding: 0.25rem;
   border-radius: 4px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.2);
   }
@@ -316,7 +327,7 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
   const [userProfile, setUserProfile] = useState(null); // Datos del perfil del usuario
   const location = useLocation();
   const dropdownRef = useRef(null);
-  
+
   // Verificar el estado de verificación de email y obtener datos del perfil
   useEffect(() => {
     const checkEmailVerification = async () => {
@@ -325,18 +336,17 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
           const session = await fetchAuthSession();
           const cognitoIdToken = session?.tokens?.idToken?.payload;
           const isEmailVerified = cognitoIdToken?.email_verified === true;
-          
+
           setEmailVerified(isEmailVerified);
-          
+
           // Mostrar banner solo si no está verificado
           if (!isEmailVerified) {
             setTimeout(() => {
               setShowVerificationBanner(true);
             }, 2000); // Esperar 2 segundos antes de mostrar
           }
-          
         } catch (error) {
-          console.error('Error verificando estado del email:', error);
+          console.error("Error verificando estado del email:", error);
           setEmailVerified(true); // Asumir verificado en caso de error
         }
       }
@@ -350,7 +360,6 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
     const loadUserProfile = async () => {
       // TODO: Implementar endpoint /api/user/profile en el backend
       // Temporalmente desactivado porque el endpoint no existe en producción
-      
       /* 
       console.log('🔍 [LayoutWithSidebar] User object:', user);
       
@@ -400,9 +409,9 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
   // Debug: Verificar el estado del theme (solo si está incompleto)
   React.useEffect(() => {
     if (!theme || !theme.surfaces) {
-      console.warn('⚠️ Theme incompleto en LayoutWithSidebar:', {
+      console.warn("⚠️ Theme incompleto en LayoutWithSidebar:", {
         hasTheme: !!theme,
-        surfaces: !!theme?.surfaces
+        surfaces: !!theme?.surfaces,
       });
     }
   }, [theme?.surfaces]);
@@ -416,8 +425,8 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const toggleSidebar = () => {
@@ -427,55 +436,59 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
   const getPageTitle = () => {
     const path = location.pathname;
     switch (path) {
-      case '/dashboard':
-        return '';
-      case '/busqueda-empleados':
-        return 'Búsqueda de Empleados';
-      case '/demografico':
-        return 'Análisis Demográfico';
-      case '/fpl':
-        return 'FPL';
-      case '/simulador-creditos':
-        return 'Simulador de Créditos';
-      case '/subir':
-        return 'Subir';
-      case '/profile':
-        return 'Mi Perfil';
-      case '/':
-        return '';
+      case "/dashboard":
+        return "";
+      case "/busqueda-empleados":
+        return "Búsqueda de Empleados";
+      case "/demografico":
+        return "Análisis Demográfico";
+      case "/fpl":
+        return "FPL";
+      case "/simulador-creditos":
+        return "Simulador de Créditos";
+      case "/subir":
+        return "Subir";
+      case "/profile":
+        return "Mi Perfil";
+      case "/":
+        return "";
       default:
-        return 'Numerica';
+        return "Numerica";
     }
   };
 
   const getUserInitials = () => {
     // Si tenemos nombre y apellido del perfil, usarlos
     if (userProfile?.firstName && userProfile?.lastName) {
-      return `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`.toUpperCase();
+      return `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(
+        0
+      )}`.toUpperCase();
     }
-    
+
     // Si solo tenemos firstName o name
     if (userProfile?.firstName) {
       return userProfile.firstName.charAt(0).toUpperCase();
     }
-    
+
     if (userProfile?.name) {
-      const names = userProfile.name.split(' ');
+      const names = userProfile.name.split(" ");
       if (names.length >= 2) {
-        return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+        return `${names[0].charAt(0)}${names[names.length - 1].charAt(
+          0
+        )}`.toUpperCase();
       }
       return userProfile.name.charAt(0).toUpperCase();
     }
-    
+
     // Fallback al email
     const email = user?.attributes?.email;
-    if (!email) return 'U';
+    if (!email) return "U";
     return email
-      .split('@')[0]
-      .split('.')
-      .map(part => part.charAt(0).toUpperCase())
+      .split("@")[0]
+      .split(".")
+      .map((part) => part.charAt(0).toUpperCase())
       .slice(0, 2)
-      .join('');
+      .join("");
   };
 
   const getUserDisplayName = () => {
@@ -489,16 +502,16 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
     if (userProfile?.firstName) {
       return userProfile.firstName;
     }
-    return user?.attributes?.email?.split('@')[0] || 'Usuario';
+    return user?.attributes?.email?.split("@")[0] || "Usuario";
   };
 
   const getUserRole = () => {
     // Verificar si es admin basado en el email o permisos
     const userEmail = user?.attributes?.email || user?.username;
-    if (userEmail === 'alberto.ochoaf@gmail.com') {
-      return 'admin';
+    if (userEmail === "alberto.ochoaf@gmail.com") {
+      return "admin";
     }
-    return userPermissions.role || 'user';
+    return userPermissions.role || "user";
   };
 
   // Handle dropdown functionality
@@ -507,17 +520,17 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
   };
 
   const handleProfileClick = () => {
-    console.log('🔍 Navegando a Mi Perfil...');
-    navigate('/profile');
+    console.log("🔍 Navegando a Mi Perfil...");
+    navigate("/profile");
     setDropdownOpen(false);
   };
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 Cerrando sesión...');
+      console.log("🚪 Cerrando sesión...");
       await signOut();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error("Error al cerrar sesión:", error);
     }
   };
 
@@ -529,13 +542,13 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Handlers para el banner de verificación
   const handleVerifyEmail = () => {
-    navigate('/profile');
+    navigate("/profile");
     setShowVerificationBanner(false);
   };
 
@@ -546,54 +559,45 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
   return (
     <StyledThemeProvider theme={theme}>
       <LayoutContainer>
-        <Sidebar 
+        <Sidebar
           isExpanded={sidebarExpanded}
           onToggle={toggleSidebar}
           isMobile={isMobile}
         />
-        
+
         <Overlay $show={isMobile && sidebarExpanded} onClick={toggleSidebar} />
-        
+
         <MainContent $sidebarExpanded={!isMobile && sidebarExpanded}>
           {!emailVerified && showVerificationBanner && (
             <VerificationBanner>
               <BannerContent>
                 <BannerIcon>⚠️</BannerIcon>
                 <span>
-                  Tu correo electrónico no está verificado. Verifica tu email para acceder a todas las funcionalidades.
+                  Tu correo electrónico no está verificado. Verifica tu email
+                  para acceder a todas las funcionalidades.
                 </span>
               </BannerContent>
               <BannerActions>
                 <BannerButton onClick={handleVerifyEmail}>
                   Verificar Ahora
                 </BannerButton>
-                <CloseButton onClick={handleCloseBanner}>
-                  ×
-                </CloseButton>
+                <CloseButton onClick={handleCloseBanner}>×</CloseButton>
               </BannerActions>
             </VerificationBanner>
           )}
-          
+
           <Header>
             <HeaderTitle>{getPageTitle()}</HeaderTitle>
             <UserDropdownContainer ref={dropdownRef}>
               <UserSectionClickable onClick={toggleDropdown}>
-                <UserAvatar>
-                  {getUserInitials()}
-                </UserAvatar>
+                <UserAvatar>{getUserInitials()}</UserAvatar>
                 <UserInfo>
-                  <UserName>
-                    {getUserDisplayName()}
-                  </UserName>
-                  <UserRole>
-                    {getUserRole()}
-                  </UserRole>
+                  <UserName>{getUserDisplayName()}</UserName>
+                  <UserRole>{getUserRole()}</UserRole>
                 </UserInfo>
-                <ChevronIcon $open={dropdownOpen}>
-                  ▼
-                </ChevronIcon>
+                <ChevronIcon $open={dropdownOpen}>▼</ChevronIcon>
               </UserSectionClickable>
-              
+
               <DropdownMenu $show={dropdownOpen}>
                 <DropdownItem onClick={handleProfileClick}>
                   <DropdownText>Mi Perfil</DropdownText>
@@ -604,10 +608,8 @@ const LayoutWithSidebar = ({ children, user, userPermissions = {} }) => {
               </DropdownMenu>
             </UserDropdownContainer>
           </Header>
-          
-          <ContentArea>
-            {children}
-          </ContentArea>
+
+          <ContentArea>{children}</ContentArea>
         </MainContent>
       </LayoutContainer>
     </StyledThemeProvider>

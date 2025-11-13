@@ -211,7 +211,7 @@ const PerfilHistorico = ({ rfc, curp }) => {
 
         const params = new URLSearchParams({
           curp: curpFromURL,
-          pageSize: "1",
+          pageSize: "1000",
           page: "1",
         });
 

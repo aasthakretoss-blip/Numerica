@@ -348,7 +348,9 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await authenticatedFetch(buildApiUrl("/api/payroll/stats"));
+        const response = await authenticatedFetch(
+          buildApiUrl("/api/payroll/stats")
+        );
         if (response.ok) {
           const result = await response.json();
           // Normalize the response to old format
@@ -389,7 +391,7 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
           isTableCollapsed ? "max-h-[400px]" : ""
         }`}
       >
-        <table className="min-w-full text-sm">
+        <table className="min-w-full text-sm whitespace-nowrap">
           <thead className="bg-[#d2d8e8] border-b-2 border-blue-200 text-left sticky top-0 z-10 shadow-sm">
             <tr>
               {columns.map((col, idx) => (
@@ -449,7 +451,22 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                   r.puesto || rAny.position || rAny.Puesto || "N/A";
                 const sucursal =
                   r.sucursal || rAny.department || rAny.Sucursal || "N/A";
-                const mes = r.mes || rAny.periodo || rAny.Mes || "";
+                const mesRaw: string | number | null =
+                  (r.mes as string) ||
+                  (rAny.periodo as string) ||
+                  (rAny.Mes as string) ||
+                  "";
+
+                let mes = "";
+                if (mesRaw) {
+                  // Try parsing as a date
+                  const parsed = new Date(mesRaw as string);
+                  if (!isNaN(parsed.getTime())) {
+                    mes = parsed.toISOString().split("T")[0]; // ✅ Format as YYYY-MM-DD
+                  } else {
+                    mes = String(mesRaw);
+                  }
+                }
                 const sueldo = r.sueldo || rAny.salary || rAny.Sueldo || 0;
                 const comisiones =
                   r.comisiones || rAny.commissions || rAny.Comisiones || 0;
@@ -494,42 +511,51 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => handleViewEmployee(r)}
-                        className="text-blue-800 underline font-semibold text-left hover:text-blue-900 transition-colors"
+                        className="text-[#1a365d] underline font-semibold text-left hover:text-[#1a365d] transition-colors"
                         title={`View profile of ${nombre}`}
                       >
                         {nombre}
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <code className="font-mono text-xs text-gray-700 bg-gray-50 rounded px-2 py-1">
+                      <code
+                        style={{
+                          background: "rgba(30, 58, 138, 0.2)",
+                          padding: "0.25rem 0.5rem",
+                          borderRadius: "4px",
+                          color: "rgb(26, 54, 93)",
+                        }}
+                      >
                         {curp}
                       </code>
                     </td>
                     <td className="px-4 py-3 text-gray-800">{puesto}</td>
                     <td className="px-4 py-3 text-gray-800">{sucursal}</td>
-                    <td className="px-4 py-3 text-gray-700 font-mono text-xs">
+                    <td className="px-4 py-3 text-[rgb(44, 82, 130)] font-mono text-[0.85rem]">
                       {mes || ""}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      {formatCurrency(parseMoney(sueldo))}
+                    <td className="px-4 py-3 text-right font-semibold text-[#2c3e50]">
+                      <strong>{formatCurrency(parseMoney(sueldo))}</strong>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">
                       {formatCurrency(parseMoney(comisiones))}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-blue-800">
-                      {formatCurrency(parseMoney(totalPercepciones || 0))}
+                    <td className="px-4 py-3 text-right font-semibold text-[#2c3e50]">
+                      <strong>
+                        {formatCurrency(parseMoney(totalPercepciones || 0))}
+                      </strong>
                     </td>
                     <td className="px-4 py-3">
                       {estado === "Activo" || estado === "A" ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        <span className="inline-flex items-center p-[0.25rem 0.75rem] text-[0.8rem] font-medium">
                           Activo
                         </span>
                       ) : estado === "Baja" || estado === "B" ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                        <span className="inline-flex items-center p-[0.25rem 0.75rem] text-[0.8rem] font-medium">
                           Baja
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                        <span className="inline-flex items-center p-[0.25rem 0.75rem] text-[0.8rem] font-medium">
                           {estado || "N/A"}
                         </span>
                       )}

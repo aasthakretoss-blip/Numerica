@@ -33,7 +33,11 @@ const FieldsGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (min-width: 1200px) and (max-width: 1599px) {
+  @media (min-width: 1200px) and (max-width: 1440px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1441px) and (max-width: 1599px) {
     grid-template-columns: repeat(4, 1fr);
   }
 

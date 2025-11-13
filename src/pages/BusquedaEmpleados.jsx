@@ -396,6 +396,10 @@ const ActionButton = styled.button.withConfig({
 `;
 
 const NoResults = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 3rem;
   opacity: 0.7;
@@ -2487,17 +2491,20 @@ const BusquedaEmpleados = () => {
           )}
 
           {loading && (
-            <div style={{ textAlign: "center", padding: "3rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
+            >
               <FaSpinner
                 size={32}
                 color="#1e3a8a"
                 style={{
                   animation: "spin 1s linear infinite",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
                 }}
               />
               <p style={{ marginTop: "1rem", opacity: 0.8 }}>

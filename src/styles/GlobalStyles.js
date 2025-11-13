@@ -1,5 +1,5 @@
-import { createGlobalStyle } from 'styled-components';
-import { surfaces, textColors, effects, gradients } from './ColorTokens';
+import { createGlobalStyle } from "styled-components";
+import { surfaces, textColors, effects, gradients } from "./ColorTokens";
 
 const GlobalStyles = createGlobalStyle`
   * {
@@ -76,6 +76,13 @@ const GlobalStyles = createGlobalStyle`
     background: ${gradients.buttons.primary};
     opacity: 0.9;
   }
+    #goog-gt-tt, 
+.goog-te-balloon-frame, 
+.goog-te-menu-frame, 
+.goog-tooltip, 
+.goog-tooltip:hover {
+  display: none !important;
+}
 `;
 
 export default GlobalStyles;

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import styled, { ThemeProvider as StyledThemeProvider } from "styled-components";
+import styled, {
+  ThemeProvider as StyledThemeProvider,
+} from "styled-components";
 import { useTheme } from "../contexts/ThemeContext";
 import { FaChevronDown, FaChevronUp, FaSearch, FaTimes } from "react-icons/fa";
 
@@ -12,33 +14,46 @@ const DropdownContainer = styled.div`
 
 const DropdownButton = styled.button`
   width: 100%;
-  background: ${(props) => props.theme?.surfaces?.dark?.medium || "rgba(184, 184, 184, 0.2)"};
-  backdrop-filter: ${(props) => props.theme?.effects?.blur?.medium || "blur(15px)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.dark?.medium || "rgba(184, 184, 184, 0.2)"};
+  backdrop-filter: ${(props) =>
+    props.theme?.effects?.blur?.medium || "blur(15px)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
   border-radius: 12px;
   padding: 0.75rem 1rem;
-  color: ${(props) => props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
+  color: ${(props) =>
+    props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
   font-size: 0.9rem;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transition || "all 0.3s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transition || "all 0.3s ease"};
   display: flex;
   align-items: center;
   justify-content: space-between;
   text-align: left;
-  box-shadow: ${(props) => props.theme?.effects?.shadows?.subtle || "0 2px 4px rgba(0, 0, 0, 0.1)"};
+  box-shadow: ${(props) =>
+    props.theme?.effects?.shadows?.subtle || "0 2px 4px rgba(0, 0, 0, 0.1)"};
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.filterHover || "rgba(168, 237, 234, 0.1)"};
-    border-color: ${(props) => props.theme?.surfaces?.borders?.accentStrong || "rgba(168, 237, 234, 0.6)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.filterHover ||
+      "rgba(168, 237, 234, 0.1)"};
+    border-color: ${(props) =>
+      props.theme?.surfaces?.borders?.accentStrong ||
+      "rgba(168, 237, 234, 0.6)"};
     transform: translateY(-1px);
-    box-shadow: ${(props) => props.theme?.effects?.shadows?.medium || "0 4px 8px rgba(0, 0, 0, 0.15)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.shadows?.medium || "0 4px 8px rgba(0, 0, 0, 0.15)"};
     color: ${(props) => props.theme?.brand?.primary || "#a8edea"};
   }
 
   &:focus {
     outline: none;
     border-color: ${(props) => props.theme?.brand?.primary || "#a8edea"};
-    box-shadow: ${(props) => props.theme?.effects?.focusRing || "0 0 0 3px rgba(168, 237, 234, 0.2)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.focusRing || "0 0 0 3px rgba(168, 237, 234, 0.2)"};
   }
 
   ${(props) =>
@@ -100,10 +115,13 @@ const ChevronIcon = styled.div`
 
 const DropdownMenuPortal = styled.div`
   position: fixed !important;
-  background: ${(props) => props.theme?.surfaces?.dark?.medium || "rgba(0, 0, 0, 0.2)"};
-  backdrop-filter: ${(props) => props.theme?.effects?.blur?.strong || "blur(20px)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.dark?.medium || "rgba(0, 0, 0, 0.2)"};
+  backdrop-filter: ${(props) =>
+    props.theme?.effects?.blur?.strong || "blur(20px)"};
   border: 1px solid ${(props) => props.theme?.brand?.primary || "#a8edea"};
-  box-shadow: ${(props) => props.theme?.effects?.shadows?.large || "0 8px 25px rgba(0, 0, 0, 0.25)"};
+  box-shadow: ${(props) =>
+    props.theme?.effects?.shadows?.large || "0 8px 25px rgba(0, 0, 0, 0.25)"};
   z-index: 999999 !important;
   max-height: 400px;
   overflow: hidden;
@@ -141,29 +159,39 @@ const DropdownMenuPortal = styled.div`
 const SearchContainer = styled.div`
   position: relative;
   padding: 0.75rem;
-  border-bottom: 1px solid ${(props) => props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
-  background: ${(props) => props.theme?.surfaces?.dark?.subtle || "rgba(0, 0, 0, 0.1)"};
+  border-bottom: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.dark?.subtle || "rgba(0, 0, 0, 0.1)"};
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  background: ${(props) => props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
-  border: 1px solid ${(props) => props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.inputs?.background || "rgba(255, 255, 255, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.medium || "rgba(255, 255, 255, 0.2)"};
   border-radius: 8px;
   padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-  color: ${(props) => props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
+  color: ${(props) =>
+    props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
   font-size: 0.85rem;
   box-sizing: border-box;
 
   &::placeholder {
-    color: ${(props) => props.theme?.text?.subtle || "rgba(255, 255, 255, 0.6)"};
+    color: ${(props) =>
+      props.theme?.text?.subtle || "rgba(255, 255, 255, 0.6)"};
   }
 
   &:focus {
     outline: none;
     border-color: ${(props) => props.theme?.brand?.primary || "#a8edea"};
-    box-shadow: ${(props) => props.theme?.effects?.focusRing || "0 0 0 2px rgba(168, 237, 234, 0.2)"};
-    background: ${(props) => props.theme?.surfaces?.inputs?.focus || "rgba(255, 255, 255, 0.15)"};
+    box-shadow: ${(props) =>
+      props.theme?.effects?.focusRing || "0 0 0 2px rgba(168, 237, 234, 0.2)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.inputs?.focus || "rgba(255, 255, 255, 0.15)"};
   }
 `;
 
@@ -187,16 +215,20 @@ const OptionsContainer = styled.div`
   }
 
   &::-webkit-scrollbar-track {
-    background: ${(props) => props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.1)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.1)"};
   }
 
   &::-webkit-scrollbar-thumb {
-    background: ${(props) => props.theme?.surfaces?.borders?.accentStrong || "rgba(168, 237, 234, 0.6)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.borders?.accentStrong ||
+      "rgba(168, 237, 234, 0.6)"};
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: ${(props) => props.theme?.brand?.primary || "rgba(168, 237, 234, 0.8)"};
+    background: ${(props) =>
+      props.theme?.brand?.primary || "rgba(168, 237, 234, 0.8)"};
   }
 `;
 
@@ -206,11 +238,16 @@ const OptionItem = styled.div`
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  transition: ${(props) => props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
-  border-bottom: 1px solid ${(props) => props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
+  border-bottom: 1px solid
+    ${(props) =>
+      props.theme?.surfaces?.borders?.subtle || "rgba(255, 255, 255, 0.1)"};
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.filterHover || "rgba(168, 237, 234, 0.1)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.filterHover ||
+      "rgba(168, 237, 234, 0.1)"};
   }
 
   &:last-child {
@@ -229,7 +266,8 @@ const OptionLabel = styled.label`
   flex: 1;
   cursor: pointer;
   font-size: 0.85rem;
-  color: ${(props) => props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
+  color: ${(props) =>
+    props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
   line-height: 1.2;
   display: flex;
   justify-content: space-between;
@@ -238,8 +276,10 @@ const OptionLabel = styled.label`
 
 const OptionCount = styled.span`
   font-size: 0.75rem;
-  color: ${(props) => props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
-  background: ${(props) => props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.1)"};
+  color: ${(props) =>
+    props.theme?.text?.secondary || "rgba(255, 255, 255, 0.9)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.glass?.subtle || "rgba(255, 255, 255, 0.1)"};
   padding: 0.15rem 0.4rem;
   border-radius: 10px;
   font-weight: 500;
@@ -254,7 +294,8 @@ const NoOptionsMessage = styled.div`
 `;
 
 const SelectedBadge = styled.span`
-  background: ${(props) => props.theme?.surfaces?.buttons?.accentMedium || "rgba(168, 237, 234, 0.2)"};
+  background: ${(props) =>
+    props.theme?.surfaces?.buttons?.accentMedium || "rgba(168, 237, 234, 0.2)"};
   color: ${(props) => props.theme?.brand?.primary || "#a8edea"};
   padding: 0.15rem 0.4rem;
   border-radius: 8px;
@@ -271,10 +312,13 @@ const ClearButton = styled.button`
   padding: 0.2rem;
   margin-left: 0.25rem;
   border-radius: 4px;
-  transition: ${(props) => props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
+  transition: ${(props) =>
+    props.theme?.effects?.states?.transitionFast || "all 0.2s ease"};
 
   &:hover {
-    background: ${(props) => props.theme?.surfaces?.buttons?.accentMedium || "rgba(168, 237, 234, 0.2)"};
+    background: ${(props) =>
+      props.theme?.surfaces?.buttons?.accentMedium ||
+      "rgba(168, 237, 234, 0.2)"};
     color: ${(props) => props.theme?.brand?.primary || "#a8edea"};
   }
 `;
@@ -295,7 +339,12 @@ const DropDownMenu = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, openDirection: "down" });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    openDirection: "down",
+  });
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
   const isMountedRef = useRef(true); // Track if component is mounted to prevent portal errors
@@ -305,13 +354,20 @@ const DropDownMenu = ({
     if (!showCount || !options.length) return false;
 
     // Calcular el total de registros sumando todos los conteos
-    const totalRecords = options.reduce((sum, option) => sum + (option.count || 0), 0);
+    const totalRecords = options.reduce(
+      (sum, option) => sum + (option.count || 0),
+      0
+    );
 
     // Ocultar cardinalidad si supera los 6000 registros
     const hideCardinality = totalRecords > 6000;
 
     if (hideCardinality) {
-      console.log(`📊 Ocultando cardinalidad en ${label}: ${totalRecords.toLocaleString("es-MX")} registros (>6000)`);
+      console.log(
+        `📊 Ocultando cardinalidad en ${label}: ${totalRecords.toLocaleString(
+          "es-MX"
+        )} registros (>6000)`
+      );
     }
 
     return hideCardinality;
@@ -319,11 +375,15 @@ const DropDownMenu = ({
 
   // Filtrar y ordenar opciones (preservar orden original si se especifica)
   const filteredOptions = useMemo(() => {
-    let filtered = options.filter((option) => option.value.toLowerCase().includes(searchTerm.toLowerCase()));
+    let filtered = options.filter((option) =>
+      option.value.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     // Solo ordenar alfabéticamente si no se especifica preserveOrder
     if (!preserveOrder) {
-      filtered.sort((a, b) => a.value.localeCompare(b.value, "es", { sensitivity: "base" }));
+      filtered.sort((a, b) =>
+        a.value.localeCompare(b.value, "es", { sensitivity: "base" })
+      );
     }
     // Si preserveOrder=true, mantener el orden original del backend
 
@@ -347,7 +407,9 @@ const DropDownMenu = ({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        const portalElement = document.querySelector('[data-dropdown-portal="true"]');
+        const portalElement = document.querySelector(
+          '[data-dropdown-portal="true"]'
+        );
         if (!portalElement || !portalElement.contains(event.target)) {
           setIsOpen(false);
           setSearchTerm("");
@@ -426,9 +488,16 @@ const DropDownMenu = ({
 
     if (isOpen) {
       // Múltiples formas de capturar scroll para mayor compatibilidad
-      document.addEventListener("scroll", handleScrollOrResize, { passive: true, capture: true });
-      window.addEventListener("scroll", handleScrollOrResize, { passive: true });
-      window.addEventListener("resize", handleScrollOrResize, { passive: true });
+      document.addEventListener("scroll", handleScrollOrResize, {
+        passive: true,
+        capture: true,
+      });
+      window.addEventListener("scroll", handleScrollOrResize, {
+        passive: true,
+      });
+      window.addEventListener("resize", handleScrollOrResize, {
+        passive: true,
+      });
 
       // También escuchar en el elemento padre más cercano con scroll
       let scrollableParent = dropdownRef.current?.parentElement;
@@ -442,7 +511,9 @@ const DropDownMenu = ({
           style.overflowY === "auto" ||
           style.overflowY === "scroll"
         ) {
-          scrollableParent.addEventListener("scroll", handleScrollOrResize, { passive: true });
+          scrollableParent.addEventListener("scroll", handleScrollOrResize, {
+            passive: true,
+          });
           break;
         }
         scrollableParent = scrollableParent.parentElement;
@@ -452,7 +523,9 @@ const DropDownMenu = ({
         if (rafId) {
           cancelAnimationFrame(rafId);
         }
-        document.removeEventListener("scroll", handleScrollOrResize, { capture: true });
+        document.removeEventListener("scroll", handleScrollOrResize, {
+          capture: true,
+        });
         window.removeEventListener("scroll", handleScrollOrResize);
         window.removeEventListener("resize", handleScrollOrResize);
 
@@ -489,7 +562,10 @@ const DropDownMenu = ({
 
     // Calcular dimensiones finales
     const availableHeight = shouldOpenUp ? spaceAbove : spaceBelow;
-    const finalHeight = Math.min(maxDropdownHeight, Math.max(150, availableHeight));
+    const finalHeight = Math.min(
+      maxDropdownHeight,
+      Math.max(150, availableHeight)
+    );
 
     // Posición horizontal (asegurar que no se salga por los lados)
     const dropdownWidth = Math.max(buttonRect.width, 250);
@@ -511,8 +587,9 @@ const DropDownMenu = ({
         maxHeight: finalHeight,
       });
     } else {
+      const topPosition = buttonRect.top + viewport.scrollY - finalHeight + 1;
       setDropdownPosition({
-        top: buttonRect.bottom + viewport.scrollY - 1,
+        top: Math.max(topMargin + viewport.scrollY, topPosition),
         left: leftPosition,
         width: dropdownWidth,
         openDirection: "down",
@@ -583,7 +660,9 @@ const DropDownMenu = ({
           <DropdownLabel $hasSelections={selectedValues.length > 0}>
             {label}
             {selectionText}
-            {selectedValues.length > 0 && <SelectedBadge>{selectedValues.length}</SelectedBadge>}
+            {selectedValues.length > 0 && (
+              <SelectedBadge>{selectedValues.length}</SelectedBadge>
+            )}
           </DropdownLabel>
 
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -653,20 +732,29 @@ const DropDownMenu = ({
                 <OptionsContainer>
                   {filteredOptions.length === 0 && (
                     <NoOptionsMessage>
-                      {searchTerm ? "No se encontraron opciones" : "No hay opciones disponibles"}
+                      {searchTerm
+                        ? "No se encontraron opciones"
+                        : "No hay opciones disponibles"}
                     </NoOptionsMessage>
                   )}
 
                   {filteredOptions.map((option, index) => {
                     const isSelected = selectedValues.includes(option.value);
                     const isDisabled =
-                      !singleSelect && maxSelections && !isSelected && selectedValues.length >= maxSelections;
+                      !singleSelect &&
+                      maxSelections &&
+                      !isSelected &&
+                      selectedValues.length >= maxSelections;
 
                     return (
                       <OptionItem
                         key={`${option.value}-${index}`}
                         onClick={preventClose}
-                        style={isDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                        style={
+                          isDisabled
+                            ? { opacity: 0.5, cursor: "not-allowed" }
+                            : {}
+                        }
                       >
                         <Checkbox
                           type={singleSelect ? "radio" : "checkbox"}
@@ -675,15 +763,22 @@ const DropDownMenu = ({
                           disabled={isDisabled}
                           onChange={(e) => {
                             if (!isDisabled) {
-                              handleOptionChange(option.value, e.target.checked);
+                              handleOptionChange(
+                                option.value,
+                                e.target.checked
+                              );
                             }
                           }}
                         />
                         <OptionLabel>
                           <span>{option.value}</span>
-                          {showCount && option.count !== undefined && !shouldHideCardinality && (
-                            <OptionCount>{option.count.toLocaleString("es-MX")}</OptionCount>
-                          )}
+                          {showCount &&
+                            option.count !== undefined &&
+                            !shouldHideCardinality && (
+                              <OptionCount>
+                                {option.count.toLocaleString("es-MX")}
+                              </OptionCount>
+                            )}
                         </OptionLabel>
                       </OptionItem>
                     );

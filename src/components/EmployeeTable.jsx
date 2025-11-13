@@ -105,6 +105,13 @@ const TableCell = styled.td`
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  vertical-align: middle;
+
+  * {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const EmployeeNameButton = styled.button`
@@ -358,8 +365,19 @@ export default function EmployeeTable({
         curp: emp.curp || emp.curve || emp.rfc || "N/A",
         puesto: emp.position || emp.puesto || "N/A",
         sucursal: emp.department || emp.sucursal || "N/A",
-        periodo:
-          formatCveperForTable(emp.mes || emp.periodo || emp.cveper) || "N/A",
+        periodo: (() => {
+          const rawDate = emp.mes || emp.periodo || emp.cveper;
+          if (!rawDate) return "N/A";
+
+          // If it's a date or ISO string, format to YYYY-MM-DD
+          const dateObj = new Date(rawDate);
+          if (!isNaN(dateObj)) {
+            return dateObj.toISOString().split("T")[0]; // ✅ "YYYY-MM-DD"
+          }
+
+          // Otherwise, use your existing formatCveperForTable fallback
+          return formatCveperForTable(rawDate) || "N/A";
+        })(),
         salario: parseFloat(emp.salary || emp.sueldo) || 0,
         comisiones: parseFloat(emp.commissions || emp.comisiones) || 0,
         comisionesCliente: parseFloat(emp.comisionesCliente || 0),
@@ -495,10 +513,10 @@ export default function EmployeeTable({
                   <TableCell>
                     <code
                       style={{
-                        background: surfaces.buttons.filter,
+                        background: "rgba(30, 58, 138, 0.2)",
                         padding: "0.25rem 0.5rem",
                         borderRadius: "4px",
-                        color: brandColors.primary,
+                        color: "rgb(26, 54, 93)",
                       }}
                     >
                       {employee.curp}
@@ -548,7 +566,7 @@ export default function EmployeeTable({
             {displayData.length === 0 && !loading && (
               <tr>
                 <TableCell colSpan={columns.length}>
-                  <NoResultsContainer>
+                  <NoResultsContainer >
                     <h3 style={{ marginBottom: "0.5rem" }}>
                       No se encontraron empleados
                     </h3>

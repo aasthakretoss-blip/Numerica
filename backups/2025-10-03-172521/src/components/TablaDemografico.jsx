@@ -725,7 +725,7 @@ export default function TablaDemografico({
                         </EmployeeNameButton>
                       </TableCell>
                       <TableCell>
-                        <code style={{ background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                        <code style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
                           {employee.curp}
                         </code>
                       </TableCell>
