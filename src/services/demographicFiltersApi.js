@@ -126,7 +126,7 @@ export const loadDemographicFilterCounts = async (activeFilters = {}) => {
       activeFilters.puestosCategorias.length > 0
     ) {
       activeFilters.puestosCategorias.forEach((categoria) =>
-        params.append("puestoCategoria", categoria)
+        params.append("puestoCategorizado", categoria)
       );
     }
 
@@ -317,6 +317,11 @@ export const buildDemographicFilterParams = (
 ) => {
   const params = new URLSearchParams();
 
+  // Aplicar filtro de búsqueda (nombre/Curp)
+  if (filters.search && filters.search.trim() !== "") {
+    params.append("search", filters.search.trim());
+  }
+
   // Aplicar filtros de dropdown
   if (filters.sucursales && filters.sucursales.length > 0) {
     filters.sucursales.forEach((sucursal) =>
@@ -330,12 +335,20 @@ export const buildDemographicFilterParams = (
 
   if (filters.puestosCategorias && filters.puestosCategorias.length > 0) {
     filters.puestosCategorias.forEach((categoria) =>
-      params.append("puestoCategoria", categoria)
+      params.append("puestoCategorizado", categoria)
     );
   }
 
-  // Siempre filtrar por empleados activos en demográfico
-  params.append("status", "A");
+  // Siempre filtrar por empleados activos en demográfico (solo si no se especifica otro status)
+  if (filters.status) {
+    if (Array.isArray(filters.status)) {
+      filters.status.forEach((estado) => params.append("status", estado));
+    } else {
+      params.append("status", filters.status);
+    }
+  } else {
+    params.append("status", "A");
+  }
 
   // Aplicar período si está disponible y no está vacío
   if (filters.periodFilter && filters.periodFilter !== "") {

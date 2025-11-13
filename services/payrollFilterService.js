@@ -1105,11 +1105,6 @@ WHERE 1=1
     try {
       const client = await nominasPool.connect();
 
-      console.log(
-        "🔢 PayrollFilterService: Obteniendo conteo de CURPs únicos con filtros:",
-        options
-      );
-
       // Query para contar CURPs únicos con los mismos filtros
       // CORREGIDA: Usar dígito de género de la CURP (posición 11, índice 10) en lugar de columna Sexo
       let countQuery = `SELECT 
@@ -1139,48 +1134,92 @@ WHERE 1=1
           countQuery += ` AND "Puesto" IN (${puestosConditions})`;
           queryParams.push(...puestosParaCategorias);
           paramIndex += puestosParaCategorias.length;
-          console.log(
-            `🎯 PayrollFilterService (CURP count): Aplicando filtro por categoría de puesto SQL:`,
-            puestosIncluidos,
-            `-> ${puestosParaCategorias.length} puestos específicos`
-          );
         }
       }
 
-      // Aplicar exactamente los mismos filtros que en getPayrollDataWithFiltersAndSorting
+      // Aplicar filtro de búsqueda
       if (options.search) {
-        const searchPattern = `%${options.search}%`;
-        countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
-        queryParams.push(searchPattern);
-        paramIndex++;
+        let cleanedSearch = String(options.search);
+        try {
+          cleanedSearch = decodeURIComponent(cleanedSearch);
+        } catch (e) {
+          // If already decoded or invalid, continue with original
+        }
+        cleanedSearch = cleanedSearch.replace(/\+/g, ' ');
+        cleanedSearch = cleanedSearch.trim().replace(/\s+/g, ' ');
+        
+        if (cleanedSearch && cleanedSearch.length > 0) {
+          const searchPattern = `%${cleanedSearch}%`;
+          countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
+          queryParams.push(searchPattern);
+          paramIndex++;
+        }
       }
 
       if (options.puesto) {
-        if (Array.isArray(options.puesto)) {
-          const puestoConditions = options.puesto
+        // Decode and clean puesto parameter
+        let cleanedPuesto = Array.isArray(options.puesto) 
+          ? options.puesto.map(p => {
+              try {
+                return decodeURIComponent(String(p).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(p).replace(/\+/g, ' ').trim();
+              }
+            })
+          : (() => {
+              try {
+                return decodeURIComponent(String(options.puesto).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(options.puesto).replace(/\+/g, ' ').trim();
+              }
+            })();
+
+        if (Array.isArray(cleanedPuesto)) {
+          const puestoConditions = cleanedPuesto
             .map((_, index) => `$${paramIndex + index}`)
             .join(", ");
           countQuery += ` AND "Puesto" IN (${puestoConditions})`;
-          queryParams.push(...options.puesto);
-          paramIndex += options.puesto.length;
-        } else {
+          queryParams.push(...cleanedPuesto);
+          paramIndex += cleanedPuesto.length;
+        } else if (cleanedPuesto && cleanedPuesto.length > 0) {
+          // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
+          const puestoPattern = `%${cleanedPuesto}%`;
           countQuery += ` AND "Puesto" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.puesto}%`);
+          queryParams.push(puestoPattern);
           paramIndex++;
         }
       }
 
       if (options.sucursal) {
-        if (Array.isArray(options.sucursal)) {
-          const sucursalConditions = options.sucursal
+        // Decode and clean sucursal parameter
+        let cleanedSucursal = Array.isArray(options.sucursal)
+          ? options.sucursal.map(s => {
+              try {
+                return decodeURIComponent(String(s).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(s).replace(/\+/g, ' ').trim();
+              }
+            })
+          : (() => {
+              try {
+                return decodeURIComponent(String(options.sucursal).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(options.sucursal).replace(/\+/g, ' ').trim();
+              }
+            })();
+
+        if (Array.isArray(cleanedSucursal)) {
+          const sucursalConditions = cleanedSucursal
             .map((_, index) => `$${paramIndex + index}`)
             .join(", ");
           countQuery += ` AND "Compañía" IN (${sucursalConditions})`;
-          queryParams.push(...options.sucursal);
-          paramIndex += options.sucursal.length;
-        } else {
+          queryParams.push(...cleanedSucursal);
+          paramIndex += cleanedSucursal.length;
+        } else if (cleanedSucursal && cleanedSucursal.length > 0) {
+          // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
+          const sucursalPattern = `%${cleanedSucursal}%`;
           countQuery += ` AND "Compañía" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.sucursal}%`);
+          queryParams.push(sucursalPattern);
           paramIndex++;
         }
       }
@@ -1230,35 +1269,17 @@ WHERE 1=1
           // Filtro por mes completo (formato YYYY-MM)
           countQuery += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
           queryParams.push(`${options.cveper}-01`);
-          console.log(
-            "🗓️ PayrollFilterService: Aplicando filtro por mes completo para conteo CURP:",
-            options.cveper
-          );
         } else if (options.cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
           // Filtro por fecha exacta (formato YYYY-MM-DD)
           countQuery += ` AND DATE(cveper) = $${paramIndex}`;
           queryParams.push(options.cveper);
-          console.log(
-            "📅 PayrollFilterService: Aplicando filtro por fecha exacta para conteo CURP:",
-            options.cveper
-          );
         } else {
           // Filtro por timestamp completo
           countQuery += ` AND cveper = $${paramIndex}`;
           queryParams.push(options.cveper);
-          console.log(
-            "⏰ PayrollFilterService: Aplicando filtro por timestamp completo para conteo CURP:",
-            options.cveper
-          );
         }
         paramIndex++;
       }
-
-      console.log(
-        "🚀 PayrollFilterService: Ejecutando consulta de conteo CURPs únicos:",
-        countQuery
-      );
-      console.log("📋 Parámetros:", queryParams);
 
       // Ejecutar consulta
       const result = await client.query(countQuery, queryParams);
@@ -1267,12 +1288,6 @@ WHERE 1=1
       const uniqueCurpCount = parseInt(result.rows[0].unique_curps) || 0;
       const uniqueMaleCount = parseInt(result.rows[0].unique_males) || 0;
       const uniqueFemaleCount = parseInt(result.rows[0].unique_females) || 0;
-
-      console.log("✅ PayrollFilterService: CURPs únicos encontrados:", {
-        total: uniqueCurpCount,
-        hombres: uniqueMaleCount,
-        mujeres: uniqueFemaleCount,
-      });
 
       return {
         success: true,

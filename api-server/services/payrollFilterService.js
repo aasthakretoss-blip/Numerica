@@ -929,27 +929,65 @@ class PayrollFilterService {
       }
       
       if (options.puesto) {
-        if (Array.isArray(options.puesto)) {
-          const puestoConditions = options.puesto.map((_, index) => `$${paramIndex + index}`).join(', ');
+        // Decode and clean puesto parameter
+        let cleanedPuesto = Array.isArray(options.puesto) 
+          ? options.puesto.map(p => {
+              try {
+                return decodeURIComponent(String(p).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(p).replace(/\+/g, ' ').trim();
+              }
+            })
+          : (() => {
+              try {
+                return decodeURIComponent(String(options.puesto).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(options.puesto).replace(/\+/g, ' ').trim();
+              }
+            })();
+
+        if (Array.isArray(cleanedPuesto)) {
+          const puestoConditions = cleanedPuesto.map((_, index) => `$${paramIndex + index}`).join(', ');
           countQuery += ` AND "Puesto" IN (${puestoConditions})`;
-          queryParams.push(...options.puesto);
-          paramIndex += options.puesto.length;
-        } else {
+          queryParams.push(...cleanedPuesto);
+          paramIndex += cleanedPuesto.length;
+        } else if (cleanedPuesto && cleanedPuesto.length > 0) {
+          // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
+          const puestoPattern = `%${cleanedPuesto}%`;
           countQuery += ` AND "Puesto" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.puesto}%`);
+          queryParams.push(puestoPattern);
           paramIndex++;
         }
       }
       
       if (options.sucursal) {
-        if (Array.isArray(options.sucursal)) {
-          const sucursalConditions = options.sucursal.map((_, index) => `$${paramIndex + index}`).join(', ');
+        // Decode and clean sucursal parameter
+        let cleanedSucursal = Array.isArray(options.sucursal)
+          ? options.sucursal.map(s => {
+              try {
+                return decodeURIComponent(String(s).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(s).replace(/\+/g, ' ').trim();
+              }
+            })
+          : (() => {
+              try {
+                return decodeURIComponent(String(options.sucursal).replace(/\+/g, ' ')).trim();
+              } catch (e) {
+                return String(options.sucursal).replace(/\+/g, ' ').trim();
+              }
+            })();
+
+        if (Array.isArray(cleanedSucursal)) {
+          const sucursalConditions = cleanedSucursal.map((_, index) => `$${paramIndex + index}`).join(', ');
           countQuery += ` AND "Compañía" IN (${sucursalConditions})`;
-          queryParams.push(...options.sucursal);
-          paramIndex += options.sucursal.length;
-        } else {
+          queryParams.push(...cleanedSucursal);
+          paramIndex += cleanedSucursal.length;
+        } else if (cleanedSucursal && cleanedSucursal.length > 0) {
+          // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
+          const sucursalPattern = `%${cleanedSucursal}%`;
           countQuery += ` AND "Compañía" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.sucursal}%`);
+          queryParams.push(sucursalPattern);
           paramIndex++;
         }
       }
@@ -1017,11 +1055,17 @@ class PayrollFilterService {
         }
       }
       
-      console.log('🚀 PayrollFilterService: Ejecutando consulta de conteo CURPs únicos:', countQuery);
-      console.log('📋 Parámetros:', queryParams);
+      console.log('🚀 PayrollFilterService: Ejecutando consulta de conteo CURPs únicos:');
+      console.log('📝 SQL Query:', countQuery);
+      console.log('📋 Query Parameters:', JSON.stringify(queryParams, null, 2));
+      console.log('📊 Parameter count:', queryParams.length);
+      console.log('🔍 Options received:', JSON.stringify(options, null, 2));
       
       // Ejecutar consulta
       const result = await client.query(countQuery, queryParams);
+      
+      console.log('📥 Query result rows:', result.rows);
+      console.log('📥 Query result count:', result.rows[0]?.unique_curps);
       client.release();
       
       const uniqueCurpCount = parseInt(result.rows[0].unique_curps) || 0;

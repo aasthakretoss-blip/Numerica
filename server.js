@@ -1435,20 +1435,43 @@ app.get(
   verifyToken,
   async (req, res) => {
     try {
-      const { search, puesto, sucursal, status, puestoCategorizado, cveper } =
-        req.query;
-
-      console.log(
-        "🔢 /api/payroll/demographic/unique-count: Parámetros recibidos:",
-        {
-          search,
-          puesto,
-          sucursal,
-          status,
-          puestoCategorizado,
-          cveper,
+      // Helper to decode URL parameters (handle + as space)
+      const decodeParam = (param) => {
+        if (!param) return param;
+        if (Array.isArray(param)) {
+          return param.map(p => {
+            try {
+              return decodeURIComponent(String(p).replace(/\+/g, ' '));
+            } catch (e) {
+              return String(p).replace(/\+/g, ' ');
+            }
+          });
         }
-      );
+        try {
+          return decodeURIComponent(String(param).replace(/\+/g, ' '));
+        } catch (e) {
+          return String(param).replace(/\+/g, ' ');
+        }
+      };
+
+      // Extract and decode parameters
+      const search = req.query.search ? decodeParam(req.query.search) : undefined;
+      const puesto = req.query.puesto ? decodeParam(req.query.puesto) : undefined;
+      const sucursal = req.query.sucursal ? decodeParam(req.query.sucursal) : undefined;
+      const status = req.query.status ? decodeParam(req.query.status) : undefined;
+      let puestoCategorizado = req.query.puestoCategorizado ? decodeParam(req.query.puestoCategorizado) : undefined;
+      const cveper = req.query.cveper;
+
+      // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
+      if (puestoCategorizado) {
+        if (Array.isArray(puestoCategorizado)) {
+          puestoCategorizado = puestoCategorizado.map(cat => 
+            cat === "Categorizar" ? "Sin Categorizar" : cat
+          );
+        } else if (puestoCategorizado === "Categorizar") {
+          puestoCategorizado = "Sin Categorizar";
+        }
+      }
 
       // Usar el service existente que ya maneja correctamente los filtros y parámetros
       const result = await payrollFilterService.getUniqueCurpCount({
@@ -1460,17 +1483,9 @@ app.get(
         cveper,
       });
 
-      console.log("✅ Conteo CURPs únicos:", {
-        total: result.uniqueCurpCount,
-        hombres: result.uniqueMaleCount,
-        mujeres: result.uniqueFemaleCount,
-      });
-
       res.json({
         success: true,
         uniqueCurpCount: result.uniqueCurpCount,
-        uniqueMaleCount: result.uniqueMaleCount,
-        uniqueFemaleCount: result.uniqueFemaleCount,
       });
     } catch (error) {
       console.error("❌ Error obteniendo conteo de CURPs únicos:", error);

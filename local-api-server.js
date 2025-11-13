@@ -1467,65 +1467,64 @@ app.get(
   verifyToken,
   async (req, res) => {
     try {
-      const { status, cveper } = req.query;
+      // Helper to decode URL parameters (handle + as space)
+      const decodeParam = (param) => {
+        if (!param) return param;
+        if (Array.isArray(param)) {
+          return param.map(p => {
+            try {
+              return decodeURIComponent(String(p).replace(/\+/g, ' '));
+            } catch (e) {
+              return String(p).replace(/\+/g, ' ');
+            }
+          });
+        }
+        try {
+          return decodeURIComponent(String(param).replace(/\+/g, ' '));
+        } catch (e) {
+          return String(param).replace(/\+/g, ' ');
+        }
+      };
 
-      const client = await getHistoricClient();
+      // Extract and decode parameters
+      const search = req.query.search ? decodeParam(req.query.search) : undefined;
+      const puesto = req.query.puesto ? decodeParam(req.query.puesto) : undefined;
+      const sucursal = req.query.sucursal ? decodeParam(req.query.sucursal) : undefined;
+      const status = req.query.status ? decodeParam(req.query.status) : undefined;
+      let puestoCategorizado = req.query.puestoCategorizado ? decodeParam(req.query.puestoCategorizado) : undefined;
+      const cveper = req.query.cveper;
 
-      // Build WHERE clause
-      const conditions = [];
-      const params = [];
-      let paramIndex = 1;
-
-      if (status) {
-        conditions.push(`"Status" = $${paramIndex}`);
-        params.push(status);
-        paramIndex++;
-      }
-
-      if (cveper) {
-        // Handle cveper as date range if it's in YYYY-MM format
-        if (/^\d{4}-\d{2}$/.test(cveper)) {
-          // Convert 2025-06 to a date range for the entire month
-          const startDate = `${cveper}-01`;
-          const endDate = `${cveper}-31`; // Using 31 to cover all possible days in month
-          conditions.push(
-            `"cveper" >= $${paramIndex} AND "cveper" < ($${
-              paramIndex + 1
-            }::date + INTERVAL '1 month')`
+      // Normalize puestoCategorizado: "Categorizar" -> "Sin Categorizar"
+      if (puestoCategorizado) {
+        if (Array.isArray(puestoCategorizado)) {
+          puestoCategorizado = puestoCategorizado.map(cat => 
+            cat === "Categorizar" ? "Sin Categorizar" : cat
           );
-          params.push(startDate, startDate);
-          paramIndex += 2;
-        } else {
-          // Handle as exact date if it's in a different format
-          conditions.push(`"cveper" = $${paramIndex}`);
-          params.push(cveper);
-          paramIndex++;
+        } else if (puestoCategorizado === "Categorizar") {
+          puestoCategorizado = "Sin Categorizar";
         }
       }
 
-      // Build complete WHERE clause including CURP conditions
-      const curpConditions = ['"CURP" IS NOT NULL', "\"CURP\" != ''"];
-      const allConditions = [...conditions, ...curpConditions];
-      const whereClause = `WHERE ${allConditions.join(" AND ")}`;
-
-      const result = await client.query(
-        `
-      SELECT COUNT(DISTINCT "CURP") as unique_curp_count
-      FROM historico_nominas_gsau 
-      ${whereClause}
-    `,
-        params
-      );
-
-      await client.end();
+      // Use the payrollFilterService which handles all filters correctly
+      const result = await payrollFilterService.getUniqueCurpCount({
+        search,
+        puesto,
+        sucursal,
+        status,
+        puestoCategorizado,
+        cveper,
+      });
 
       res.json({
         success: true,
-        uniqueCurpCount: parseInt(result.rows[0].unique_curp_count),
+        uniqueCurpCount: result.uniqueCurpCount,
       });
     } catch (error) {
-      console.error("Error in /api/payroll/demographic/unique-count:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("❌ Error obteniendo conteo de CURPs únicos:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
     }
   }
 );
