@@ -1998,24 +1998,32 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
       // Formatear para dropdown (similar a getUniquePayrollPeriods)
       const formattedPeriods = uniqueCvepers.map((cveper) => {
         let labelValue = cveper;
+        let valuePlusOne = cveper;
 
-        // Try to interpret cveper as a date (supports YYYY-MM-DD or similar)
         try {
           const date = new Date(cveper);
           if (!isNaN(date.getTime())) {
-            date.setDate(date.getDate() + 1); // Add 1 day
-            const day = String(date.getDate()).padStart(2, "0");
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const year = date.getFullYear();
-            labelValue = `${day}/${month}/${year}`;
+            // Format label as YYYY-MM-DD
+            const labelYear = date.getFullYear();
+            const labelMonth = String(date.getMonth() + 1).padStart(2, "0");
+            const labelDay = String(date.getDate()).padStart(2, "0");
+            labelValue = `${labelYear}-${labelMonth}-${labelDay}`;
+
+            // Add +1 day for the value
+            date.setDate(date.getDate() + 1);
+            const valueYear = date.getFullYear();
+            const valueMonth = String(date.getMonth() + 1).padStart(2, "0");
+            const valueDay = String(date.getDate()).padStart(2, "0");
+            valuePlusOne = `${valueYear}-${valueMonth}-${valueDay}`;
           }
         } catch (err) {
-          // If not a valid date, fallback to original
+          // Fallback if not a valid date
           labelValue = cveper;
+          valuePlusOne = cveper;
         }
 
         return {
-          value: cveper,
+          value: valuePlusOne,
           label: labelValue,
           count: allCvepers.filter((c) => c === cveper).length,
         };
