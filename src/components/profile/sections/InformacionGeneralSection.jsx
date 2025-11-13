@@ -94,8 +94,7 @@ const FieldValue = styled.div`
 const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
   const formatValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "")
-      return "-";
+    if (value === null || value === undefined || value === "") return "-";
     return value.toString();
   };
 
@@ -118,8 +117,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
 
   const formatNumberIMSS = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "")
-      return "-";
+    if (value === null || value === undefined || value === "") return "-";
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return value.toString();
     return Math.floor(numValue).toString();
@@ -127,8 +125,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
 
   const formatCleanValue = (value) => {
     if (loading) return "Cargando...";
-    if (value === null || value === undefined || value === "")
-      return "-";
+    if (value === null || value === undefined || value === "") return "-";
     let cleanValue = value.toString();
     // Limpiar timestamps - extraer solo la parte antes de 'T' si existe
     if (cleanValue.includes("T")) {
@@ -164,7 +161,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "clavecompañía",
       label: "Clave compañía",
-      dbFields: ["Clave", "Clave compañía", "clavecompañía"],
+      dbFields: ["Clave", "Clave compañía", "clavecompañía", "cvecia"],
     },
     {
       key: "compania",
@@ -241,11 +238,7 @@ const InformacionGeneralSection = ({ data, loading, selectedPeriod }) => {
     {
       key: "fechabaja",
       label: "Fecha baja",
-      dbFields: [
-        "Fecha baja",
-        "fechaBaja",
-        "fechabaja",
-      ],
+      dbFields: ["Fecha baja", "fechaBaja", "fechabaja"],
       isDate: true,
     },
     {
