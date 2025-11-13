@@ -1602,26 +1602,14 @@ app.get(
           .filter((month) => /^\d{4}-\d{2}$/.test(month)); // only valid YYYY-MM
       }
 
-      // Prepare SQL condition for months
-      let cveperCondition = null;
-      if (cveper && cveper.length > 0) {
-        const conditions = cveper.map((month) => {
-          const start = `${month}-01`;
-          const [year, mon] = month.split("-");
-          const nextMonth = new Date(Number(year), Number(mon), 1); // JS months 0-indexed
-          const end = nextMonth.toISOString().slice(0, 10);
-          return `(cveper >= '${start}' AND cveper < '${end}')`;
-        });
-        cveperCondition = `(${conditions.join(" OR ")})`;
-      }
-
-      // Other filters
+      // Helper to decode other URL parameters
       const decodeParam = (param) => {
         if (!param) return undefined;
         if (Array.isArray(param))
           return param.map((p) => decodeURIComponent(p));
         return decodeURIComponent(param);
       };
+
       const search = decodeParam(req.query.search);
       const puesto = decodeParam(req.query.puesto);
       const sucursal = decodeParam(req.query.sucursal);
@@ -1637,7 +1625,7 @@ app.get(
         sucursal,
         status,
         puestoCategorizado,
-        cveper: cveperCondition,
+        cveper,
       });
 
       res.json({
