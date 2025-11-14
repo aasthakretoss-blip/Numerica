@@ -1,6 +1,6 @@
 // ✅ UPDATED: Use Render API URL for all environments
-const LOCAL_API_URL = 'http://numericaapi.kretosstechnology.com:3001';
-const RENDER_API_URL = 'http://numericaapi.kretosstechnology.com:3001';
+const LOCAL_API_URL = process.env.REACT_APP_API_URL;
+const RENDER_API_URL = process.env.REACT_APP_API_URL;
 
 // ✅ UPDATED: Always use Render API (no localhost option)
 // All environments now use http://numericaapi.kretosstechnology.com:3001

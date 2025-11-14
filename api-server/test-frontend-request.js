@@ -4,7 +4,7 @@ async function testFrontendRequest() {
   
   try {
     // Simular la petición que hace el frontend cuando selecciona un mes
-    const baseURL = 'http://numericaapi.kretosstechnology.com:3001';
+    const baseURL = `${process.env.REACT_APP_API_URL}`;
     
     // Test 1: Petición con filtro de mes (2024-10)
     console.log('\n📅 === TEST 1: Filtro por mes 2024-10 ===');

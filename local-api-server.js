@@ -710,7 +710,7 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       name: row.name || row.nombre,
       curp: row.curp,
       cvecia: row.cvecia,
-      sucursal: row.sucursal,
+      sucursal: row.compania,
       department: row.sucursal,
       puesto: row.puesto,
       position: row.puesto,
@@ -1901,7 +1901,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
 });
 
 // Activar usuario (después de verificación exitosa)
-app.post("/api/auth/activate-user", verifyToken, async (req, res) => {
+app.post("/api/auth/activate-user", async (req, res) => {
   try {
     const { email } = req.body;
 

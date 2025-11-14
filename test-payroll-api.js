@@ -4,7 +4,7 @@ async function testPayrollAPI() {
   console.log('🧪 Probando el endpoint /api/payroll...');
   console.log('='.repeat(50));
 
-  const baseUrl = 'http://numericaapi.kretosstechnology.com:3001';
+  const baseUrl = `${process.env.REACT_APP_API_URL}`;
   
   try {
     // Probar el endpoint principal

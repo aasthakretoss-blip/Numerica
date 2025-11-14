@@ -55,20 +55,22 @@ const EmployeeProfile = () => {
 
     switch (activeTab) {
       case "fpl":
-        return <PerfilFPL {...commonProps} />;
+        return <PerfilFPL key={`${rfc}-fpl`} {...commonProps} />;
       case "historico":
-        return <PerfilHistorico {...commonProps} />;
+        return <PerfilHistorico key={`${rfc}-historico`} {...commonProps} />;
       case "documentos":
-        return <PerfilDocumentos {...commonProps} />;
+        return <PerfilDocumentos key={`${rfc}-documentos`} {...commonProps} />;
       default:
-        return <PerfilEmpleado {...commonProps} />;
+        return <PerfilEmpleado key={`${rfc}-empleado`} {...commonProps} />;
     }
   };
 
   return (
     <StyledThemeProvider theme={theme}>
       <PageContainer>
-        <ContentSection>{renderActiveTab()}</ContentSection>
+        <ContentSection key={`${rfc}-${curp}-${activeTab}`}>
+          {renderActiveTab()}
+        </ContentSection>
       </PageContainer>
     </StyledThemeProvider>
   );

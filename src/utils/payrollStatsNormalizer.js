@@ -227,7 +227,7 @@ async function fetchTotalFondosRecords(statsApiUrl, fetchFn = fetch) {
  * @returns {Promise<Object>} Normalized response in old format
  */
 export async function fetchPayrollStats(apiUrl, fetchFn = fetch) {
-  const url = apiUrl || "http://numericaapi.kretosstechnology.com:3001/api/payroll/stats";
+  const url = apiUrl || `${process.env.REACT_APP_API_URL}/api/payroll/stats`;
 
   console.log(
     `[PAYROLL STATS NORMALIZER] ==========================================`

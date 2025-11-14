@@ -1,7 +1,7 @@
 // Diagnóstico del endpoint /api/fondos/data-from-rfc
 const axios = require('axios');
 
-const API_BASE_URL = 'http://numericaapi.kretosstechnology.com:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const TEST_RFC = 'AOHM980311PY9';
 
 // Función para obtener token de autenticación (simulado)

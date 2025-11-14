@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const BASE_URL = 'http://numericaapi.kretosstechnology.com:3001';
+const BASE_URL = `${process.env.REACT_APP_API_URL}`;
 
 async function testEndpoint(url, description, expectAuth = false) {
   try {

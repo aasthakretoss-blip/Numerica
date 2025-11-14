@@ -155,7 +155,9 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         identifier,
         path: navigationPath,
       });
-      navigate(navigationPath);
+      const fullUrl = `${window.location.origin}${navigationPath}`;
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
+      // navigate(navigationPath);
     } else {
       // Fallback: use cleaned name
       const cleanedName =
@@ -168,7 +170,9 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
         nombre: employee.nombre,
         path: navigationPath,
       });
-      navigate(navigationPath);
+      const fullUrl = `${window.location.origin}${navigationPath}`;
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
+      // navigate(navigationPath);
     }
   };
 

@@ -402,9 +402,9 @@ const PerfilFPL = ({ rfc, curp }) => {
             setFechaFPLCalculada(fechaCalculada);
 
             // Establecer como fecha seleccionada si no hay una seleccionada
-            if (!selectedFechaFPL) {
-              setSelectedFechaFPL(fechaCalculada.fechaISO);
-            }
+            // if (!selectedFechaFPL) {
+            //   setSelectedFechaFPL(fechaCalculada.fechaISO);
+            // }
           }
         }
       } catch (error) {
@@ -414,7 +414,7 @@ const PerfilFPL = ({ rfc, curp }) => {
     };
 
     fetchPayrollData();
-  }, [rfcData?.rfc, selectedFechaFPL]);
+  }, [rfcData?.rfc]);
 
   const handleFechaFPLChange = (fechaFPL) => {
     console.log("📅 Fecha FPL seleccionada:", fechaFPL);

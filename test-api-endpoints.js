@@ -47,7 +47,7 @@ async function testEndpoint(url, description) {
 async function main() {
   console.log('🚀 Testing API Endpoints...\n');
   
-  const baseUrl = 'http://numericaapi.kretosstechnology.com:3001';
+  const baseUrl = `${process.env.REACT_APP_API_URL}`;
   
   const endpoints = [
     { url: `${baseUrl}/health`, desc: 'Health Check' },

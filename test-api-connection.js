@@ -2,7 +2,7 @@
  * Script de prueba rápida para verificar conectividad con la API
  */
 
-const API_BASE_URL = 'http://numericaapi.kretosstechnology.com:3001';
+const API_BASE_URL = `${process.env.REACT_APP_API_URL}`;
 
 async function testApiConnection() {
     console.log('🔍 PROBANDO CONECTIVIDAD CON LA API');
