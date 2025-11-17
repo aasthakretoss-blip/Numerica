@@ -1555,7 +1555,8 @@ WHERE 1=1
           paramIndex += cleanedSucursal.length;
         } else if (cleanedSucursal && cleanedSucursal.length > 0) {
           // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
-          const sucursalPattern = `%${cleanedSucursal}%`;
+          // const sucursalPattern = `%${cleanedSucursal}%`;
+          const sucursalPattern = cleanedSucursal;
           countQuery += ` AND "Compañía" ILIKE $${paramIndex}`;
           queryParams.push(sucursalPattern);
           paramIndex++;
