@@ -861,7 +861,7 @@ WHERE 1=1
         } else {
           query += ` AND "Puesto" ILIKE $${paramIndex}`;
           countQuery += ` AND "Puesto" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.puesto}%`);
+          queryParams.push(`${options.puesto}`);
           paramIndex++;
         }
       }
@@ -876,9 +876,13 @@ WHERE 1=1
           queryParams.push(...options.sucursal);
           paramIndex += options.sucursal.length;
         } else {
+          // query += ` AND "Compañía" ILIKE $${paramIndex}`;
+          // countQuery += ` AND "Compañía" ILIKE $${paramIndex}`;
+          // queryParams.push(`%${options.sucursal}%`);
+          // paramIndex++;
           query += ` AND "Compañía" ILIKE $${paramIndex}`;
           countQuery += ` AND "Compañía" ILIKE $${paramIndex}`;
-          queryParams.push(`%${options.sucursal}%`);
+          queryParams.push(options.sucursal); // No %
           paramIndex++;
         }
       }
@@ -1483,7 +1487,7 @@ WHERE 1=1
         cleanedSearch = cleanedSearch.trim().replace(/\s+/g, " ");
 
         if (cleanedSearch && cleanedSearch.length > 0) {
-          const searchPattern = `%${cleanedSearch}%`;
+          const searchPattern = `${cleanedSearch}`;
           countQuery += ` AND ("Nombre completo" ILIKE $${paramIndex} OR "CURP" ILIKE $${paramIndex})`;
           queryParams.push(searchPattern);
           paramIndex++;
@@ -1519,7 +1523,7 @@ WHERE 1=1
           paramIndex += cleanedPuesto.length;
         } else if (cleanedPuesto && cleanedPuesto.length > 0) {
           // Use ILIKE with wildcards (same as getPayrollDataWithFiltersAndSorting)
-          const puestoPattern = `%${cleanedPuesto}%`;
+          const puestoPattern = `${cleanedPuesto}`;
           countQuery += ` AND "Puesto" ILIKE $${paramIndex}`;
           queryParams.push(puestoPattern);
           paramIndex++;
