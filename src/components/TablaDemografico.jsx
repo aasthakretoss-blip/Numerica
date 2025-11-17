@@ -501,8 +501,10 @@ export default function TablaDemografico({
           setEmployees(result.data || []);
           setPagination((prev) => ({
             ...prev,
-            total: result.total || 0,
-            totalPages: Math.ceil((result.total || 0) / prev.pageSize),
+            total: result.pagination.total || 0,
+            totalPages: Math.ceil(
+              (result?.pagination?.total || 0) / prev?.pageSize
+            ),
           }));
         } else {
           console.error("❌ Error en respuesta del servidor:", result.error);
@@ -610,6 +612,7 @@ export default function TablaDemografico({
   };
 
   const handlePageChange = (newPage) => {
+    console.log("This is calling");
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setPagination((prev) => ({ ...prev, page: newPage }));
     }

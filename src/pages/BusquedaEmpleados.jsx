@@ -2379,14 +2379,14 @@ const BusquedaEmpleados = () => {
 
             {/* Estadísticas en el centro */}
             <StatsContainer>
-              {pagination && pagination.total > 0 ? (
+              {pagination && pagination.total >= 0 ? (
                 <div>
-                  {uniqueEmployeesCount > 0
+                  {uniqueEmployeesCount >= 0
                     ? uniqueEmployeesCount.toLocaleString("es-MX")
                     : "..."}{" "}
                   Empleados / {pagination.total.toLocaleString("es-MX")}{" "}
                   Entradas
-                  {employees.length > 0 &&
+                  {employees.length >= 0 &&
                     pagination.total !== employees.length && (
                       <span>
                         {" "}
@@ -2394,17 +2394,19 @@ const BusquedaEmpleados = () => {
                       </span>
                     )}
                 </div>
-              ) : datasetStats &&
-                typeof datasetStats === "object" &&
-                datasetStats.uniqueEmployees &&
-                datasetStats.uniqueEmployees > 0 ? (
-                <div>
-                  {datasetStats.uniqueEmployees.toLocaleString("es-MX")}{" "}
-                  Empleados /{" "}
-                  {(datasetStats.totalRecords || 0).toLocaleString("es-MX")}{" "}
-                  Entradas
-                </div>
               ) : (
+                // : datasetStats &&
+                //   typeof datasetStats === "object" &&
+                //   datasetStats.uniqueEmployees &&
+                //   datasetStats.uniqueEmployees > 0 ? (
+                //   <div>
+                //     {datasetStats.uniqueEmployees.toLocaleString("es-MX")}{" "}
+                //     Empleados /{" "}
+                //     {(datasetStats.totalRecords || 0).toLocaleString("es-MX")}{" "}
+                //     Entradas
+                //   </div>
+                // )
+
                 <div>Conectando con la base de datos...</div>
               )}
             </StatsContainer>
