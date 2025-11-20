@@ -548,6 +548,8 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       fullData,
     } = req.query;
 
+    console.log(req.query, "req.query");
+
     // Use 'search' if provided, otherwise use 'q'
     const searchTerm = search || q;
 
@@ -619,24 +621,46 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       cvepermonth: cvepermonthArray,
       cveper: (() => {
         if (!cveper) return null;
-        try {
-          const decoded = decodeURIComponent(cveper);
-          const parsedDate = new Date(decoded);
-          if (isNaN(parsedDate)) return null;
 
-          // Keep only the date portion (YYYY-MM-DD) without timezone drift
-          const year = parsedDate.getUTCFullYear();
-          const month = String(parsedDate.getUTCMonth() + 1).padStart(2, "0");
-          const day = String(parsedDate.getUTCDate()).padStart(2, "0");
-          return `${year}-${month}-${day}`;
-        } catch {
-          return null;
+        // Normalize to array
+        const values = Array.isArray(cveper) ? cveper : [cveper];
+
+        const formatted = values
+          .map((val) => {
+            try {
+              const decoded = decodeURIComponent(String(val));
+              const d = new Date(decoded);
+              if (isNaN(d)) return null;
+
+              const year = d.getUTCFullYear();
+              const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+              const day = String(d.getUTCDate()).padStart(2, "0");
+              return `${year}-${month}-${day}`;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        if (formatted.length === 0) return null;
+
+        // If only one date → return that date
+        if (formatted.length === 1) return formatted[0];
+
+        // If two dates & they are same → return one
+        if (formatted.length === 2 && formatted[0] === formatted[1]) {
+          return formatted[0];
         }
+
+        // Otherwise return range array
+        return formatted;
       })(),
       orderBy: finalOrderBy,
       orderDirection: finalOrderDirection,
       fullData: fullData === "true" || fullData === true,
     };
+
+    console.log(serviceOptions, "serviceOptions");
 
     // COMMENTED OUT: Verbose logging
     // console.log('🔍 [FILTER/SORT] Active filters and sorting:', {...});
@@ -726,7 +750,13 @@ app.get("/api/payroll", verifyToken, async (req, res) => {
       fecha_baja: row.fecha_baja,
       status: row.status,
       estado: row.estado || row.status,
-      periodo: row.periodo || row.mes,
+      periodo: row.periodo
+        ? new Date(
+            row.periodo.getTime() - row.periodo.getTimezoneOffset() * 60000
+          )
+            .toISOString()
+            .split("T")[0]
+        : row.mes,
       mes: row.mes || "Enero 2024",
       tipo: row.tipo,
       " TOTAL DE PERCEPCIONES ": parseFloat(row.total_percepciones || 0),
@@ -1450,12 +1480,27 @@ app.get("/api/payroll/periodos", verifyToken, async (req, res) => {
 
     await client.end();
 
+    const formatted = result.rows.map((row) => {
+      const d = new Date(row.value); // raw date from DB in local timezone
+
+      // Extract Y/M/D WITHOUT timezone shift
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+
+      // Build correct UTC midnight date
+      const isoUTC = `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+
+      return {
+        value: isoUTC,
+        label: isoUTC,
+        count: parseInt(row.count),
+      };
+    });
+
     res.json({
       success: true,
-      data: result.rows.map((row) => ({
-        value: row.value,
-        count: parseInt(row.count),
-      })),
+      data: formatted,
     });
   } catch (error) {
     console.error("Error in /api/payroll/periodos:", error);
@@ -1589,9 +1634,23 @@ app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
 
     await client.end();
 
+    const fixedRows = dataResult.rows.map((row) => {
+      if (row.fecha) {
+        const d = new Date(row.fecha); // raw date with IST shift
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+
+        // Rebuild correct UTC midnight
+        row.fecha = `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+      }
+      return row;
+    });
+
     res.json({
       success: true,
-      data: dataResult.rows,
+      data: fixedRows,
       page: validatedPage,
       pageSize: validatedPageSize,
       total: total,
@@ -1983,7 +2042,7 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
       console.log(`🔍 Ejecutando query para CURP: ${curp}`);
       const result = await client.query(query, [curp]);
 
-      console.log(`📈 TOTAL DE DATAPOINTS ENCONTRADOS: ${result.rows.length}`);
+      console.log(`📈 TOTAL DE DATAPOINTS ENCONTRADOS: ${result.rows}`);
 
       if (result.rows.length === 0) {
         return res.json({
@@ -2015,12 +2074,29 @@ app.get("/api/payroll/periodos-from-curp", verifyToken, async (req, res) => {
         console.log(`${index + 1}: ${cveper}`);
       });
 
+      // const formattedPeriods = uniqueCvepers.map((cveper) => ({
+      //   value: cveper,
+      //   label: cveper,
+      //   count: allCvepers.filter((c) => c === cveper).length,
+      // }));
+
       // Formatear para dropdown (similar a getUniquePayrollPeriods)
-      const formattedPeriods = uniqueCvepers.map((cveper) => ({
-        value: cveper,
-        label: cveper,
-        count: allCvepers.filter((c) => c === cveper).length,
-      }));
+      const formattedPeriods = uniqueCvepers.map((cveper) => {
+        // Node returns Date object in IST → extract only YYYY-MM-DD safely
+        const yyyy = cveper.getFullYear();
+        const mm = String(cveper.getMonth() + 1).padStart(2, "0");
+        const dd = String(cveper.getDate()).padStart(2, "0");
+
+        // Create exact UTC midnight date
+        const isoUTC = `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+
+        return {
+          value: isoUTC,
+          label: isoUTC,
+          count: allCvepers.filter((c) => c.getTime() === cveper.getTime())
+            .length,
+        };
+      });
 
       console.log(`🎯 METODOLOGÍA APLICADA:`);
       console.log(`1. ✅ Buscado CURP ${curp} en historico_nominas_gsau`);

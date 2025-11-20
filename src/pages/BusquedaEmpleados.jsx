@@ -754,7 +754,7 @@ const BusquedaEmpleados = () => {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 100,
+    pageSize: 40,
     total: 0,
     totalPages: 1,
   });
@@ -1783,7 +1783,7 @@ const BusquedaEmpleados = () => {
   );
 
   // Función unificada para cargar empleados con paginación
-  const loadEmployeesWithPagination = async (page = 1, pageSize = 50) => {
+  const loadEmployeesWithPagination = async (page = 1, pageSize = 40) => {
     // Always clear current data to avoid showing stale rows and force a re-render
     setEmployees([]);
     setLoading(true);
@@ -2067,7 +2067,7 @@ const BusquedaEmpleados = () => {
       setEmployees([]);
       setPagination({
         page: 1,
-        pageSize: pagination.pageSize || 50,
+        pageSize: pagination.pageSize || 40,
         total: 0,
         totalPages: 0,
       });
@@ -2276,7 +2276,7 @@ const BusquedaEmpleados = () => {
                 onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
               >
                 <option value={25}>25 por página</option>
-                <option value={50}>50 por página</option>
+                <option value={40}>40 por página</option>
                 <option value={100}>100 por página</option>
                 <option value={250}>250 por página</option>
                 <option value={500}>500 por página</option>
@@ -2668,6 +2668,8 @@ const BusquedaEmpleados = () => {
               selectedEstados={selectedEstados}
               selectedPeriodos={selectedPeriodos}
               employeeSearchTerm={employeeSearchTerm}
+              limit={pagination.pageSize}
+              defaultsApplied={defaultsApplied}
             />
           )}
         </ResultsSection>

@@ -1,5 +1,6 @@
 const { nominasPool } = require("../config/database");
 const nominasService = require("./nominasService");
+const moment = require("moment");
 
 class PayrollFilterService {
   constructor() {
@@ -957,6 +958,7 @@ WHERE 1=1
       }
 
       if (options.cveper) {
+        console.log(options.cveper, "options.cveper");
         if (options.cveper.match(/^\d{4}-\d{2}$/)) {
           // Filtro por mes completo (formato YYYY-MM)
           query += ` AND DATE_TRUNC('month', cveper) = $${paramIndex}`;
@@ -968,13 +970,20 @@ WHERE 1=1
           );
         } else if (options.cveper.match(/^\d{4}-\d{2}-\d{2}$/)) {
           // Filtro por fecha exacta (formato YYYY-MM-DD)
-          query += ` AND DATE(cveper) = $${paramIndex}`;
-          countQuery += ` AND DATE(cveper) = $${paramIndex}`;
-          queryParams.push(options.cveper);
-          console.log(
-            "📅 PayrollFilterService: Aplicando filtro por fecha exacta:",
-            options.cveper
-          );
+          let exactDate = Array.isArray(options.cveper)
+            ? options.cveper[0] // use first if array
+            : options.cveper;
+          if (exactDate) {
+            const utcDate = moment.utc(exactDate).format("YYYY-MM-DD");
+            query += ` AND cveper::date = $${paramIndex}`;
+            countQuery += ` AND cveper::date = $${paramIndex}`;
+            queryParams.push(utcDate);
+
+            console.log(
+              "📅 PayrollFilterService: Aplicando filtro por fecha exacta:",
+              utcDate
+            );
+          }
         } else {
           // Filtro por timestamp completo
           query += ` AND cveper = $${paramIndex}`;

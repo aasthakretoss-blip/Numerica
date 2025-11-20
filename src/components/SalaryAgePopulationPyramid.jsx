@@ -17,7 +17,7 @@ const OFFICIAL_BLUE = "#3b82f6";
 
 // Styled Components
 const PyramidContainer = styled.div`
-  width: 50%; /* Media pantalla como la otra pirámide */
+  width: 100%; /* Media pantalla como la otra pirámide */
   max-width: 100%;
   min-width: 0;
   background: rgba(255, 255, 255, 0.15);
@@ -47,12 +47,31 @@ const PyramidHeader = styled.div`
   background: rgba(255, 255, 255, 0.1);
   border-bottom: ${(props) =>
     props.$collapsed ? "none" : "1px solid rgba(255, 255, 255, 0.1)"};
+  
+  /* Responsive additions */
+  flex-wrap: wrap; 
+  gap: 1rem; 
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1rem; 
+    justify-content: center; 
+  }
 `;
 
 const PyramidTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+  
+  /* Responsive additions */
+  flex-wrap: wrap; 
+  
+  @media (max-width: 768px) {
+    width: 100%; 
+    justify-content: center; 
+    gap: 0.5rem; 
+    margin-bottom: 0.5rem; 
+  }
 `;
 
 const TitleText = styled.h3`
@@ -63,6 +82,14 @@ const TitleText = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  
+  /* Responsive additions */
+  flex-wrap: wrap; 
+  
+  @media (max-width: 768px) {
+    font-size: 1.25rem; 
+    justify-content: center; 
+  }
 `;
 
 const ToggleButton = styled.button`
@@ -77,6 +104,13 @@ const ToggleButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+
+  /* Responsive additions */
+  @media (max-width: 768px) {
+    width: 100%; 
+    justify-content: center; 
+    font-size: 1rem; 
+  }
 
   &:hover {
     background: rgba(168, 237, 234, 0.3);
@@ -342,22 +376,22 @@ const SALARY_BANDS = [
   },
   {
     min: 20000,
-    max: 35000,
-    label: "$20K - $35K",
+    max: 40000,
+    label: "$20K - $40K",
     color: "linear-gradient(90deg, #FFD700, #FFA500)",
     name: "Medio",
   },
   {
-    min: 35000,
-    max: 50000,
-    label: "$35K - $50K",
+    min: 40000,
+    max: 70000,
+    label: "$40K - $70K",
     color: "linear-gradient(90deg, #FF6347, #DC143C)",
     name: "Medio-Alto",
   },
   {
-    min: 50000,
+    min: 70000,
     max: Infinity,
-    label: "> $50K",
+    label: "> $70K",
     color: "linear-gradient(90deg, #8B008B, #4B0082)",
     name: "Alto",
   },

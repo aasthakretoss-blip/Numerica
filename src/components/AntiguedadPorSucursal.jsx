@@ -16,7 +16,7 @@ const OFFICIAL_BLUE = "#3b82f6";
 
 // Styled Components
 const ChartContainer = styled.div`
-  width: 50%;
+  width:100%;
   min-width: 600px;
   height: auto;
   min-height: 80vh;

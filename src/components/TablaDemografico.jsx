@@ -118,7 +118,7 @@ const HeaderCell = styled.th`
   color: #1e3a8a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.1);
+  background: #ffffff;
 `;
 
 const SortButton = styled.button`
@@ -176,43 +176,8 @@ const StatusBadge = styled.span`
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
-  background: ${(props) => {
-    switch (props.$status) {
-      case "Activo":
-        return "rgba(46, 204, 113, 0.2)";
-      case "Baja":
-        return "rgba(231, 76, 60, 0.2)";
-      case "Finiquitado":
-        return "rgba(241, 196, 15, 0.2)";
-      default:
-        return "rgba(149, 165, 166, 0.2)";
-    }
-  }};
-  color: ${(props) => {
-    switch (props.$status) {
-      case "Activo":
-        return "#2ecc71";
-      case "Baja":
-        return "#e74c3c";
-      case "Finiquitado":
-        return "#f39c12";
-      default:
-        return "#95a5a6";
-    }
-  }};
-  border: 1px solid
-    ${(props) => {
-      switch (props.$status) {
-        case "Activo":
-          return "rgba(46, 204, 113, 0.3)";
-        case "Baja":
-          return "rgba(231, 76, 60, 0.3)";
-        case "Finiquitado":
-          return "rgba(241, 196, 15, 0.3)";
-        default:
-          return "rgba(149, 165, 166, 0.3)";
-      }
-    }};
+  background: "rgba(149, 165, 166, 0.2)";
+  color: "#95a5a6";
 `;
 
 const NoResultsContainer = styled.div`
@@ -879,9 +844,10 @@ export default function TablaDemografico({
                       <TableCell>
                         <code
                           style={{
-                            background: "rgba(255,255,255,0.1)",
+                            background: "rgba(30, 58, 138, 0.2)",
                             padding: "0.25rem 0.5rem",
                             borderRadius: "4px",
+                            color: "rgb(26, 54, 93)",
                           }}
                         >
                           {employee.curp}

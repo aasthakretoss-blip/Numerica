@@ -456,6 +456,18 @@ const Demografico = () => {
           <PageTitle>Dashboard Demográfico</PageTitle>
         </PageHeader>
 
+        <SalaryAgePopulationPyramid
+          title="Pirámide Poblacional por Rango Salarial y Edad"
+          minAge={15}
+          maxAge={80}
+          filters={demographicFilters}
+        />
+
+        <AntiguedadPorSucursal
+          title="Antigüedad por Sucursal"
+          filters={demographicFilters}
+        />
+
         {/* Sistema de filtros demográficos */}
         <DemographicFilterSystem
           onFiltersChange={handleFiltersChange}
@@ -470,7 +482,7 @@ const Demografico = () => {
           filters={demographicFilters}
         />
 
-        <ChartsContainer>
+        {/* <ChartsContainer>
           <PopulationPyramid
             title="Pirámide Poblacional por Edad y Género"
             minAge={15}
@@ -488,18 +500,18 @@ const Demografico = () => {
             filters={demographicFilters}
             periodFilter={periodFilter}
           />
-        </ChartsContainer>
+        </ChartsContainer> */}
 
         {/* Componente de datos interactivo - ancho completo y horizontal */}
-        <InteractiveDataContainer>
+        {/* <InteractiveDataContainer>
           <InteractiveDataViewer
             onViewEmployee={handleViewEmployee}
             filters={demographicFilters}
             periodFilter={periodFilter}
           />
-        </InteractiveDataContainer>
+        </InteractiveDataContainer> */}
 
-        <SalaryAgePopulationPyramid
+        {/* <SalaryAgePopulationPyramid
           title="Pirámide Poblacional por Rango Salarial y Edad"
           minAge={15}
           maxAge={80}
@@ -509,7 +521,7 @@ const Demografico = () => {
         <AntiguedadPorSucursal
           title="Antigüedad por Sucursal"
           filters={demographicFilters}
-        />
+        /> */}
 
         {/* Aquí se agregarán más componentes de visualización paso a paso */}
       </PageContainer>

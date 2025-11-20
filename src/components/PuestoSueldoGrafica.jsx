@@ -526,9 +526,8 @@ export default function PuestoSueldoGrafica({
   // Función para manejar clics en las barras
   const handleBarClick = (puesto, gender, count) => {
     // Crear selección usando el nuevo sistema
-    const selection = createSelection.jobPositionGender(puesto, gender, {
+    const selection = createSelection.positionGender(puesto, gender, count, {
       totalEmployees: chartData.stats?.totalEmployees || 0,
-      positionCount: count,
       filters: filters,
       periodFilter: periodFilter,
     });

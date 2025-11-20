@@ -814,7 +814,7 @@ export default function InteractiveDataViewer() {
               {generatePageNumbers().map((pageNum, index) =>
                 typeof pageNum === "number" ? (
                   <PaginationButton
-                    key={pageNum}
+                    key={index}
                     $active={pageNum === pagination.page}
                     onClick={() => handlePageChange(pageNum)}
                   >

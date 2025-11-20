@@ -215,6 +215,8 @@ const EmployeeCompareGraph = ({
   // Props adicionales para detectar el sorting local de la tabla
   localSortBy = "nombre",
   localSortDir = "asc",
+  limit = 0,
+  defaultsApplied,
 }) => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [visibleLines, setVisibleLines] = React.useState({
@@ -359,7 +361,7 @@ const EmployeeCompareGraph = ({
     }
 
     // Limitar a los primeros 40 registros (ya ordenados)
-    const limitedData = processedArray.slice(0, 40);
+    const limitedData = processedArray.slice(0, limit);
 
     console.log(
       "✅ Datos procesados para gráfica (agrupados por empleado+mes):",
@@ -557,7 +559,7 @@ const EmployeeCompareGraph = ({
         display: true,
         title: {
           display: true,
-          text: "Empleados por Mes (Primeros 40 empleado-mes únicos)",
+          text: `Empleados por Mes (Primeros 40 empleado-mes únicos)`,
           color: "#2c3e50",
           font: {
             family: "Inter, system-ui, sans-serif",
@@ -623,6 +625,8 @@ const EmployeeCompareGraph = ({
   // Calcular estadísticas
   const statistics = useMemo(() => {
     if (processedData.length === 0) return null;
+
+    console.log(processedData, "processdata");
 
     const totalSalary = processedData.reduce((sum, emp) => sum + emp.salary, 0);
     const totalCommissions = processedData.reduce(
@@ -729,14 +733,20 @@ const EmployeeCompareGraph = ({
       </GraphHeader>
 
       <GraphWrapper $collapsed={isCollapsed}>
-        <Line data={chartData} options={chartOptions} />
+        <Line
+          key={JSON.stringify(chartData?.labels)}
+          data={chartData}
+          options={chartOptions}
+        />
       </GraphWrapper>
 
       {statistics && !isCollapsed && (
         <StatsPanel>
           <StatItem>
-            <div className="label">Empleados Mostrados</div>
-            <div className="value">{statistics.totalEmployees}</div>
+            <div className="label">Entradas Mostrados</div>
+            <div className="value">
+              {!defaultsApplied ? limit : statistics.totalEmployees}
+            </div>
           </StatItem>
           <StatItem>
             <div className="label">Sueldo Promedio</div>
