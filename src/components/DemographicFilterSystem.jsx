@@ -31,6 +31,14 @@ const FilterHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
 `;
 
 const FilterTitle = styled.div`
@@ -40,12 +48,22 @@ const FilterTitle = styled.div`
   color: #1e3a8a;
   font-size: 1.2rem;
   font-weight: 500;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
 `;
 
 const FilterControls = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
 `;
 
 const ClearAllButton = styled.button`
@@ -70,6 +88,12 @@ const ClearAllButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+  }
+
+  @media (max-width: 768px) {
+    width: auto;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
   }
 `;
 
@@ -120,6 +144,13 @@ const ActiveFilterBadge = styled.span`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  max-width: 100%;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+  }
 `;
 
 const DemographicFilterSystem = ({
@@ -157,24 +188,24 @@ const DemographicFilterSystem = ({
   }, []);
 
   // Recargar conteos dinámicos cuando cambien los filtros
-  useEffect(() => {
-    if (staticFilterOptions.sucursales.length > 0) {
-      const activeFilters = {
-        sucursales: selectedSucursales,
-        puestos: selectedPuestos,
-        puestosCategorias: selectedPuestosCategorias,
-        periodFilter,
-      };
+  // useEffect(() => {
+  //   if (staticFilterOptions.sucursales.length > 0) {
+  //     const activeFilters = {
+  //       sucursales: selectedSucursales,
+  //       puestos: selectedPuestos,
+  //       puestosCategorias: selectedPuestosCategorias,
+  //       periodFilter,
+  //     };
 
-      loadDynamicCounts(activeFilters);
-    }
-  }, [
-    selectedSucursales,
-    selectedPuestos,
-    selectedPuestosCategorias,
-    periodFilter,
-    staticFilterOptions.sucursales.length,
-  ]);
+  //     loadDynamicCounts(activeFilters);
+  //   }
+  // }, [
+  //   selectedSucursales,
+  //   selectedPuestos,
+  //   selectedPuestosCategorias,
+  //   periodFilter,
+  //   staticFilterOptions.sucursales.length,
+  // ]);
 
   // Notificar cambios de filtros al componente padre (usando useCallback para evitar loops)
   useEffect(() => {

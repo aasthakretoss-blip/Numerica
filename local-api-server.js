@@ -1546,9 +1546,26 @@ app.get("/api/payroll/demographic", verifyToken, async (req, res) => {
     }
 
     if (sucursal) {
-      conditions.push(`"Compañía" = $${paramIndex}`);
-      params.push(sucursal);
-      paramIndex++;
+      // If multiple ?sucursal= appear, Express returns an array
+      const sucursalList = Array.isArray(sucursal)
+        ? sucursal
+        : sucursal.split(",").map((s) => s.trim());
+
+      if (sucursalList.length === 1) {
+        // Single value
+        conditions.push(`"Compañía" = $${paramIndex}`);
+        params.push(sucursalList[0]);
+        paramIndex++;
+      } else if (sucursalList.length > 1) {
+        // Multiple values
+        const placeholders = sucursalList
+          .map((_, i) => `$${paramIndex + i}`)
+          .join(", ");
+
+        conditions.push(`"Compañía" IN (${placeholders})`);
+        params.push(...sucursalList);
+        paramIndex += sucursalList.length;
+      }
     }
 
     if (puesto) {

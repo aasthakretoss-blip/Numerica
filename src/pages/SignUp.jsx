@@ -305,21 +305,21 @@ const SignUp = () => {
 
       // Paso 1: Validar email contra numerica_users
       console.log('🔍 Validando email:', formData.email);
-      const validateResponse = await fetch(buildApiUrl('/api/auth/validate-email'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
-      });
+      // const validateResponse = await fetch(buildApiUrl('/api/auth/validate-email'), {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email: formData.email })
+      // });
 
-      const validateData = await validateResponse.json();
+      // const validateData = await validateResponse.json();
 
-      if (!validateResponse.ok) {
-        setMessage({ text: validateData.error, type: 'error' });
-        setLoading(false);
-        return;
-      }
+      // if (!validateResponse.ok) {
+      //   setMessage({ text: validateData.error, type: 'error' });
+      //   setLoading(false);
+      //   return;
+      // }
 
-      console.log('✅ Email validado:', validateData);
+      // console.log('✅ Email validado:', validateData);
 
       // Paso 2: Registrar usuario en AWS Cognito
       console.log('📝 Registrando usuario en Cognito...');

@@ -271,28 +271,28 @@ const Demografico = () => {
 
       // Cargar todas las páginas en paralelo
       const pagePromises = [];
-      for (let page = 1; page <= totalPages; page++) {
-        const params = new URLSearchParams({
-          page: page,
-          pageSize: PAGE_SIZE,
-          sortBy: "nombre",
-          sortDir: "asc",
-          ...(periodFilter && periodFilter !== ""
-            ? { cveper: periodFilter }
-            : {}),
-          status: "A",
-        });
+      // for (let page = 1; page <= totalPages; page++) {
+      //   const params = new URLSearchParams({
+      //     page: page,
+      //     pageSize: PAGE_SIZE,
+      //     sortBy: "nombre",
+      //     sortDir: "asc",
+      //     ...(periodFilter && periodFilter !== ""
+      //       ? { cveper: periodFilter }
+      //       : {}),
+      //     status: "A",
+      //   });
 
-        pagePromises.push(
-          authenticatedFetch(buildApiUrl(`/api/payroll/demographic?${params}`))
-            .then((res) => res.json())
-            .then((result) => ({
-              page,
-              data: result.data || [],
-              total: result.total,
-            }))
-        );
-      }
+      //   pagePromises.push(
+      //     authenticatedFetch(buildApiUrl(`/api/payroll/demographic?${params}`))
+      //       .then((res) => res.json())
+      //       .then((result) => ({
+      //         page,
+      //         data: result.data || [],
+      //         total: result.total,
+      //       }))
+      //   );
+      // }
 
       console.log("📊 Cargando", pagePromises.length, "páginas en paralelo...");
       const pageResults = await Promise.all(pagePromises);
@@ -456,6 +456,12 @@ const Demografico = () => {
           <PageTitle>Dashboard Demográfico</PageTitle>
         </PageHeader>
 
+        <DemographicFilterSystem
+          onFiltersChange={handleFiltersChange}
+          periodFilter={periodFilter}
+          disabled={loading}
+          showActiveFilters={true}
+        />
         <SalaryAgePopulationPyramid
           title="Pirámide Poblacional por Rango Salarial y Edad"
           minAge={15}
@@ -469,12 +475,6 @@ const Demografico = () => {
         />
 
         {/* Sistema de filtros demográficos */}
-        <DemographicFilterSystem
-          onFiltersChange={handleFiltersChange}
-          periodFilter={periodFilter}
-          disabled={loading}
-          showActiveFilters={true}
-        />
 
         <TablaDemografico
           onViewEmployee={handleViewEmployee}

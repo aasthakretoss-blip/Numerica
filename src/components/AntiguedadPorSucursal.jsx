@@ -16,7 +16,7 @@ const OFFICIAL_BLUE = "#3b82f6";
 
 // Styled Components
 const ChartContainer = styled.div`
-  width:100%;
+  width: 100%;
   min-width: 600px;
   height: auto;
   min-height: 80vh;
@@ -49,12 +49,25 @@ const ChartHeader = styled.div`
   background: rgba(255, 255, 255, 0.15);
   border-bottom: ${(props) =>
     props.$collapsed ? "none" : "1px solid rgba(255, 255, 255, 0.1)"};
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+  }
 `;
 
 const ChartTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
 `;
 
 const TitleText = styled.h3`
@@ -65,6 +78,15 @@ const TitleText = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
 `;
 
 const ToggleButton = styled.button`
@@ -83,6 +105,17 @@ const ToggleButton = styled.button`
   &:hover {
     background: rgba(30, 58, 138, 0.3);
     transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    font-size: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
   }
 `;
 
@@ -253,6 +286,7 @@ const BarStack = styled.div`
   border-radius: 4px;
   overflow: hidden;
   background: transparent;
+  overflow: visible;
 `;
 
 const BarSegment = styled.div`
@@ -264,6 +298,7 @@ const BarSegment = styled.div`
   justify-content: center;
   font-size: 0.7rem;
   color: white;
+  overflow: visible;
   font-weight: 600;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   min-width: 2px;
@@ -274,11 +309,16 @@ const BarSegment = styled.div`
     z-index: 10;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
+
+  &:hover .tooltip-content {
+    opacity: 1;
+    pointer-events: auto;
+  }
 `;
 
 const Tooltip = styled.div`
   position: absolute;
-  top: -40px;
+  top: -45px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.9);
@@ -290,7 +330,7 @@ const Tooltip = styled.div`
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  z-index: 20;
+  z-index: 9999;
 
   ${BarSegment}:hover & {
     opacity: 1;
@@ -356,6 +396,7 @@ export default function AntiguedadPorSucursal({
       "fechaAntiguedad",
       "start_date",
       "hire_date",
+      "fecha",
     ];
 
     for (const field of seniorityFields) {
@@ -690,14 +731,18 @@ export default function AntiguedadPorSucursal({
       "branch",
     ];
 
+    console.log(uniqueEmployees, "uniqueEmployees");
+
     uniqueEmployees.forEach((emp, index) => {
       processedCount++;
+
+      console.log(emp, "emp");
 
       // Buscar campo de sucursal
       let sucursal = null;
       for (const field of branchFields) {
-        if (emp[field] && typeof emp[field] === "string") {
-          sucursal = emp[field].trim();
+        if (emp[field]) {
+          sucursal = String(emp[field]).trim();
           break;
         }
       }
@@ -714,10 +759,15 @@ export default function AntiguedadPorSucursal({
 
       // Obtener años de antigüedad del empleado
       const yearsOfSeniority = getYearsOfSeniority(emp);
-      const seniorityBand = getSeniorityBand(yearsOfSeniority);
+      const safeYears = yearsOfSeniority ?? 0;
+      const seniorityBand = getSeniorityBand(safeYears);
 
-      if (seniorityBand && yearsOfSeniority !== null) {
+      if (seniorityBand) {
         validSeniorityCount++;
+
+        const key = sucursal.trim().toLowerCase();
+
+        console.log(key, "key");
 
         // Inicializar sucursal si no existe
         if (!branchData[sucursal]) {
@@ -766,6 +816,8 @@ export default function AntiguedadPorSucursal({
     const sortedBranches = Object.keys(branchData).sort((a, b) =>
       a.localeCompare(b, "es", { sensitivity: "base" })
     );
+
+    console.log(branchData, "branchData");
 
     const stats = {
       totalEmployees: processedCount,
@@ -930,7 +982,7 @@ export default function AntiguedadPorSucursal({
                               >
                                 {count > 3 && count}{" "}
                                 {/* Solo mostrar números si hay suficiente espacio */}
-                                <Tooltip>
+                                <Tooltip className="tooltip-content">
                                   {branchName}
                                   <br />
                                   {band.label}: {count} empleado

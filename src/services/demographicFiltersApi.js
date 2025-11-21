@@ -352,7 +352,7 @@ export const buildDemographicFilterParams = (
 
   // Aplicar período si está disponible y no está vacío
   if (filters.periodFilter && filters.periodFilter !== "") {
-    params.append("cveper", filters.periodFilter);
+    params.append("cvepermonth", filters.periodFilter);
   }
 
   // Parámetros adicionales (paginación, sorting, etc.)

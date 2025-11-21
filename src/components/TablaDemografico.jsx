@@ -35,14 +35,29 @@ const TableHeader = styled.div`
   align-items: center;
   padding: 1.5rem 2rem;
   background: rgba(255, 255, 255, 0.15);
+  flex-wrap: wrap;
+  gap: 1rem;
   border-bottom: ${(props) =>
     props.$collapsed ? "none" : "1px solid rgba(255, 255, 255, 0.1)"};
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+  }
 `;
 
 const TableTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: space-between;
+  }
 `;
 
 const TitleText = styled.h3`
@@ -53,6 +68,11 @@ const TitleText = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+    width: 100%;
+  }
 `;
 
 const ToggleButton = styled.button`
@@ -71,6 +91,11 @@ const ToggleButton = styled.button`
   &:hover {
     background: rgba(30, 58, 138, 0.3);
     transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
   }
 `;
 
@@ -451,7 +476,7 @@ export default function TablaDemografico({
       );
 
       // Cargar conteo en paralelo (saltándonos por ahora hasta que exista el endpoint)
-      // await loadUniqueCurpCount();
+      await loadUniqueCurpCount();
 
       if (dataResponse.ok) {
         const result = await dataResponse.json();
@@ -949,7 +974,7 @@ export default function TablaDemografico({
                 {generatePageNumbers().map((pageNum, index) =>
                   typeof pageNum === "number" ? (
                     <PaginationButton
-                      key={pageNum}
+                      key={`${pageNum}-${index}`}
                       $active={pageNum === pagination.page}
                       onClick={() => handlePageChange(pageNum)}
                     >

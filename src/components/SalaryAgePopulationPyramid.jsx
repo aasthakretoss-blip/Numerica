@@ -740,21 +740,22 @@ export default function SalaryAgePopulationPyramid({
   useEffect(() => {
     // Cargar el último período al montar el componente
     loadLatestPeriod();
+    loadSalaryData();
   }, []);
 
-  useEffect(() => {
-    // Cargar datos cuando cambie el período o filtros demográficos
-    if (periodFilter !== null) {
-      console.log(
-        "🔄 SalaryAgePopulationPyramid: Recargando datos por cambio de filtros:",
-        {
-          periodFilter,
-          filters,
-        }
-      );
-      loadSalaryData();
-    }
-  }, [periodFilter, filters]);
+  // useEffect(() => {
+  //   // Cargar datos cuando cambie el período o filtros demográficos
+  //   if (periodFilter !== null) {
+  //     console.log(
+  //       "🔄 SalaryAgePopulationPyramid: Recargando datos por cambio de filtros:",
+  //       {
+  //         periodFilter,
+  //         filters,
+  //       }
+  //     );
+  //     loadSalaryData();
+  //   }
+  // }, [periodFilter, filters]);
 
   // Determinar banda salarial
   const getSalaryBand = (costoNomina) => {
