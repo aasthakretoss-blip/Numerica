@@ -1694,7 +1694,9 @@ const BusquedaEmpleados = () => {
         identifier,
         path: navigationPath,
       });
-      navigate(navigationPath);
+      // navigate(navigationPath);
+      const fullUrl = `${window.location.origin}${navigationPath}`;
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
     } else {
       // Fallback: use cleaned name
       const cleanedName =
@@ -1707,7 +1709,9 @@ const BusquedaEmpleados = () => {
         nombre: employee.name || employee.nombre,
         path: navigationPath,
       });
-      navigate(navigationPath);
+      // navigate(navigationPath);
+      const fullUrl = `${window.location.origin}${navigationPath}`;
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
     }
   };
 

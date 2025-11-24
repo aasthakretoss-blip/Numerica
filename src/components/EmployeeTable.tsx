@@ -140,10 +140,13 @@ export default function EmployeeTable(props?: EmployeeTableProps) {
       return;
     }
 
+    console.log("👁️ EmployeeTable.handleViewEmployee called:", {
+      employee,
+    });
     // ✅ FIXED: Check all possible field names for CURP (same logic as table rendering)
     const rAny = employee as any;
     const identifier = employee.rfc?.trim() || rAny.RFC?.trim() || null;
-    const curpidentifier = rAny.curp?.trim();
+    const curpidentifier = employee.curp?.trim();
 
     let navigationPath: string;
 
